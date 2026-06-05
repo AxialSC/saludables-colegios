@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Saludables para Jardines y Colegios</title>
-    <!-- Tailwind CSS para diseño moderno, responsive y limpio -->
+    <title>Saludables para Jardines y Colegios - Catálogo Pilar</title>
+    <!-- Tailwind CSS para diseño fluido y moderno -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .product-card {
@@ -17,28 +17,94 @@
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans">
 
+    <!-- PANEL DE CONTROL DE PRECIOS (JULIANA) -->
+    <div id="admin-panel" class="bg-slate-900 text-white border-b border-slate-700 py-3 px-4 sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <span class="bg-amber-500 text-[10px] uppercase font-extrabold px-2 py-0.5 rounded text-slate-950">Vista Vendedora</span>
+                <p class="text-xs md:text-sm font-semibold text-slate-300">Ajustes de Márgenes</p>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-6">
+                <!-- Selector de Markup General -->
+                <div class="flex items-center gap-2">
+                    <label for="markup-slider" class="text-xs text-slate-400">Markup General:</label>
+                    <input type="range" id="markup-slider" min="0" max="100" value="30" class="w-24 md:w-32 accent-emerald-500">
+                    <span id="markup-val" class="text-xs font-bold text-emerald-400 bg-slate-800 px-2 py-1 rounded">30%</span>
+                </div>
+                
+                <!-- Mostrar/Ocultar costos de lista -->
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="show-cost-check" checked class="rounded accent-emerald-500">
+                    <label for="show-cost-check" class="text-xs text-slate-400 cursor-pointer">Ver costos s/IVA</label>
+                </div>
+
+                <!-- Botón de Copiar Link Personalizado -->
+                <button onclick="generateCustomLink()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold px-4 py-2 rounded-lg flex items-center gap-2 shadow-md transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+                    Generar Link para Cliente
+                </button>
+            </div>
+
+            <!-- Botón para ocultar todo el panel antes de mostrar al cliente -->
+            <button onclick="hideAdminPanelDirectly()" class="bg-slate-800 hover:bg-slate-700 text-xs font-semibold px-3 py-1.5 rounded border border-slate-700 transition-all">
+                Modo Cliente
+            </button>
+        </div>
+    </div>
+
+    <!-- Botón flotante para acceder al panel (Protegido con Modal de Contraseña) -->
+    <button id="restore-admin-btn" onclick="openLoginModal()" class="fixed bottom-6 left-6 z-50 bg-slate-900 text-white hover:bg-slate-800 border border-slate-700 p-3 rounded-full shadow-2xl transition-all">
+        <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+    </button>
+
+    <!-- NOTIFICACIÓN TEMPORAL (TOAST) -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 bg-slate-900 text-emerald-400 border border-emerald-500/30 px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 transition-opacity duration-300 opacity-0 pointer-events-none">
+        <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span id="toast-msg" class="text-sm font-semibold text-white"></span>
+    </div>
+
+    <!-- MODAL DE INICIO DE SESIÓN -->
+    <div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm hidden">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 w-full max-w-sm mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-900">Acceso Vendedora</h3>
+                <button onclick="closeLoginModal()" class="text-slate-400 hover:text-slate-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Usuario:</label>
+                    <input type="text" id="username" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Contraseña:</label>
+                    <input type="password" id="password" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none text-sm">
+                </div>
+                <div id="login-error" class="text-xs text-red-500 hidden">Credenciales inválidas. Intente nuevamente.</div>
+                <button onclick="attemptLogin()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-lg text-sm transition-all shadow-md">
+                    Ingresar al Panel
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Encabezado / Hero Section -->
     <header class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white py-12 px-4 shadow-md text-center">
-        <div class="max-w-4xl mx-auto">
-            
-            <!-- Imagen de Portada -->
-            <img src="https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1200&q=80" 
-                 alt="Alimentos Saludables Escolares" 
-                 class="w-full h-48 md:h-64 object-cover rounded-2xl mb-8 shadow-lg border border-white/20">
-            
-            <span class="bg-emerald-500 text-xs uppercase font-bold px-3 py-1 rounded-full mb-3 inline-block tracking-wider">Propuesta Nutritiva Escolar</span>
+        <div class="max-w-7xl mx-auto">
+            <span class="bg-emerald-500/30 text-emerald-200 border border-emerald-400/20 text-xs uppercase font-extrabold px-3 py-1 rounded-full mb-3 inline-block tracking-wider">Distribuidora Juliana Maciel</span>
             <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight mb-4">Saludables para Jardines y Colegios</h1>
             <p class="text-base md:text-lg text-emerald-100 max-w-2xl mx-auto mb-6">
-                Una selección cuidada de colaciones y bebidas ideales para cantinas escolares y quioscos saludables. Sin fritos ni excesos de azúcares.
+                Propuestas nutritivas seleccionadas especialmente para colegios de Pilar y zona norte. Colaciones sanas que los chicos eligen.
             </p>
             
             <!-- Contacto Principal -->
-            <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 inline-block border border-white/20">
-                <p class="text-sm text-emerald-200">Para consultas y pedidos mayoristas:</p>
-                <p class="text-lg md:text-xl font-semibold mt-1">Juliana Maciel</p>
+            <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-4 inline-block border border-white/20">
+                <p class="text-sm text-emerald-200">Coordinación de presupuestos y envíos:</p>
+                <p class="text-lg md:text-xl font-bold mt-0.5">Juliana Maciel</p>
                 <div class="mt-3 flex flex-wrap justify-center gap-3">
-                    <a href="https://wa.me/5491171352560?text=Hola%20Juliana,%20vi%20tu%20lista%20de%20saludables%20para%20colegios" target="_blank" class="bg-emerald-500 hover:bg-emerald-400 text-white px-5 py-2 rounded-lg font-bold text-sm shadow flex items-center gap-2 transition-all">
-                        <!-- Icono WhatsApp -->
+                    <a href="https://wa.me/5491171352560?text=Hola%20Juliana,%20vi%20tu%20lista%20de%20saludables%20para%20colegios" target="_blank" class="bg-emerald-500 hover:bg-emerald-400 text-white px-5 py-2 rounded-xl font-bold text-sm shadow flex items-center gap-2 transition-all">
                         <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.62.962 3.21 1.453 4.857 1.453 5.489 0 9.954-4.436 9.958-9.885.002-2.639-1.025-5.119-2.89-6.988C16.658 1.865 14.19 .84 11.55.84c-5.492 0-9.957 4.437-9.962 9.886-.001 1.925.501 3.807 1.455 5.461l-.955 3.49 3.582-.939zm12.593-7.551c-.302-.151-1.789-.882-2.057-.979-.268-.098-.463-.147-.659.147-.196.294-.755.947-.927 1.144-.171.196-.343.221-.645.071-.3-.151-1.267-.467-2.414-1.487-.893-.794-1.496-1.774-1.671-2.074-.175-.301-.019-.463.132-.612.136-.134.302-.35.453-.524.151-.174.201-.299.302-.497.101-.199.051-.374-.025-.524-.075-.151-.659-1.589-.902-2.174-.237-.568-.478-.49-.659-.499-.17-.008-.365-.01-.56-.01-.196 0-.515.073-.784.365-.268.294-1.026 1.002-1.026 2.443 0 1.442 1.052 2.839 1.198 3.037.147.197 2.074 3.167 5.022 4.444.701.304 1.248.485 1.673.619.706.224 1.35.193 1.859.117.567-.085 1.789-.731 2.042-1.439.253-.708.253-1.314.177-1.439-.077-.125-.283-.199-.585-.35z"/></svg>
                         WhatsApp: +54 9 11 7135-2560
                     </a>
@@ -47,948 +113,611 @@
         </div>
     </header>
 
-    <!-- Buscador en tiempo real -->
-    <div class="max-w-6xl mx-auto px-4 mt-8">
-        <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-200">
-            <label for="search" class="block text-sm font-semibold text-slate-600 mb-2">Buscador de Productos:</label>
+    <!-- Buscador Integrado -->
+    <div class="max-w-7xl mx-auto px-4 mt-8">
+        <div class="bg-white rounded-2xl shadow-sm p-4 border border-slate-200">
             <div class="relative">
-                <input type="text" id="search" placeholder="Escribí una marca, producto o código (ej: 'arroz', 'cachafaz', '81116')..." class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-slate-700 transition-all">
-                <span class="absolute right-3 top-3.5 text-slate-400">
+                <input type="text" id="search" placeholder="Escribí marca, producto o código (ej: 'arroz', 'cachafaz', '824261')..." class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-slate-700 transition-all text-sm">
+                <span class="absolute right-4 top-3.5 text-slate-400">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </span>
             </div>
-            <div id="search-info" class="text-xs text-slate-500 mt-2 hidden"></div>
+            <div id="search-info" class="text-xs text-emerald-600 mt-2 font-medium hidden"></div>
         </div>
     </div>
 
-    <!-- Contenido Principal de Niveles -->
-    <main class="max-w-6xl mx-auto px-4 py-8 space-y-12">
+    <!-- Contenido Principal: Catálogo y Barra Lateral -->
+    <main class="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-4 gap-8">
+        
+        <!-- COLUMNA DEL CATÁLOGO (3/4 de ancho en desktop) -->
+        <div class="lg:col-span-3 space-y-12">
 
-        <!-- NIVEL 1 -->
-        <section class="level-section">
-            <div class="border-b border-emerald-200 pb-3 mb-6 flex items-center gap-3">
-                <span class="bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded text-sm">Nivel 1</span>
-                <h2 class="text-xl md:text-2xl font-bold text-slate-800">Hidratación Pura y Jugos 100% Naturales</h2>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="level-1-grid">
+            <!-- CATEGORÍA 1 -->
+            <section class="level-section">
+                <div class="border-b border-emerald-200 pb-3 mb-6 flex items-center gap-3">
+                    <span class="bg-emerald-100 text-emerald-800 font-extrabold px-3 py-1 rounded-lg text-xs">NIVEL 1</span>
+                    <h2 class="text-lg md:text-xl font-bold text-slate-800">Hidratación Pura y Jugos 100% Naturales</h2>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    
+                    <!-- Sierra de los Padres 600 -->
+                    <div class="product-card bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-code="89051" data-keywords="agua mineral sierra de los padres 600cc 89051" data-base-price="6205.04">
+                        <img src="https://images.unsplash.com/photo-1523362628745-0c100150b504?auto=format&fit=crop&w=400&q=80" alt="Agua Mineral" class="h-44 w-full object-cover">
+                        <div class="p-5 flex-grow flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-start">
+                                    <span class="text-xs font-semibold text-slate-400">Cód. 89051</span>
+                                    <span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2.5 py-1 rounded-full">AGUA</span>
+                                </div>
+                                <h3 class="font-bold text-slate-800 text-base mt-2 prod-name">Agua SIERRA DE LOS PADRES</h3>
+                                <p class="text-slate-500 text-xs mt-0.5">Pack 12 x 600cc.</p>
+                            </div>
+                            
+                            <!-- CONTROLES ADMIN (OCULTOS POR DEFECTO AL CLIENTE) -->
+                            <div class="admin-controls-card bg-slate-100 p-2.5 rounded-xl border border-slate-200 mt-4 hidden">
+                                <div class="flex items-center justify-between text-xs">
+                                    <label class="flex items-center gap-1.5 font-semibold text-slate-700 cursor-pointer">
+                                        <input type="checkbox" class="individual-check accent-amber-500 rounded">
+                                        Margen Indiv.
+                                    </label>
+                                    <div class="flex items-center gap-1">
+                                        <input type="number" class="individual-input w-12 text-center border rounded py-0.5 text-slate-800 font-bold" min="0" max="100" value="30">
+                                        <span class="font-bold text-slate-500">%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-1">
+                                <div class="cost-row flex justify-between text-xs text-slate-400"><span>Costo s/IVA:</span><span>$6.205,04</span></div>
+                                <div class="flex justify-between items-center text-slate-600 text-xs mt-0.5"><span>Venta Sugerida s/IVA:</span><span class="sale-price font-bold">$0,00</span></div>
+                                <div class="flex justify-between items-center text-emerald-700 font-extrabold mt-1"><span>Precio Final c/IVA:</span><span class="text-lg final-price">$0,00</span></div>
+                                <button onclick="shareItem(this)" class="text-xs bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-3 py-2 rounded-xl flex items-center justify-center gap-2 transition-all mt-3 font-bold border border-slate-100">
+                                    <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+                                    Compartir Ficha
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Citric Exprimido -->
+                    <div class="product-card bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-code="89001" data-keywords="jugo citric exprimido natural naranja 250ml 89001" data-base-price="1035.87">
+                        <img src="https://images.unsplash.com/photo-1613478223719-2ab802602423?auto=format&fit=crop&w=400&q=80" alt="Jugo de Naranja" class="h-44 w-full object-cover">
+                        <div class="p-5 flex-grow flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-start">
+                                    <span class="text-xs font-semibold text-slate-400">Cód. 89001</span>
+                                    <span class="bg-orange-50 text-orange-700 text-[10px] font-bold px-2.5 py-1 rounded-full">NATURAL</span>
+                                </div>
+                                <h3 class="font-bold text-slate-800 text-base mt-2 prod-name">Jugo CITRIC Naranja</h3>
+                                <p class="text-slate-500 text-xs mt-0.5">Exprimido 100% natural 250ml.</p>
+                            </div>
+
+                            <!-- CONTROLES ADMIN (OCULTOS POR DEFECTO AL CLIENTE) -->
+                            <div class="admin-controls-card bg-slate-100 p-2.5 rounded-xl border border-slate-200 mt-4 hidden">
+                                <div class="flex items-center justify-between text-xs">
+                                    <label class="flex items-center gap-1.5 font-semibold text-slate-700 cursor-pointer">
+                                        <input type="checkbox" class="individual-check accent-amber-500 rounded">
+                                        Margen Indiv.
+                                    </label>
+                                    <div class="flex items-center gap-1">
+                                        <input type="number" class="individual-input w-12 text-center border rounded py-0.5 text-slate-800 font-bold" min="0" max="100" value="30">
+                                        <span class="font-bold text-slate-500">%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-1">
+                                <div class="cost-row flex justify-between text-xs text-slate-400"><span>Costo s/IVA:</span><span>$1.035,87</span></div>
+                                <div class="flex justify-between items-center text-slate-600 text-xs mt-0.5"><span>Venta Sugerida s/IVA:</span><span class="sale-price font-bold">$0,00</span></div>
+                                <div class="flex justify-between items-center text-emerald-700 font-extrabold mt-1"><span>Precio Final c/IVA:</span><span class="text-lg final-price">$0,00</span></div>
+                                <button onclick="shareItem(this)" class="text-xs bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-3 py-2 rounded-xl flex items-center justify-center gap-2 transition-all mt-3 font-bold border border-slate-100">
+                                    <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+                                    Compartir Ficha
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- CATEGORÍA 2 -->
+            <section class="level-section">
+                <div class="border-b border-emerald-200 pb-3 mb-6 flex items-center gap-3">
+                    <span class="bg-emerald-100 text-emerald-800 font-extrabold px-3 py-1 rounded-lg text-xs">NIVEL 2</span>
+                    <h2 class="text-lg md:text-xl font-bold text-slate-800">Tostadas de Arroz (Bajas calorías y sodio)</h2>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    
+                    <!-- Arrocitas con sal -->
+                    <div class="product-card bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-code="850205" data-keywords="galletas de arroz arrocitas con sal 101g 850205" data-base-price="909.53">
+                        <img src="https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&w=400&q=80" alt="Galletas de Arroz" class="h-44 w-full object-cover">
+                        <div class="p-5 flex-grow flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-start">
+                                    <span class="text-xs font-semibold text-slate-400">Cód. 850205</span>
+                                    <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2.5 py-1 rounded-full">FIBRA</span>
+                                </div>
+                                <h3 class="font-bold text-slate-800 text-base mt-2 prod-name">Galletas ARROCITAS con Sal</h3>
+                                <p class="text-slate-500 text-xs mt-0.5">Paquete x 101g.</p>
+                            </div>
+
+                            <!-- CONTROLES ADMIN -->
+                            <div class="admin-controls-card bg-slate-100 p-2.5 rounded-xl border border-slate-200 mt-4 hidden">
+                                <div class="flex items-center justify-between text-xs">
+                                    <label class="flex items-center gap-1.5 font-semibold text-slate-700 cursor-pointer">
+                                        <input type="checkbox" class="individual-check accent-amber-500 rounded">
+                                        Margen Indiv.
+                                    </label>
+                                    <div class="flex items-center gap-1">
+                                        <input type="number" class="individual-input w-12 text-center border rounded py-0.5 text-slate-800 font-bold" min="0" max="100" value="30">
+                                        <span class="font-bold text-slate-500">%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-1">
+                                <div class="cost-row flex justify-between text-xs text-slate-400"><span>Costo s/IVA:</span><span>$909,53</span></div>
+                                <div class="flex justify-between items-center text-slate-600 text-xs mt-0.5"><span>Venta Sugerida s/IVA:</span><span class="sale-price font-bold">$0,00</span></div>
+                                <div class="flex justify-between items-center text-emerald-700 font-extrabold mt-1"><span>Precio Final c/IVA:</span><span class="text-lg final-price">$0,00</span></div>
+                                <button onclick="shareItem(this)" class="text-xs bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-3 py-2 rounded-xl flex items-center justify-center gap-2 transition-all mt-3 font-bold border border-slate-100">
+                                    <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+                                    Compartir Ficha
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Miniarrocitas -->
+                    <div class="product-card bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-code="850115" data-keywords="snack miniarrocitas finas hierbas arroz horneado 850115" data-base-price="1017.88">
+                        <img src="https://images.unsplash.com/photo-1541532713592-79a0317b6b77?auto=format&fit=crop&w=400&q=80" alt="Snacks Saludables" class="h-44 w-full object-cover">
+                        <div class="p-5 flex-grow flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-start">
+                                    <span class="text-xs font-semibold text-slate-400">Cód. 850115</span>
+                                    <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2.5 py-1 rounded-full">SNACK ARROZ</span>
+                                </div>
+                                <h3 class="font-bold text-slate-800 text-base mt-2 prod-name">Miniarrocitas Hierbas</h3>
+                                <p class="text-slate-500 text-xs mt-0.5">Arroz horneado saborizado</p>
+                            </div>
+
+                            <!-- CONTROLES ADMIN -->
+                            <div class="admin-controls-card bg-slate-100 p-2.5 rounded-xl border border-slate-200 mt-4 hidden">
+                                <div class="flex items-center justify-between text-xs">
+                                    <label class="flex items-center gap-1.5 font-semibold text-slate-700 cursor-pointer">
+                                        <input type="checkbox" class="individual-check accent-amber-500 rounded">
+                                        Margen Indiv.
+                                    </label>
+                                    <div class="flex items-center gap-1">
+                                        <input type="number" class="individual-input w-12 text-center border rounded py-0.5 text-slate-800 font-bold" min="0" max="100" value="30">
+                                        <span class="font-bold text-slate-500">%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-1">
+                                <div class="cost-row flex justify-between text-xs text-slate-400"><span>Costo s/IVA:</span><span>$1.017,88</span></div>
+                                <div class="flex justify-between items-center text-slate-600 text-xs mt-0.5"><span>Venta Sugerida s/IVA:</span><span class="sale-price font-bold">$0,00</span></div>
+                                <div class="flex justify-between items-center text-emerald-700 font-extrabold mt-1"><span>Precio Final c/IVA:</span><span class="text-lg final-price">$0,00</span></div>
+                                <button onclick="shareItem(this)" class="text-xs bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-3 py-2 rounded-xl flex items-center justify-center gap-2 transition-all mt-3 font-bold border border-slate-100">
+                                    <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5(1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+                                    Compartir Ficha
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- CATEGORÍA 3 -->
+            <section class="level-section">
+                <div class="border-b border-emerald-200 pb-3 mb-6 flex items-center gap-3">
+                    <span class="bg-emerald-100 text-emerald-800 font-extrabold px-3 py-1 rounded-lg text-xs">NIVEL 3</span>
+                    <h2 class="text-lg md:text-xl font-bold text-slate-800">Cereales Infantiles y Energía (Libres de excesos)</h2>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    
+                    <!-- Fort Flekos -->
+                    <div class="product-card bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-code="821009" data-keywords="cereal fort barra flekos cereales ninos 18g 821009" data-base-price="418.39">
+                        <img src="https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=400&q=80" alt="Cereales Infantiles" class="h-44 w-full object-cover">
+                        <div class="p-5 flex-grow flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-start">
+                                    <span class="text-xs font-semibold text-slate-400">Cód. 821009</span>
+                                    <span class="bg-teal-50 text-teal-800 text-[10px] font-bold px-2.5 py-1 rounded-full">INFANTIL</span>
+                                </div>
+                                <h3 class="font-bold text-slate-800 text-base mt-2 prod-name">Barra Cereal FORT Flekos</h3>
+                                <p class="text-slate-500 text-xs mt-0.5">Barrita para chicos x 18g.</p>
+                            </div>
+
+                            <!-- CONTROLES ADMIN -->
+                            <div class="admin-controls-card bg-slate-100 p-2.5 rounded-xl border border-slate-200 mt-4 hidden">
+                                <div class="flex items-center justify-between text-xs">
+                                    <label class="flex items-center gap-1.5 font-semibold text-slate-700 cursor-pointer">
+                                        <input type="checkbox" class="individual-check accent-amber-500 rounded">
+                                        Margen Indiv.
+                                    </label>
+                                    <div class="flex items-center gap-1">
+                                        <input type="number" class="individual-input w-12 text-center border rounded py-0.5 text-slate-800 font-bold" min="0" max="100" value="30">
+                                        <span class="font-bold text-slate-500">%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-1">
+                                <div class="cost-row flex justify-between text-xs text-slate-400"><span>Costo s/IVA:</span><span>$418,39</span></div>
+                                <div class="flex justify-between items-center text-slate-600 text-xs mt-0.5"><span>Venta Sugerida s/IVA:</span><span class="sale-price font-bold">$0,00</span></div>
+                                <div class="flex justify-between items-center text-emerald-700 font-extrabold mt-1"><span>Precio Final c/IVA:</span><span class="text-lg final-price">$0,00</span></div>
+                                <button onclick="shareItem(this)" class="text-xs bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-3 py-2 rounded-xl flex items-center justify-center gap-2 transition-all mt-3 font-bold border border-slate-100">
+                                    <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+                                    Compartir Ficha
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Flow Granola -->
+                    <div class="product-card bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-code="824263" data-keywords="barra de cereal flow granola semillas 23g 824263" data-base-price="529.81">
+                        <img src="https://images.unsplash.com/photo-1568254183919-78a4f43a2877?auto=format&fit=crop&w=400&q=80" alt="Barrita de Cereal" class="h-44 w-full object-cover">
+                        <div class="p-5 flex-grow flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-start">
+                                    <span class="text-xs font-semibold text-slate-400">Cód. 824263</span>
+                                    <span class="bg-teal-50 text-teal-800 text-[10px] font-bold px-2.5 py-1 rounded-full">INTEGRAL</span>
+                                </div>
+                                <h3 class="font-bold text-slate-800 text-base mt-2 prod-name">Flow Semillas y Granola</h3>
+                                <p class="text-slate-500 text-xs mt-0.5">Barra de cereal natural x 23g.</p>
+                            </div>
+
+                            <!-- CONTROLES ADMIN -->
+                            <div class="admin-controls-card bg-slate-100 p-2.5 rounded-xl border border-slate-200 mt-4 hidden">
+                                <div class="flex items-center justify-between text-xs">
+                                    <label class="flex items-center gap-1.5 font-semibold text-slate-700 cursor-pointer">
+                                        <input type="checkbox" class="individual-check accent-amber-500 rounded">
+                                        Margen Indiv.
+                                    </label>
+                                    <div class="flex items-center gap-1">
+                                        <input type="number" class="individual-input w-12 text-center border rounded py-0.5 text-slate-800 font-bold" min="0" max="100" value="30">
+                                        <span class="font-bold text-slate-500">%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-1">
+                                <div class="cost-row flex justify-between text-xs text-slate-400"><span>Costo s/IVA:</span><span>$529,81</span></div>
+                                <div class="flex justify-between items-center text-slate-600 text-xs mt-0.5"><span>Venta Sugerida s/IVA:</span><span class="sale-price font-bold">$0,00</span></div>
+                                <div class="flex justify-between items-center text-emerald-700 font-extrabold mt-1"><span>Precio Final c/IVA:</span><span class="text-lg final-price">$0,00</span></div>
+                                <button onclick="shareItem(this)" class="text-xs bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-3 py-2 rounded-xl flex items-center justify-center gap-2 transition-all mt-3 font-bold border border-slate-100">
+                                    <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+                                    Compartir Ficha
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </div>
+
+        <!-- COLUMNA LATERAL (SIDEBAR): COLEGIOS DE PILAR & COBERTURA (1/4 de ancho en desktop) -->
+        <aside class="space-y-6">
+            
+            <!-- Bloque de Colegios Confianzas -->
+            <div class="bg-gradient-to-b from-slate-900 to-slate-800 text-white rounded-2xl p-6 shadow-md border border-slate-700/50">
+                <h3 class="font-extrabold text-base border-b border-slate-700 pb-3 mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                    Zonas & Colegios
+                </h3>
                 
-                <!-- Sierra de los Padres 600 -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="agua mineral sierra de los padres 600cc 89051">
-                    <img src="https://images.unsplash.com/photo-1523362628745-0c100150b504?auto=format&fit=crop&w=400&q=80" alt="Agua Mineral" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
+                <p class="text-xs text-slate-300 leading-relaxed mb-6">
+                    Suministramos alimentos y colaciones saludables en los quioscos y cantinas de los principales colegios de **Pilar, Zona Norte**.
+                </p>
+
+                <!-- Escudos / Logotipos Simulados Profesionales con puro CSS -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3 bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/40">
+                        <div class="w-10 h-10 rounded-full bg-blue-900 border-2 border-red-500 flex items-center justify-center font-bold text-xs text-white">NL</div>
                         <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 89051</span>
-                                <span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
-                                    AGUA
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Agua SIERRA DE LOS PADRES</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Pack 12 x 600cc.</p>
+                            <p class="text-xs font-bold text-white leading-tight">Northlands School</p>
+                            <p class="text-[10px] text-slate-400">Campus Nordelta/Pilar</p>
                         </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$6.205,04</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$7.508,10</span></div>
+                    </div>
+
+                    <div class="flex items-center gap-3 bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/40">
+                        <div class="w-10 h-10 rounded-full bg-emerald-800 border-2 border-amber-400 flex items-center justify-center font-bold text-xs text-white">SJ</div>
+                        <div>
+                            <p class="text-xs font-bold text-white leading-tight">St. John's School</p>
+                            <p class="text-[10px] text-slate-400">Sede Pilar</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3 bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/40">
+                        <div class="w-10 h-10 rounded-full bg-red-900 border-2 border-blue-500 flex items-center justify-center font-bold text-xs text-white">SG</div>
+                        <div>
+                            <p class="text-xs font-bold text-white leading-tight">St. George's North</p>
+                            <p class="text-[10px] text-slate-400">Polo Educativo Norte</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3 bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/40">
+                        <div class="w-10 h-10 rounded-full bg-slate-900 border-2 border-emerald-400 flex items-center justify-center font-bold text-xs text-white">SC</div>
+                        <div>
+                            <p class="text-xs font-bold text-white leading-tight">St. Catherine's</p>
+                            <p class="text-[10px] text-slate-400">Moorlands Pilar</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Sierra de los Padres 2L -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="agua mineral sierra de los padres 2l 2000cc 89038">
-                    <img src="https://images.unsplash.com/photo-1523362628745-0c100150b504?auto=format&fit=crop&w=400&q=80" alt="Agua Mineral" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 89038</span>
-                                <span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
-                                    AGUA
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Agua SIERRA DE LOS PADRES</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Pack 6 x 2000cc.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$5.056,26</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$6.118,07</span></div>
-                        </div>
-                    </div>
+                <!-- Imagen decorativa escolar -->
+                <div class="mt-6">
+                    <img src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=400&q=80" alt="Chicos en Colegio" class="w-full h-32 object-cover rounded-xl shadow border border-slate-700/40">
                 </div>
-
-                <!-- Cellier 600 -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="agua cellier mineral sin gas 600cc 89010">
-                    <img src="https://images.unsplash.com/photo-1523362628745-0c100150b504?auto=format&fit=crop&w=400&q=80" alt="Agua Pura" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 89010</span>
-                                <span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
-                                    AGUA
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Agua CELLIER Sin Gas</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Botella individual 600cc.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$361,38</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$437,27</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Cellier 2L -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="agua cellier mineral sin gas 2000cc 2l 89024">
-                    <img src="https://images.unsplash.com/photo-1523362628745-0c100150b504?auto=format&fit=crop&w=400&q=80" alt="Agua Pura" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 89024</span>
-                                <span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
-                                    AGUA
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Agua CELLIER Sin Gas</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Botella individual 2000cc.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$621,08</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$751,51</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Citric -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="jugo citric exprimido natural naranja 250ml 89001">
-                    <img src="https://images.unsplash.com/photo-1613478223719-2ab802602423?auto=format&fit=crop&w=400&q=80" alt="Jugo de Naranja" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 89001</span>
-                                <span class="bg-orange-50 text-orange-700 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/></svg>
-                                    JUGO NATURAL
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Jugo CITRIC Naranja</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Exprimido 100% natural 250ml.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.035,87</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.253,40</span></div>
-                        </div>
-                    </div>
-                </div>
-
             </div>
-        </section>
 
-        <!-- NIVEL 2 -->
-        <section class="level-section">
-            <div class="border-b border-emerald-200 pb-3 mb-6 flex items-center gap-3">
-                <span class="bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded text-sm">Nivel 2</span>
-                <h2 class="text-xl md:text-2xl font-bold text-slate-800">Galletas y Tostadas de Arroz (Bajas calorías y sodio)</h2>
+            <!-- Bloque de Cobertura Logística -->
+            <div class="bg-emerald-50 rounded-2xl p-6 border border-emerald-100 shadow-sm">
+                <h4 class="font-extrabold text-sm text-emerald-900 mb-2 flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Entrega Directa Barrios
+                </h4>
+                <p class="text-xs text-emerald-800 leading-normal">
+                    Despachamos directamente en los barrios privados de Pilar (Estancias del Pilar, Tortugas CC, Highland Park, Mapuche, etc.) con vehículos acondicionados para alimentos.
+                </p>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="level-2-grid">
-                
-                <!-- Arrocitas con sal -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="galletas de arroz arrocitas con sal 101g 850205">
-                    <img src="https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&w=400&q=80" alt="Galletas de Arroz" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 850205</span>
-                                <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 8 0 0 0-8-8z"/></svg>
-                                    DE ARROZ
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Galletas ARROCITAS con Sal</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Paquete x 101g.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$909,53</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.100,53</span></div>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Arrocitas sin sal -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="galletas de arroz arrocitas sin sal 101g 850206">
-                    <img src="https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&w=400&q=80" alt="Galletas de Arroz" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 850206</span>
-                                <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 8 0 0 0-8-8z"/></svg>
-                                    DE ARROZ
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Galletas ARROCITAS sin Sal</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Paquete x 101g.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$909,53</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.100,53</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Macrobiotica con sal -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="galletas arroz macrobiotica con sal 102g 850200">
-                    <img src="https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&w=400&q=80" alt="Tostadas Saludables" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 850200</span>
-                                <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 8 0 0 0-8-8z"/></svg>
-                                    DE ARROZ
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Galletas MACROBIÓTICA con Sal</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Paquete x 102g.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$832,42</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.007,22</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Macrobiotica sin sal -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="galletas arroz macrobiotica sin sal 102g 850201">
-                    <img src="https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&w=400&q=80" alt="Tostadas Saludables" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 850201</span>
-                                <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 8 0 0 0-8-8z"/></svg>
-                                    DE ARROZ
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Galletas MACROBIÓTICA sin Sal</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Paquete x 102g.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$832,42</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.007,22</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Risky-dit con sal -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="galletas arroz risky-dit redondas con sal 81116">
-                    <img src="https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&w=400&q=80" alt="Galletas de Arroz" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 81116</span>
-                                <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 8 0 0 0-8-8z"/></svg>
-                                    DE ARROZ
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Galletas RISKY-DIT Redondas Con Sal</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Paquete individual</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$820,96</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$993,36</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Risky-dit sin sal -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="galletas arroz risky-dit redondas sin sal 81117">
-                    <img src="https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&w=400&q=80" alt="Galletas de Arroz" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 81117</span>
-                                <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 8 0 0 0-8-8z"/></svg>
-                                    DE ARROZ
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Galletas RISKY-DIT Redondas Sin Sal</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Paquete individual</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$820,96</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$993,36</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Risky-dit tostada clasica -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="tostadas de arroz risky-dit clasica 81110">
-                    <img src="https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&w=400&q=80" alt="Tostadas de Arroz" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 81110</span>
-                                <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 8 0 0 0-8-8z"/></svg>
-                                    TOSTADA ARROZ
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Tostada Arroz RISKY-DIT Clásica</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Paquete individual</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.030,40</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.246,78</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Risky-dit tostada sin sal -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="tostadas de arroz risky-dit sin sal 81111">
-                    <img src="https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&w=400&q=80" alt="Tostadas de Arroz" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 81111</span>
-                                <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 8 0 0 0-8-8z"/></svg>
-                                    TOSTADA ARROZ
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Tostada Arroz RISKY-DIT Sin Sal</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Paquete individual</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.030,40</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.246,78</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Dos Hermanos Clasica -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="tostadas arroz dos hermanos clasicas 140g 211145">
-                    <img src="https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&w=400&q=80" alt="Tostadas de Arroz" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 211145</span>
-                                <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 8 0 0 0-8-8z"/></svg>
-                                    TOSTADA ARROZ
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Tostadas DOS HERMANOS Clásicas</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Paquete x 140g.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.087,06</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.315,34</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Dos Hermanos sin sal -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="tostadas arroz dos hermanos sin sal 140g 211144">
-                    <img src="https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&w=400&q=80" alt="Tostadas de Arroz" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 211144</span>
-                                <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 0 0 0-8-8z"/></svg>
-                                    TOSTADA ARROZ
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Tostadas DOS HERMANOS Sin Sal</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Paquete x 140g.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.087,06</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.315,34</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Molinos del Bosque original -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="tostada arroz molinos del bosque original 150g 81118">
-                    <img src="https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&w=400&q=80" alt="Tostadas de Arroz" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 81118</span>
-                                <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 8 0 0 0-8-8z"/></svg>
-                                    TOSTADA ARROZ
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Tostada MOLINOS DEL BOSQUE</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Sabor Original x 150g.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.399,34</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.693,20</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Molinos del Bosque sin sal -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="tostada arroz molinos del bosque sin sal 150g 81119">
-                    <img src="https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&w=400&q=80" alt="Tostadas de Arroz" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 81119</span>
-                                <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 8 0 0 0-8-8z"/></svg>
-                                    TOSTADA ARROZ
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Tostada MOLINOS DEL BOSQUE</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Sin Sal x 150g.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.399,34</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.693,20</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Miniarrocitas finas hierbas -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="snack miniarrocitas finas hierbas arroz horneado 850115">
-                    <img src="https://images.unsplash.com/photo-1541532713592-79a0317b6b77?auto=format&fit=crop&w=400&q=80" alt="Snacks Saludables" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 850115</span>
-                                <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 0 0 0-8-8z"/></svg>
-                                    SNACK ARROZ
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Snack MINIARROCITAS Hierbas</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Arroz horneado saborizado</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.017,88</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.231,63</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Miniarrocitas Queso -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="snack miniarrocitas queso romano arroz horneado 850116">
-                    <img src="https://images.unsplash.com/photo-1541532713592-79a0317b6b77?auto=format&fit=crop&w=400&q=80" alt="Snacks Saludables" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 850116</span>
-                                <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 0 0 0-8-8z"/></svg>
-                                    SNACK ARROZ
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Snack MINIARROCITAS Queso</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Arroz horneado Queso Romano</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.017,88</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.231,63</span></div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </section>
-
-        <!-- NIVEL 3 -->
-        <section class="level-section">
-            <div class="border-b border-emerald-200 pb-3 mb-6 flex items-center gap-3">
-                <span class="bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded text-sm">Nivel 3</span>
-                <h2 class="text-xl md:text-2xl font-bold text-slate-800">Cereales, Fibra y Galletas Orgánicas (Energía saludable)</h2>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="level-3-grid">
-                
-                <!-- Cachafaz Algarroba -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="galletas cachafaz integrales algarroba avena 225g 99147">
-                    <img src="https://images.unsplash.com/photo-1558961309-dbdf71791f54?auto=format&fit=crop&w=400&q=80" alt="Galletas Integrales" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 99147</span>
-                                <span class="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M17 3H7a4 4 0 0 0-4 4v10a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4V7a4 4 0 0 0-4-4zm-2 12H9v-2h6zm0-4H9V9h6z"/></svg>
-                                    FIBRA / AVENA
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Gall. CACHAFAZ Algarroba</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Integrales ricas en fibra x 225g.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.744,62</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$2.110,99</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Cachafaz Avena y Pasas -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="galletas cachafaz integrales avena pasas 225g 99148">
-                    <img src="https://images.unsplash.com/photo-1558961309-dbdf71791f54?auto=format&fit=crop&w=400&q=80" alt="Galletas Integrales" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 99148</span>
-                                <span class="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M17 3H7a4 4 0 0 0-4 4v10a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4V7a4 4 0 0 0-4-4zm-2 12H9v-2h6zm0-4H9V9h6z"/></svg>
-                                    FIBRA / AVENA
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Gall. CACHAFAZ Avena y Pasas</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Integrales con pasas de uva x 225g.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.744,62</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$2.110,99</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Cachafaz Avena y Miel -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="galletas cachafaz organicas avena miel 170g 99151">
-                    <img src="https://images.unsplash.com/photo-1558961309-dbdf71791f54?auto=format&fit=crop&w=400&q=80" alt="Galletas Orgánicas" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 99151</span>
-                                <span class="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M17 3H7a4 4 0 0 0-4 4v10a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4V7a4 4 0 0 0-4-4zm-2 12H9v-2h6zm0-4H9V9h6z"/></svg>
-                                    ORGÁNICO
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Gall. CACHAFAZ Avena y Miel</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Línea Orgánica x 170g.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.473,92</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.783,44</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Cachafaz Cacao y Miel -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="galletas cachafaz organicas cacao miel 170g 99152">
-                    <img src="https://images.unsplash.com/photo-1558961309-dbdf71791f54?auto=format&fit=crop&w=400&q=80" alt="Galletas Orgánicas" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 99152</span>
-                                <span class="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M17 3H7a4 4 0 0 0-4 4v10a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4V7a4 4 0 0 0-4-4zm-2 12H9v-2h6zm0-4H9V9h6z"/></svg>
-                                    ORGÁNICO
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Gall. CACHAFAZ Cacao y Miel</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Línea Orgánica x 170g.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.473,92</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.783,44</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Flow Manzana -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="barra de cereal flow manzana light 21g 824261">
-                    <img src="https://images.unsplash.com/photo-1568254183919-78a4f43a2877?auto=format&fit=crop&w=400&q=80" alt="Barrita de Cereal" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 824261</span>
-                                <span class="bg-teal-50 text-teal-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm1 14H11V10h2zm0-8H11V6h2z"/></svg>
-                                    BARRITA CEREAL
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Flow CEREAL Manzana</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Barra de cereal light x 21g.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$529,81</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$641,07</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Flow Frutos del Bosque -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="barra de cereal flow frutos del bosque 23g 824266">
-                    <img src="https://images.unsplash.com/photo-1568254183919-78a4f43a2877?auto=format&fit=crop&w=400&q=80" alt="Barrita de Cereal" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 824266</span>
-                                <span class="bg-teal-50 text-teal-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm1 14H11V10h2zm0-8H11V6h2z"/></svg>
-                                    BARRITA CEREAL
-                            </span>
-                        </div>
-                        <h3 class="font-bold text-slate-800 text-base mt-2">Flow CEREAL Frutos del Bosque</h3>
-                        <p class="text-slate-500 text-sm mt-0.5">Barra de cereal x 23g.</p>
-                    </div>
-                    <div class="mt-4 pt-3 border-t border-slate-100">
-                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$529,81</span></div>
-                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$641,07</span></div>
-                    </div>
-                </div>
-                </div>
-
-                <!-- Flow Granola -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="barra de cereal flow granola semillas 23g 824263">
-                    <img src="https://images.unsplash.com/photo-1568254183919-78a4f43a2877?auto=format&fit=crop&w=400&q=80" alt="Barrita de Cereal" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 824263</span>
-                                <span class="bg-teal-50 text-teal-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm1 14H11V10h2zm0-8H11V6h2z"/></svg>
-                                    BARRITA CEREAL
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Flow CEREAL Granola y Semillas</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Barra de cereal x 23g.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$529,81</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$641,07</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Flow Mix Frutas -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="barra de cereal flow mix de frutas 23g 824264">
-                    <img src="https://images.unsplash.com/photo-1568254183919-78a4f43a2877?auto=format&fit=crop&w=400&q=80" alt="Barrita de Cereal" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 824264</span>
-                                <span class="bg-teal-50 text-teal-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm1 14H11V10h2zm0-8H11V6h2z"/></svg>
-                                    BARRITA CEREAL
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Flow CEREAL Mix de Frutas</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Barra de cereal x 23g.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$529,81</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$641,07</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Cereal Mix Tradicional -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="barra cereal mix tradicional 23g 804021">
-                    <img src="https://images.unsplash.com/photo-1568254183919-78a4f43a2877?auto=format&fit=crop&w=400&q=80" alt="Barrita de Cereal" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 804021</span>
-                                <span class="bg-teal-50 text-teal-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm1 14H11V10h2zm0-8H11V6h2z"/></svg>
-                                    BARRITA CEREAL
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Cereal MIX Tradicional</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Barra de cereal x 23g.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$626,98</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$758,65</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Cereal Mix Manzana -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="barra cereal mix manzana light 23g 804024">
-                    <img src="https://images.unsplash.com/photo-1568254183919-78a4f43a2877?auto=format&fit=crop&w=400&q=80" alt="Barrita de Cereal" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 804024</span>
-                                <span class="bg-teal-50 text-teal-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm1 14H11V10h2zm0-8H11V6h2z"/></svg>
-                                    BARRITA CEREAL
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Cereal MIX Manzana Light</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Barra de cereal x 23g.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$626,98</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$758,65</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Cerealitas -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="galletas cerealitas integral salvado semillas 212g 81101">
-                    <img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=400&q=80" alt="Galletas de Salvado" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 81101</span>
-                                <span class="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M17 3H7a4 4 0 0 0-4 4v10a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4V7a4 4 0 0 0-4-4zm-2 12H9v-2h6zm0-4H9V9h6z"/></svg>
-                                    INTEGRAL
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Galletas CEREALITAS</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Galletas con salvado x 212g.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.321,75</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.599,32</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Frutigran Chia Lino -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="galletas frutigran chia lino avena fibra 240g 828716">
-                    <img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=400&q=80" alt="Galletas de Semillas" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 828716</span>
-                                <span class="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M17 3H7a4 4 0 0 0-4 4v10a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4V7a4 4 0 0 0-4-4zm-2 12H9v-2h6zm0-4H9V9h6z"/></svg>
-                                    SEMILLAS / AVENA
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Gall. FRUTIGRAN Chía/Lino</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Avena y semillas x 240g.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.502,44</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.817,95</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Frutigran Frutos Rojos -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="galletas frutigran avena frutos rojos fibra 250g 1010130">
-                    <img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=400&q=80" alt="Galletas de Avena" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 1010130</span>
-                                <span class="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M17 3H7a4 4 0 0 0-4 4v10a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4V7a4 4 0 0 0-4-4zm-2 12H9v-2h6zm0-4H9V9h6z"/></svg>
-                                    FRUTOS ROJOS
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Gall. FRUTIGRAN Frutos Rojos</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Avena y frutos rojos x 250g.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.832,03</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$2.216,76</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Frutigran Avena y Pasas -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="galletas frutigran avena pasas fibra 250g 828712">
-                    <img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=400&q=80" alt="Galletas de Fibra" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 828712</span>
-                                <span class="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M17 3H7a4 4 0 0 0-4 4v10a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4V7a4 4 0 0 0-4-4zm-2 12H9v-2h6zm0-4H9V9h6z"/></svg>
-                                    FIBRA
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Gall. FRUTIGRAN Avena y Pasas</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Fibras naturales x 250g.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.502,44</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.817,95</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Frutigran Salvado -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="galletas frutigran salvado fibra avena 250g 828711">
-                    <img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=400&q=80" alt="Galletas de Salvado" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 828711</span>
-                                <span class="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M17 3H7a4 4 0 0 0-4 4v10a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4V7a4 4 0 0 0-4-4zm-2 12H9v-2h6zm0-4H9V9h6z"/></svg>
-                                    SALVADO
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Gall. FRUTIGRAN Salvado</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Alto contenido de salvado x 250g.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.421,33</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.719,81</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Fort Flekos -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="cereal fort barra flekos cereales ninos 18g 821009">
-                    <img src="https://images.unsplash.com/photo-1596412061665-27a29e248b89?auto=format&fit=crop&w=400&q=80" alt="Cereales Infantiles" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 821009</span>
-                                <span class="bg-teal-50 text-teal-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm1 14H11V10h2zm0-8H11V6h2z"/></svg>
-                                    INFANTIL
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Barra Cereal FORT Flekos</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Barrita de cereal para chicos x 18g.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$418,39</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$506,25</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Fort Granrico -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="cereal fort barra granrico cereales ninos 19g 821008">
-                    <img src="https://images.unsplash.com/photo-1596412061665-27a29e248b89?auto=format&fit=crop&w=400&q=80" alt="Cereales Infantiles" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 821008</span>
-                                <span class="bg-teal-50 text-teal-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm1 14H11V10h2zm0-8H11V6h2z"/></svg>
-                                    INFANTIL
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Barra Cereal FORT Granrico</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Barrita de cereal x 19g.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$418,39</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$506,25</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Fort Manzana -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="cereal fort barra manzana almendra ninos 22g 821003">
-                    <img src="https://images.unsplash.com/photo-1596412061665-27a29e248b89?auto=format&fit=crop&w=400&q=80" alt="Cereales Infantiles" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 821003</span>
-                                <span class="bg-teal-50 text-teal-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm1 14H11V10h2zm0-8H11V6h2z"/></svg>
-                                    INFANTIL
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Barra Cereal FORT Manzana</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Manzana y almendra x 22g.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$418,39</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$506,25</span></div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </section>
-
-        <!-- NIVEL 4 -->
-        <section class="level-section">
-            <div class="border-b border-emerald-200 pb-3 mb-6 flex items-center gap-3">
-                <span class="bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded text-sm">Nivel 4</span>
-                <h2 class="text-xl md:text-2xl font-bold text-slate-800">Bebidas Light Saborizadas (Sin azúcar añadida)</h2>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="level-4-grid">
-                
-                <!-- Baggio Manzana Sin Azúcar -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="agua baggio manzana sin azucar light 1.5l 890132">
-                    <img src="https://images.unsplash.com/photo-1556881286-fc6915169721?auto=format&fit=crop&w=400&q=80" alt="Bebidas Light" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 890132</span>
-                                <span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
-                                    LIGHT / SIN AZÚCAR
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Agua BAGGIO Manzana</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Saborizada sin azúcar 1.5L.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.053,23</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.274,41</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Baggio Pomelo Sin Azúcar -->
-                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-keywords="agua baggio pomelo sin azucar light 1.5l 890131">
-                    <img src="https://images.unsplash.com/photo-1556881286-fc6915169721?auto=format&fit=crop&w=400&q=80" alt="Bebidas Light" class="h-40 w-full object-cover">
-                    <div class="p-5 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-semibold text-slate-400">Cód. 890131</span>
-                                <span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
-                                    LIGHT / SIN AZÚCAR
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-base mt-2">Agua BAGGIO Pomelo</h3>
-                            <p class="text-slate-500 text-sm mt-0.5">Saborizada sin azúcar 1.5L.</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.053,23</span></div>
-                            <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.274,41</span></div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </section>
+        </aside>
 
     </main>
 
-    <!-- Footer de Contacto -->
-    <footer class="bg-slate-900 text-slate-400 py-12 px-4 mt-16 text-center border-t border-slate-800">
-        <div class="max-w-4xl mx-auto space-y-4">
-            <h3 class="text-white font-bold text-lg">Distribuidora de Alimentos Saludables</h3>
-            <p class="text-sm max-w-md mx-auto">
-                Ofrecemos soluciones nutricionales adaptadas para cantinas escolares, quioscos saludables y comedores de colegios.
-            </p>
-            <div class="pt-4 border-t border-slate-800 text-sm">
-                <p class="font-semibold text-slate-200">Juliana Maciel</p>
-                <p class="mt-1">Teléfono / WhatsApp: <a href="https://wa.me/5491171352560" class="text-emerald-400 hover:underline">+54 9 11 7135-2560</a></p>
+    <!-- Footer con Redes Sociales Incorporadas -->
+    <footer class="bg-slate-950 text-slate-400 py-12 px-4 mt-16 border-t border-slate-900">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            <div class="space-y-3">
+                <h3 class="text-white font-extrabold text-base">Catálogo de Saludables</h3>
+                <p class="text-xs max-w-sm">
+                    Distribución de colaciones escolares de calidad bilingüe para colegios de Pilar y corredores de zona norte.
+                </p>
             </div>
-            <p class="text-xs text-slate-600 mt-6">
-                © 2026 Catálogo de Saludables. Todos los precios de lista están sujetos a cambios.
-            </p>
+
+            <!-- Redes Sociales Incorporadas por Pedido de Juliana -->
+            <div class="space-y-3">
+                <h4 class="text-white font-extrabold text-sm">Seguinos en nuestras Redes</h4>
+                <div class="flex gap-4">
+                    <!-- Instagram -->
+                    <a href="https://instagram.com" target="_blank" class="w-9 h-9 rounded-full bg-slate-800 hover:bg-emerald-600 text-white flex items-center justify-center transition-all shadow-md">
+                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051C.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg>
+                    </a>
+                    <!-- Facebook -->
+                    <a href="https://facebook.com" target="_blank" class="w-9 h-9 rounded-full bg-slate-800 hover:bg-emerald-600 text-white flex items-center justify-center transition-all shadow-md">
+                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                    </a>
+                    <!-- TikTok -->
+                    <a href="https://tiktok.com" target="_blank" class="w-9 h-9 rounded-full bg-slate-800 hover:bg-emerald-600 text-white flex items-center justify-center transition-all shadow-md">
+                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.86-.74-3.94-1.74-.22-.21-.42-.45-.61-.7-.02 3.68-.01 7.36-.02 11.04-.1 2.44-1.14 4.88-3.14 6.28-2.23 1.61-5.3 1.91-7.79 1.05-2.73-.91-4.9-3.24-5.51-6.05-1.02-4.32 1.67-8.81 5.97-9.7 1.25-.26 2.56-.16 3.77.25.01 1.48.01 2.96.01 4.43-.97-.33-2.03-.35-2.99.03-.98.37-1.8 1.15-2.22 2.1-.88 1.9-.3 4.39 1.37 5.61 1.46 1.12 3.61 1.27 5.2.37 1.31-.72 2.13-2.15 2.23-3.65.03-3.68.01-7.36.02-11.04V0z"/></svg>
+                    </a>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <h4 class="text-white font-extrabold text-sm">Contacto Directo</h4>
+                <p class="text-xs">Juliana Maciel<br>WhatsApp: +54 9 11 7135-2560</p>
+                <p class="text-[10px] text-slate-600">© 2026 Catálogo Pilar. Todos los derechos reservados.</p>
+            </div>
+
         </div>
     </footer>
 
-    <!-- Lógica del buscador en tiempo real -->
+    <!-- LÓGICA JAVASCRIPT DINÁMICA -->
     <script>
-        const searchInput = document.getElementById('search');
+        const markupSlider = document.getElementById('markup-slider');
+        const markupVal = document.getElementById('markup-val');
+        const showCostCheck = document.getElementById('show-cost-check');
         const cards = document.querySelectorAll('.product-card');
+        const adminPanel = document.getElementById('admin-panel');
+        const restoreBtn = document.getElementById('restore-admin-btn');
+
+        // Formateador de pesos
+        const formatter = new Intl.NumberFormat('es-AR', {
+            style: 'currency',
+            currency: 'ARS',
+            minimumFractionDigits: 2
+        });
+
+        // ====== RECALCULO DE PRECIOS DINÁMICOS ======
+        function calculatePrices() {
+            const globalMarkup = parseFloat(markupSlider.value);
+            markupVal.textContent = globalMarkup + "%";
+
+            cards.forEach(card => {
+                const baseCost = parseFloat(card.getAttribute('data-base-price'));
+                const individualCheck = card.querySelector('.individual-check');
+                const individualInput = card.querySelector('.individual-input');
+
+                let currentMarkup = globalMarkup;
+                
+                // Si está tildado el margen individual, usa ese valor en vez del global
+                if (individualCheck && individualCheck.checked) {
+                    currentMarkup = parseFloat(individualInput.value) || 0;
+                }
+
+                // Cálculo financiero
+                const salePrice = baseCost * (1 + (currentMarkup / 100));
+                const finalPrice = salePrice * 1.21;
+
+                // Render en el DOM
+                card.querySelector('.sale-price').textContent = formatter.format(salePrice);
+                card.querySelector('.final-price').textContent = formatter.format(finalPrice);
+
+                // Ver costos de lista s/IVA
+                const costRow = card.querySelector('.cost-row');
+                if (showCostCheck.checked) {
+                    costRow.classList.remove('hidden');
+                } else {
+                    costRow.classList.add('hidden');
+                }
+            });
+        }
+
+        // Eventos en vivo del panel admin
+        markupSlider.addEventListener('input', calculatePrices);
+        showCostCheck.addEventListener('change', calculatePrices);
+
+        // Eventos para detectar cambios en márgenes individuales en vivo
+        cards.forEach(card => {
+            const check = card.querySelector('.individual-check');
+            const input = card.querySelector('.individual-input');
+            if (check && input) {
+                check.addEventListener('change', calculatePrices);
+                input.addEventListener('input', calculatePrices);
+            }
+        });
+
+
+        // ====== MODAL DE LOGIN (CONTRASEÑA SECTOR VENDEDOR) ======
+        function openLoginModal() {
+            document.getElementById('login-modal').classList.remove('hidden');
+        }
+
+        function closeLoginModal() {
+            document.getElementById('login-modal').classList.add('hidden');
+        }
+
+        function attemptLogin() {
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            const errorDiv = document.getElementById('login-error');
+
+            if (u === "bmaciel" && p === "Maciel@2026") {
+                errorDiv.classList.add('hidden');
+                closeLoginModal();
+                showAdminView();
+            } else {
+                errorDiv.classList.remove('hidden');
+            }
+        }
+
+        function showAdminView() {
+            adminPanel.classList.remove('hidden');
+            restoreBtn.classList.add('hidden');
+            // Revelar también los controles individuales de cada producto
+            document.querySelectorAll('.admin-controls-card').forEach(el => el.classList.remove('hidden'));
+            calculatePrices();
+            showToast("Modo Vendedora Activado");
+        }
+
+        function hideAdminPanelDirectly() {
+            adminPanel.classList.add('hidden');
+            restoreBtn.classList.remove('hidden');
+            // Ocultar controles individuales de cada producto
+            document.querySelectorAll('.admin-controls-card').forEach(el => el.classList.add('hidden'));
+            calculatePrices();
+            showToast("Vista Cliente Activada");
+        }
+
+
+        // ====== DETECTAR PARÁMETROS EN URL (MODO CLIENTE AUTOMÁTICO) ======
+        function checkUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            const globalParam = params.get('m');
+            const overridesParam = params.get('overrides');
+
+            if (globalParam !== null) {
+                // Al venir con parámetros, ocultamos el panel de control (Modo Cliente)
+                adminPanel.classList.add('hidden');
+                restoreBtn.classList.remove('hidden');
+                document.querySelectorAll('.admin-controls-card').forEach(el => el.classList.add('hidden'));
+
+                // Establecer Markup General
+                markupSlider.value = globalParam;
+
+                // Aplicar desvíos individuales de productos
+                if (overridesParam) {
+                    const overridesArray = overridesParam.split(',');
+                    overridesArray.forEach(pair => {
+                        const [code, val] = pair.split(':');
+                        const card = document.querySelector(`.product-card[data-code="${code}"]`);
+                        if (card) {
+                            const check = card.querySelector('.individual-check');
+                            const input = card.querySelector('.individual-input');
+                            if (check && input) {
+                                check.checked = true;
+                                input.value = val;
+                            }
+                        }
+                    });
+                }
+            } else {
+                // Si no hay parámetros (Ingreso inicial de Juliana), arranca con el panel visible
+                showAdminView();
+            }
+            calculatePrices();
+        }
+
+
+        // ====== GENERAR ENLACE COMERCIAL PERSONALIZADO ======
+        function generateCustomLink() {
+            const globalMarkup = markupSlider.value;
+            let overrides = [];
+
+            cards.forEach(card => {
+                const code = card.getAttribute('data-code');
+                const check = card.querySelector('.individual-check');
+                const input = card.querySelector('.individual-input');
+
+                if (check && check.checked) {
+                    overrides.push(`${code}:${input.value}`);
+                }
+            });
+
+            let customUrl = window.location.origin + window.location.pathname + `?m=${globalMarkup}`;
+            if (overrides.length > 0) {
+                customUrl += `&overrides=${overrides.join(',')}`;
+            }
+
+            // Copiar al portapapeles
+            navigator.clipboard.writeText(customUrl).then(() => {
+                showToast("¡Enlace de Catálogo Copiado!");
+            });
+        }
+
+
+        // ====== COMPARTIR PRODUCTO INDIVIDUAL ======
+        function shareItem(btn) {
+            const card = btn.closest('.product-card');
+            const productName = card.querySelector('.prod-name').textContent;
+            const finalPriceText = card.querySelector('.final-price').textContent;
+            const code = card.getAttribute('data-code');
+
+            const message = `¡Hola! Te recomiendo este producto:\n\n🍏 *${productName}*\n📌 Cód. ${code}\n💵 *Precio Final: ${finalPriceText}*\n\nConsultas con Juliana Maciel al +54 9 11 7135-2560.`;
+
+            if (navigator.share) {
+                navigator.share({
+                    title: productName,
+                    text: message,
+                    url: window.location.href
+                }).catch(err => console.log(err));
+            } else {
+                window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+            }
+        }
+
+
+        // ====== SISTEMA DE NOTIFICACIONES (TOAST) ======
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+
+        // ====== FILTRO EN TIEMPO REAL ======
+        const searchInput = document.getElementById('search');
         const searchInfo = document.getElementById('search-info');
         const sections = document.querySelectorAll('.level-section');
 
@@ -1013,18 +742,17 @@
                 }
             });
 
-            sections.forEach(section => {
-                const visibleCards = section.querySelectorAll('.product-card[style="display: flex;"]');
-                if (visibleCards.length === 0) {
-                    section.style.display = 'none';
-                } else {
-                    section.style.display = 'block';
-                }
+            sections.forEach(sec => {
+                const visibles = sec.querySelectorAll('.product-card[style="display: flex;"]');
+                sec.style.display = visibles.length === 0 ? 'none' : 'block';
             });
 
             searchInfo.classList.remove('hidden');
-            searchInfo.textContent = `Se encontraron ${matches} producto(s) que coinciden con tu búsqueda.`;
+            searchInfo.textContent = `Se encontraron ${matches} productos.`;
         });
+
+        // Inicializar el sistema al cargar
+        window.addEventListener('DOMContentLoaded', checkUrlParams);
     </script>
 </body>
 </html>
