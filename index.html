@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saludables para Jardines, Colegios y Más</title>
+    <!-- Tailwind CSS para diseño moderno, responsive y limpio -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .product-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .product-card:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans">
+
+    <!-- Encabezado / Hero Section -->
+    <header class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white py-12 px-4 shadow-md text-center">
+        <div class="max-w-4xl mx-auto">
+            
+            <!-- === PORTADA PERSONALIZADA === -->
+            <!-- Aquí podés reemplazar la URL que está dentro de src="..." por el link de tu portada -->
+            <img src="https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1200&q=80" 
+                 alt="Alimentos Saludables Escolares" 
+                 class="w-full h-48 md:h-64 object-cover rounded-2xl mb-8 shadow-lg border border-white/20">
+            
+            <span class="bg-emerald-500 text-xs uppercase font-bold px-3 py-1 rounded-full mb-3 inline-block tracking-wider">Propuesta Nutritiva Escolar</span>
+            <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight mb-4">Saludables para Jardines, Colegios y Más</h1>
+            <p class="text-base md:text-lg text-emerald-100 max-w-2xl mx-auto mb-6">
+                Una selección cuidada de colaciones y bebidas ideales para cantinas escolares y quioscos saludables. Sin fritos ni excesos de azúcares.
+            </p>
+            
+            <!-- Contacto Principal -->
+            <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 inline-block border border-white/20">
+                <p class="text-sm text-emerald-200">Para consultas y pedidos mayoristas:</p>
+                <p class="text-lg md:text-xl font-semibold mt-1">Juliana Maciel</p>
+                <div class="mt-3 flex flex-wrap justify-center gap-3">
+                    <a href="https://wa.me/5491171352560?text=Hola%20Juliana,%20vi%20tu%20lista%20de%20saludables%20para%20colegios" target="_blank" class="bg-emerald-500 hover:bg-emerald-400 text-white px-5 py-2 rounded-lg font-bold text-sm shadow flex items-center gap-2 transition-all">
+                        <!-- Icono WhatsApp -->
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.62.962 3.21 1.453 4.857 1.453 5.489 0 9.954-4.436 9.958-9.885.002-2.639-1.025-5.119-2.89-6.988C16.658 1.865 14.19 .84 11.55.84c-5.492 0-9.957 4.437-9.962 9.886-.001 1.925.501 3.807 1.455 5.461l-.955 3.49 3.582-.939zm12.593-7.551c-.302-.151-1.789-.882-2.057-.979-.268-.098-.463-.147-.659.147-.196.294-.755.947-.927 1.144-.171.196-.343.221-.645.071-.3-.151-1.267-.467-2.414-1.487-.893-.794-1.496-1.774-1.671-2.074-.175-.301-.019-.463.132-.612.136-.134.302-.35.453-.524.151-.174.201-.299.302-.497.101-.199.051-.374-.025-.524-.075-.151-.659-1.589-.902-2.174-.237-.568-.478-.49-.659-.499-.17-.008-.365-.01-.56-.01-.196 0-.515.073-.784.365-.268.294-1.026 1.002-1.026 2.443 0 1.442 1.052 2.839 1.198 3.037.147.197 2.074 3.167 5.022 4.444.701.304 1.248.485 1.673.619.706.224 1.35.193 1.859.117.567-.085 1.789-.731 2.042-1.439.253-.708.253-1.314.177-1.439-.077-.125-.283-.199-.585-.35z"/></svg>
+                        WhatsApp: +54 9 11 7135-2560
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Buscador en tiempo real -->
+    <div class="max-w-6xl mx-auto px-4 mt-8">
+        <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-200">
+            <label for="search" class="block text-sm font-semibold text-slate-600 mb-2">Buscador de Productos:</label>
+            <div class="relative">
+                <input type="text" id="search" placeholder="Escribí una marca, producto o código (ej: 'arroz', 'cachafaz', '81116')..." class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-slate-700 transition-all">
+                <span class="absolute right-3 top-3.5 text-slate-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </span>
+            </div>
+            <div id="search-info" class="text-xs text-slate-500 mt-2 hidden"></div>
+        </div>
+    </div>
+
+    <!-- Contenido Principal de Niveles -->
+    <main class="max-w-6xl mx-auto px-4 py-8 space-y-12">
+
+        <!-- NIVEL 1 -->
+        <section class="level-section">
+            <div class="border-b border-emerald-200 pb-3 mb-6 flex items-center gap-3">
+                <span class="bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded text-sm">Nivel 1</span>
+                <h2 class="text-xl md:text-2xl font-bold text-slate-800">Hidratación Pura y Jugos 100% Naturales</h2>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="level-1-grid">
+                
+                <!-- Sierra de los Padres 600 -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="agua mineral sierra de los padres 600cc 89051">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 89051</span>
+                            <!-- Badge de marca/categoría con ícono de gota -->
+                            <span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+                                AGUA
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Agua SIERRA DE LOS PADRES</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Pack 12 x 600cc.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$6.205,04</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$7.508,10</span></div>
+                    </div>
+                </div>
+
+                <!-- Sierra de los Padres 2L -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="agua mineral sierra de los padres 2l 2000cc 89038">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 89038</span>
+                            <span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+                                AGUA
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Agua SIERRA DE LOS PADRES</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Pack 6 x 2000cc.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$5.056,26</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$6.118,07</span></div>
+                    </div>
+                </div>
+
+                <!-- Cellier 600 -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="agua cellier mineral sin gas 600cc 89010">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 89010</span>
+                            <span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+                                AGUA
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Agua CELLIER Sin Gas</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Botella individual 600cc.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$361,38</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$437,27</span></div>
+                    </div>
+                </div>
+
+                <!-- Cellier 2L -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="agua cellier mineral sin gas 2000cc 2l 89024">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 89024</span>
+                            <span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+                                AGUA
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Agua CELLIER Sin Gas</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Botella individual 2000cc.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$621,08</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$751,51</span></div>
+                    </div>
+                </div>
+
+                <!-- Citric -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="jugo citric exprimido natural naranja 250ml 89001">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 89001</span>
+                            <!-- Badge de Jugo con ícono de fruta -->
+                            <span class="bg-orange-50 text-orange-700 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/></svg>
+                                JUGO NATURAL
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Jugo CITRIC Naranja</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Exprimido 100% natural 250ml.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.035,87</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.253,40</span></div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- NIVEL 2 -->
+        <section class="level-section">
+            <div class="border-b border-emerald-200 pb-3 mb-6 flex items-center gap-3">
+                <span class="bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded text-sm">Nivel 2</span>
+                <h2 class="text-xl md:text-2xl font-bold text-slate-800">Galletas y Tostadas de Arroz (Bajas calorías y sodio)</h2>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="level-2-grid">
+                
+                <!-- Arrocitas con sal -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="galletas de arroz arrocitas con sal 101g 850205">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 850205</span>
+                            <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 8 0 0 0-8-8z"/></svg>
+                                DE ARROZ
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Galletas ARROCITAS con Sal</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Paquete x 101g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$909,53</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.100,53</span></div>
+                    </div>
+                </div>
+
+                <!-- Arrocitas sin sal -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="galletas de arroz arrocitas sin sal 101g 850206">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 850206</span>
+                            <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 8 0 0 0-8-8z"/></svg>
+                                DE ARROZ
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Galletas ARROCITAS sin Sal</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Paquete x 101g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$909,53</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.100,53</span></div>
+                    </div>
+                </div>
+
+                <!-- Macrobiotica con sal -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="galletas arroz macrobiotica con sal 102g 850200">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 850200</span>
+                            <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 8 0 0 0-8-8z"/></svg>
+                                DE ARROZ
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Galletas MACROBIÓTICA con Sal</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Paquete x 102g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$832,42</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.007,22</span></div>
+                    </div>
+                </div>
+
+                <!-- Macrobiotica sin sal -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="galletas arroz macrobiotica sin sal 102g 850201">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 850201</span>
+                            <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 8 0 0 0-8-8z"/></svg>
+                                DE ARROZ
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Galletas MACROBIÓTICA sin Sal</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Paquete x 102g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$832,42</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.007,22</span></div>
+                    </div>
+                </div>
+
+                <!-- Risky-dit con sal -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="galletas arroz risky-dit redondas con sal 81116">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 81116</span>
+                            <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 8 0 0 0-8-8z"/></svg>
+                                DE ARROZ
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Galletas RISKY-DIT Redondas Con Sal</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Paquete individual</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$820,96</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$993,36</span></div>
+                    </div>
+                </div>
+
+                <!-- Risky-dit sin sal -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="galletas arroz risky-dit redondas sin sal 81117">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 81117</span>
+                            <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 8 0 0 0-8-8z"/></svg>
+                                DE ARROZ
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Galletas RISKY-DIT Redondas Sin Sal</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Paquete individual</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$820,96</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$993,36</span></div>
+                    </div>
+                </div>
+
+                <!-- Risky-dit tostada clasica -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="tostadas de arroz risky-dit clasica 81110">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 81110</span>
+                            <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 8 0 0 0-8-8z"/></svg>
+                                TOSTADA ARROZ
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Tostada Arroz RISKY-DIT Clásica</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Paquete individual</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.030,40</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.246,78</span></div>
+                    </div>
+                </div>
+
+                <!-- Risky-dit tostada sin sal -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="tostadas de arroz risky-dit sin sal 81111">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 81111</span>
+                            <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 8 0 0 0-8-8z"/></svg>
+                                TOSTADA ARROZ
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Tostada Arroz RISKY-DIT Sin Sal</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Paquete individual</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.030,40</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.246,78</span></div>
+                    </div>
+                </div>
+
+                <!-- Dos Hermanos Clasica -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="tostadas arroz dos hermanos clasicas 140g 211145">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 211145</span>
+                            <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 8 0 0 0-8-8z"/></svg>
+                                TOSTADA ARROZ
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Tostadas DOS HERMANOS Clásicas</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Paquete x 140g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.087,06</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.315,34</span></div>
+                    </div>
+                </div>
+
+                <!-- Dos Hermanos sin sal -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="tostadas arroz dos hermanos sin sal 140g 211144">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 211144</span>
+                            <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 8 0 0 0-8-8z"/></svg>
+                                TOSTADA ARROZ
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Tostadas DOS HERMANOS Sin Sal</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Paquete x 140g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.087,06</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.315,34</span></div>
+                    </div>
+                </div>
+
+                <!-- Molinos del Bosque original -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="tostada arroz molinos del bosque original 150g 81118">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 81118</span>
+                            <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 8 0 0 0-8-8z"/></svg>
+                                TOSTADA ARROZ
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Tostada MOLINOS DEL BOSQUE</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Sabor Original x 150g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.399,34</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.693,20</span></div>
+                    </div>
+                </div>
+
+                <!-- Molinos del Bosque sin sal -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="tostada arroz molinos del bosque sin sal 150g 81119">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 81119</span>
+                            <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 8 0 0 0-8-8z"/></svg>
+                                TOSTADA ARROZ
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Tostada MOLINOS DEL BOSQUE</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Sin Sal x 150g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.399,34</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.693,20</span></div>
+                    </div>
+                </div>
+
+                <!-- Miniarrocitas finas hierbas -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="snack miniarrocitas finas hierbas arroz horneado 850115">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 850115</span>
+                            <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 8 0 0 0-8-8z"/></svg>
+                                SNACK ARROZ
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Snack MINIARROCITAS Hierbas</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Arroz horneado saborizado</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.017,88</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.231,63</span></div>
+                    </div>
+                </div>
+
+                <!-- Miniarrocitas Queso -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="snack miniarrocitas queso romano arroz horneado 850116">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 850116</span>
+                            <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 1 10-10 10 10 0 0 1-10 10zm0-18a8 8 0 1 0 8 8 8 8 0 0 0-8-8z"/></svg>
+                                SNACK ARROZ
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Snack MINIARROCITAS Queso</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Arroz horneado Queso Romano</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.017,88</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.231,63</span></div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- NIVEL 3 -->
+        <section class="level-section">
+            <div class="border-b border-emerald-200 pb-3 mb-6 flex items-center gap-3">
+                <span class="bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded text-sm">Nivel 3</span>
+                <h2 class="text-xl md:text-2xl font-bold text-slate-800">Cereales, Fibra y Galletas Orgánicas (Energía saludable)</h2>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="level-3-grid">
+                
+                <!-- Cachafaz Algarroba -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="galletas cachafaz integrales algarroba avena 225g 99147">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 99147</span>
+                            <!-- Badge de Fibra/Avena -->
+                            <span class="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M17 3H7a4 4 0 0 0-4 4v10a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4V7a4 4 0 0 0-4-4zm-2 12H9v-2h6zm0-4H9V9h6z"/></svg>
+                                FIBRA / AVENA
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Gall. CACHAFAZ Algarroba</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Integrales ricas en fibra x 225g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.744,62</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$2.110,99</span></div>
+                    </div>
+                </div>
+
+                <!-- Cachafaz Avena y Pasas -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="galletas cachafaz integrales avena pasas 225g 99148">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 99148</span>
+                            <span class="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M17 3H7a4 4 0 0 0-4 4v10a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4V7a4 4 0 0 0-4-4zm-2 12H9v-2h6zm0-4H9V9h6z"/></svg>
+                                FIBRA / AVENA
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Gall. CACHAFAZ Avena y Pasas</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Integrales con pasas de uva x 225g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.744,62</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$2.110,99</span></div>
+                    </div>
+                </div>
+
+                <!-- Cachafaz Avena y Miel -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="galletas cachafaz organicas avena miel 170g 99151">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 99151</span>
+                            <span class="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M17 3H7a4 4 0 0 0-4 4v10a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4V7a4 4 0 0 0-4-4zm-2 12H9v-2h6zm0-4H9V9h6z"/></svg>
+                                ORGÁNICO
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Gall. CACHAFAZ Avena y Miel</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Línea Orgánica x 170g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.473,92</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.783,44</span></div>
+                    </div>
+                </div>
+
+                <!-- Cachafaz Cacao y Miel -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="galletas cachafaz organicas cacao miel 170g 99152">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 99152</span>
+                            <span class="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M17 3H7a4 4 0 0 0-4 4v10a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4V7a4 4 0 0 0-4-4zm-2 12H9v-2h6zm0-4H9V9h6z"/></svg>
+                                ORGÁNICO
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Gall. CACHAFAZ Cacao y Miel</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Línea Orgánica x 170g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.473,92</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.783,44</span></div>
+                    </div>
+                </div>
+
+                <!-- Flow Manzana -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="barra de cereal flow manzana light 21g 824261">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 824261</span>
+                            <span class="bg-teal-50 text-teal-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm1 14H11V10h2zm0-8H11V6h2z"/></svg>
+                                BARRITA CEREAL
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Flow CEREAL Manzana</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Barra de cereal light x 21g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$529,81</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$641,07</span></div>
+                    </div>
+                </div>
+
+                <!-- Flow Frutos del Bosque -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="barra de cereal flow frutos del bosque 23g 824266">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 824266</span>
+                            <span class="bg-teal-50 text-teal-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm1 14H11V10h2zm0-8H11V6h2z"/></svg>
+                                BARRITA CEREAL
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Flow CEREAL Frutos del Bosque</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Barra de cereal x 23g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$529,81</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$641,07</span></div>
+                    </div>
+                </div>
+
+                <!-- Flow Granola -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="barra de cereal flow granola semillas 23g 824263">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 824263</span>
+                            <span class="bg-teal-50 text-teal-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm1 14H11V10h2zm0-8H11V6h2z"/></svg>
+                                BARRITA CEREAL
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Flow CEREAL Granola y Semillas</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Barra de cereal x 23g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$529,81</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$641,07</span></div>
+                    </div>
+                </div>
+
+                <!-- Flow Mix Frutas -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="barra de cereal flow mix de frutas 23g 824264">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 824264</span>
+                            <span class="bg-teal-50 text-teal-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm1 14H11V10h2zm0-8H11V6h2z"/></svg>
+                                BARRITA CEREAL
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Flow CEREAL Mix de Frutas</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Barra de cereal x 23g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$529,81</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$641,07</span></div>
+                    </div>
+                </div>
+
+                <!-- Cereal Mix Tradicional -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="barra cereal mix tradicional 23g 804021">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 804021</span>
+                            <span class="bg-teal-50 text-teal-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm1 14H11V10h2zm0-8H11V6h2z"/></svg>
+                                BARRITA CEREAL
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Cereal MIX Tradicional</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Barra de cereal x 23g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$626,98</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$758,65</span></div>
+                    </div>
+                </div>
+
+                <!-- Cereal Mix Manzana -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="barra cereal mix manzana light 23g 804024">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 804024</span>
+                            <span class="bg-teal-50 text-teal-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm1 14H11V10h2zm0-8H11V6h2z"/></svg>
+                                BARRITA CEREAL
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Cereal MIX Manzana Light</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Barra de cereal x 23g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$626,98</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$758,65</span></div>
+                    </div>
+                </div>
+
+                <!-- Cerealitas -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="galletas cerealitas integral salvado semillas 212g 81101">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 81101</span>
+                            <span class="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M17 3H7a4 4 0 0 0-4 4v10a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4V7a4 4 0 0 0-4-4zm-2 12H9v-2h6zm0-4H9V9h6z"/></svg>
+                                INTEGRAL
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Galletas CEREALITAS</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Galletas con salvado x 212g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.321,75</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.599,32</span></div>
+                    </div>
+                </div>
+
+                <!-- Frutigran Chia Lino -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="galletas frutigran chia lino avena fibra 240g 828716">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 828716</span>
+                            <span class="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M17 3H7a4 4 0 0 0-4 4v10a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4V7a4 4 0 0 0-4-4zm-2 12H9v-2h6zm0-4H9V9h6z"/></svg>
+                                SEMILLAS / AVENA
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Gall. FRUTIGRAN Chía/Lino</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Avena y semillas x 240g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.502,44</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.817,95</span></div>
+                    </div>
+                </div>
+
+                <!-- Frutigran Frutos Rojos -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="galletas frutigran avena frutos rojos fibra 250g 1010130">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 1010130</span>
+                            <span class="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M17 3H7a4 4 0 0 0-4 4v10a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4V7a4 4 0 0 0-4-4zm-2 12H9v-2h6zm0-4H9V9h6z"/></svg>
+                                FRUTOS ROJOS
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Gall. FRUTIGRAN Frutos Rojos</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Avena y frutos rojos x 250g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.832,03</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$2.216,76</span></div>
+                    </div>
+                </div>
+
+                <!-- Frutigran Avena y Pasas -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="galletas frutigran avena pasas fibra 250g 828712">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 828712</span>
+                            <span class="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M17 3H7a4 4 0 0 0-4 4v10a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4V7a4 4 0 0 0-4-4zm-2 12H9v-2h6zm0-4H9V9h6z"/></svg>
+                                FIBRA
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Gall. FRUTIGRAN Avena y Pasas</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Fibras naturales x 250g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.502,44</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.817,95</span></div>
+                    </div>
+                </div>
+
+                <!-- Frutigran Salvado -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="galletas frutigran salvado fibra avena 250g 828711">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 828711</span>
+                            <span class="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M17 3H7a4 4 0 0 0-4 4v10a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4V7a4 4 0 0 0-4-4zm-2 12H9v-2h6zm0-4H9V9h6z"/></svg>
+                                SALVADO
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Gall. FRUTIGRAN Salvado</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Alto contenido de salvado x 250g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.421,33</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.719,81</span></div>
+                    </div>
+                </div>
+
+                <!-- Fort Flekos -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="cereal fort barra flekos cereales ninos 18g 821009">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 821009</span>
+                            <span class="bg-teal-50 text-teal-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm1 14H11V10h2zm0-8H11V6h2z"/></svg>
+                                INFANTIL
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Barra Cereal FORT Flekos</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Barrita de cereal para chicos x 18g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$418,39</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$506,25</span></div>
+                    </div>
+                </div>
+
+                <!-- Fort Granrico -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="cereal fort barra granrico cereales ninos 19g 821008">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 821008</span>
+                            <span class="bg-teal-50 text-teal-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm1 14H11V10h2zm0-8H11V6h2z"/></svg>
+                                INFANTIL
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Barra Cereal FORT Granrico</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Barrita de cereal x 19g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$418,39</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$506,25</span></div>
+                    </div>
+                </div>
+
+                <!-- Fort Manzana -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="cereal fort barra manzana almendra ninos 22g 821003">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 821003</span>
+                            <span class="bg-teal-50 text-teal-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm1 14H11V10h2zm0-8H11V6h2z"/></svg>
+                                INFANTIL
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Barra Cereal FORT Manzana</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Manzana y almendra x 22g.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$418,39</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$506,25</span></div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- NIVEL 4 -->
+        <section class="level-section">
+            <div class="border-b border-emerald-200 pb-3 mb-6 flex items-center gap-3">
+                <span class="bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded text-sm">Nivel 4</span>
+                <h2 class="text-xl md:text-2xl font-bold text-slate-800">Bebidas Light Saborizadas (Sin azúcar añadida)</h2>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="level-4-grid">
+                
+                <!-- Baggio Manzana Sin Azúcar -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="agua baggio manzana sin azucar light 1.5l 890132">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 890132</span>
+                            <span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+                                LIGHT / SIN AZÚCAR
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Agua BAGGIO Manzana</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Saborizada sin azúcar 1.5L.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.053,23</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.274,41</span></div>
+                    </div>
+                </div>
+
+                <!-- Baggio Pomelo Sin Azúcar -->
+                <div class="product-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" data-keywords="agua baggio pomelo sin azucar light 1.5l 890131">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-semibold text-slate-400">Cód. 890131</span>
+                            <span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+                                LIGHT / SIN AZÚCAR
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mt-2">Agua BAGGIO Pomelo</h3>
+                        <p class="text-slate-500 text-sm mt-0.5">Saborizada sin azúcar 1.5L.</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <div class="flex justify-between text-xs text-slate-500"><span>Precio Sin IVA:</span><span>$1.053,23</span></div>
+                        <div class="flex justify-between items-center text-emerald-700 font-bold mt-1"><span>Con 21% IVA:</span><span class="text-lg">$1.274,41</span></div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer de Contacto -->
+    <footer class="bg-slate-900 text-slate-400 py-12 px-4 mt-16 text-center border-t border-slate-800">
+        <div class="max-w-4xl mx-auto space-y-4">
+            <h3 class="text-white font-bold text-lg">Distribuidora de Alimentos Saludables</h3>
+            <p class="text-sm max-w-md mx-auto">
+                Ofrecemos soluciones nutricionales adaptadas para cantinas escolares, quioscos saludables y comedores de colegios.
+            </p>
+            <div class="pt-4 border-t border-slate-800 text-sm">
+                <p class="font-semibold text-slate-200">Juliana Maciel</p>
+                <p class="mt-1">Teléfono / WhatsApp: <a href="https://wa.me/5491171352560" class="text-emerald-400 hover:underline">+54 9 11 7135-2560</a></p>
+            </div>
+            <p class="text-xs text-slate-600 mt-6">
+                © 2026 Catálogo de Saludables. Todos los precios de lista están sujetos a cambios.
+            </p>
+        </div>
+    </footer>
+
+    <!-- Lógica del buscador en tiempo real -->
+    <script>
+        const searchInput = document.getElementById('search');
+        const cards = document.querySelectorAll('.product-card');
+        const searchInfo = document.getElementById('search-info');
+        const sections = document.querySelectorAll('.level-section');
+
+        searchInput.addEventListener('input', function() {
+            const query = searchInput.value.toLowerCase().trim();
+            let matches = 0;
+
+            if (query === "") {
+                cards.forEach(card => card.style.display = 'flex');
+                sections.forEach(sec => sec.style.display = 'block');
+                searchInfo.classList.add('hidden');
+                return;
+            }
+
+            cards.forEach(card => {
+                const keywords = card.getAttribute('data-keywords').toLowerCase();
+                if (keywords.includes(query)) {
+                    card.style.display = 'flex';
+                    matches++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            sections.forEach(section => {
+                const visibleCards = section.querySelectorAll('.product-card[style="display: flex;"]');
+                if (visibleCards.length === 0) {
+                    section.style.display = 'none';
+                } else {
+                    section.style.display = 'block';
+                }
+            });
+
+            searchInfo.classList.remove('hidden');
+            searchInfo.textContent = `Se encontraron ${matches} producto(s) que coinciden con tu búsqueda.`;
+        });
+    </script>
+</body>
+</html>
