@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Saludables para Jardines y Colegios - Catálogo Pilar</title>
-    <!-- Tailwind CSS para diseño fluido y moderno -->
+    <!-- Tailwind CSS para diseño moderno y fluido -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .product-card {
@@ -12,6 +12,13 @@
         }
         .product-card:hover {
             transform: translateY(-2px);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
     </style>
 </head>
@@ -22,45 +29,49 @@
         <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
             <div class="flex items-center gap-2">
                 <span class="bg-amber-500 text-[10px] uppercase font-extrabold px-2 py-0.5 rounded text-slate-950">Vista Vendedora</span>
-                <p class="text-xs md:text-sm font-semibold text-slate-300">Ajustes de Márgenes</p>
+                <p class="text-xs md:text-sm font-semibold text-slate-300">Margen de Ganancia (Mínimo 20%)</p>
             </div>
             
-            <div class="flex flex-wrap items-center gap-6">
+            <div class="flex flex-wrap items-center gap-4 md:gap-6">
                 <!-- Selector de Markup General -->
                 <div class="flex items-center gap-2">
                     <label for="markup-slider" class="text-xs text-slate-400">Markup General:</label>
-                    <input type="range" id="markup-slider" min="0" max="100" value="30" class="w-24 md:w-32 accent-emerald-500">
+                    <input type="range" id="markup-slider" min="20" max="100" value="30" class="w-24 md:w-32 accent-emerald-500">
                     <span id="markup-val" class="text-xs font-bold text-emerald-400 bg-slate-800 px-2 py-1 rounded">30%</span>
                 </div>
                 
-                <!-- Mostrar/Ocultar costos de lista -->
+                <!-- Ver costos de lista -->
                 <div class="flex items-center gap-2">
                     <input type="checkbox" id="show-cost-check" checked class="rounded accent-emerald-500">
                     <label for="show-cost-check" class="text-xs text-slate-400 cursor-pointer">Ver costos s/IVA</label>
                 </div>
 
-                <!-- Botón de Copiar Link Personalizado -->
-                <button onclick="generateCustomLink()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold px-4 py-2 rounded-lg flex items-center gap-2 shadow-md transition-all">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+                <!-- Botón Importador de TXT Completo -->
+                <button onclick="triggerFileInput()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1.5 shadow transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    📁 Importar Lista (TXT)
+                </button>
+                <input type="file" id="txt-file-input" accept=".txt,.csv" class="hidden" onchange="handleFileImport(event)">
+
+                <!-- Generar Link para Cliente -->
+                <button onclick="generateCustomLink()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold px-4 py-2 rounded-lg flex items-center gap-2 shadow transition-all">
                     Generar Link para Cliente
                 </button>
             </div>
 
-            <!-- Botón para ocultar todo el panel antes de mostrar al cliente -->
             <button onclick="hideAdminPanelDirectly()" class="bg-slate-800 hover:bg-slate-700 text-xs font-semibold px-3 py-1.5 rounded border border-slate-700 transition-all">
                 Modo Cliente
             </button>
         </div>
     </div>
 
-    <!-- Botón flotante para acceder al panel (Protegido con Modal de Contraseña) -->
+    <!-- Botón flotante para acceder al panel -->
     <button id="restore-admin-btn" onclick="openLoginModal()" class="fixed bottom-6 left-6 z-50 bg-slate-900 text-white hover:bg-slate-800 border border-slate-700 p-3 rounded-full shadow-2xl transition-all">
         <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
     </button>
 
     <!-- NOTIFICACIÓN TEMPORAL (TOAST) -->
     <div id="toast" class="fixed bottom-6 right-6 z-50 bg-slate-900 text-emerald-400 border border-emerald-500/30 px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 transition-opacity duration-300 opacity-0 pointer-events-none">
-        <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         <span id="toast-msg" class="text-sm font-semibold text-white"></span>
     </div>
 
@@ -82,7 +93,7 @@
                     <label class="block text-xs font-semibold text-slate-500 mb-1">Contraseña:</label>
                     <input type="password" id="password" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none text-sm">
                 </div>
-                <div id="login-error" class="text-xs text-red-500 hidden">Credenciales inválidas. Intente nuevamente.</div>
+                <div id="login-error" class="text-xs text-red-500 hidden">Credenciales incorrectas.</div>
                 <button onclick="attemptLogin()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-lg text-sm transition-all shadow-md">
                     Ingresar al Panel
                 </button>
@@ -95,336 +106,120 @@
         <div class="max-w-7xl mx-auto">
             <span class="bg-emerald-500/30 text-emerald-200 border border-emerald-400/20 text-xs uppercase font-extrabold px-3 py-1 rounded-full mb-3 inline-block tracking-wider">Distribuidora Juliana Maciel</span>
             <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight mb-4">Saludables para Jardines y Colegios</h1>
-            <p class="text-base md:text-lg text-emerald-100 max-w-2xl mx-auto mb-6">
-                Propuestas nutritivas seleccionadas especialmente para colegios de Pilar y zona norte. Colaciones sanas que los chicos eligen.
+            <p class="text-base md:text-lg text-emerald-100 max-w-2xl mx-auto mb-4">
+                Catálogo mayorista bilingüe optimizado para quioscos escolares y cantinas de Pilar.
             </p>
             
-            <!-- Contacto Principal -->
-            <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-4 inline-block border border-white/20">
-                <p class="text-sm text-emerald-200">Coordinación de presupuestos y envíos:</p>
-                <p class="text-lg md:text-xl font-bold mt-0.5">Juliana Maciel</p>
-                <div class="mt-3 flex flex-wrap justify-center gap-3">
-                    <a href="https://wa.me/5491171352560?text=Hola%20Juliana,%20vi%20tu%20lista%20de%20saludables%20para%20colegios" target="_blank" class="bg-emerald-500 hover:bg-emerald-400 text-white px-5 py-2 rounded-xl font-bold text-sm shadow flex items-center gap-2 transition-all">
-                        <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.62.962 3.21 1.453 4.857 1.453 5.489 0 9.954-4.436 9.958-9.885.002-2.639-1.025-5.119-2.89-6.988C16.658 1.865 14.19 .84 11.55.84c-5.492 0-9.957 4.437-9.962 9.886-.001 1.925.501 3.807 1.455 5.461l-.955 3.49 3.582-.939zm12.593-7.551c-.302-.151-1.789-.882-2.057-.979-.268-.098-.463-.147-.659.147-.196.294-.755.947-.927 1.144-.171.196-.343.221-.645.071-.3-.151-1.267-.467-2.414-1.487-.893-.794-1.496-1.774-1.671-2.074-.175-.301-.019-.463.132-.612.136-.134.302-.35.453-.524.151-.174.201-.299.302-.497.101-.199.051-.374-.025-.524-.075-.151-.659-1.589-.902-2.174-.237-.568-.478-.49-.659-.499-.17-.008-.365-.01-.56-.01-.196 0-.515.073-.784.365-.268.294-1.026 1.002-1.026 2.443 0 1.442 1.052 2.839 1.198 3.037.147.197 2.074 3.167 5.022 4.444.701.304 1.248.485 1.673.619.706.224 1.35.193 1.859.117.567-.085 1.789-.731 2.042-1.439.253-.708.253-1.314.177-1.439-.077-.125-.283-.199-.585-.35z"/></svg>
-                        WhatsApp: +54 9 11 7135-2560
-                    </a>
+            <!-- Contador total de la base de datos -->
+            <div class="inline-block bg-slate-900/40 text-emerald-300 font-bold border border-emerald-400/20 px-4 py-2 rounded-xl text-xs mb-6">
+                📦 El catálogo cuenta actualmente con <span id="total-count-badge" class="text-white text-sm font-black">0</span> artículos cargados
+            </div>
+            
+            <div class="block">
+                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-4 inline-block border border-white/20">
+                    <p class="text-sm text-emerald-200">Juliana Maciel — WhatsApp: <span class="text-white font-bold">+54 9 11 7135-2560</span></p>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- Buscador Integrado -->
-    <div class="max-w-7xl mx-auto px-4 mt-8">
+    <!-- Buscador y Solapas (Carpetas de Navegación) -->
+    <div class="max-w-7xl mx-auto px-4 mt-8 space-y-4">
+        
+        <!-- Buscador -->
         <div class="bg-white rounded-2xl shadow-sm p-4 border border-slate-200">
             <div class="relative">
-                <input type="text" id="search" placeholder="Escribí marca, producto o código (ej: 'arroz', 'cachafaz', '824261')..." class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-slate-700 transition-all text-sm">
+                <input type="text" id="search" placeholder="Escribí marca, producto o código (ej: 'arroz', 'baggio', '89012')..." class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-slate-700 transition-all text-sm">
                 <span class="absolute right-4 top-3.5 text-slate-400">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </span>
             </div>
-            <div id="search-info" class="text-xs text-emerald-600 mt-2 font-medium hidden"></div>
+        </div>
+
+        <!-- Barra de Solapas / Carpetas (Filtros por Categoría y Desplegable de Marcas) -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-4">
+            
+            <!-- Solapas de Categorías (Rubros) -->
+            <div class="flex flex-wrap items-center gap-2">
+                <button onclick="filterByCategory('todas')" id="btn-cat-todas" class="cat-btn px-4 py-2 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white shadow-sm shrink-0">
+                    Todas
+                </button>
+                <button onclick="filterByCategory('saludables')" id="btn-cat-saludables" class="cat-btn px-4 py-2 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0">
+                    🌱 Selección Saludables
+                </button>
+                <button onclick="filterByCategory('BEBIDAS')" id="btn-cat-BEBIDAS" class="cat-btn px-4 py-2 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0">
+                    Bebidas
+                </button>
+                <button onclick="filterByCategory('COMESTIBLE')" id="btn-cat-COMESTIBLE" class="cat-btn px-4 py-2 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0">
+                    Comestibles
+                </button>
+                <button onclick="filterByCategory('GALLETITAS')" id="btn-cat-GALLETITAS" class="cat-btn px-4 py-2 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0">
+                    Galletitas
+                </button>
+                <button onclick="filterByCategory('GOLOSINAS')" id="btn-cat-GOLOSINAS" class="cat-btn px-4 py-2 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0">
+                    Golosinas
+                </button>
+                <button onclick="filterByCategory('LIMPIEZA Y HOGAR TEOLOGISTICA')" id="btn-cat-LIMPIEZA" class="cat-btn px-4 py-2 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0">
+                    Limpieza
+                </button>
+                <button onclick="filterByCategory('PERFUMERIA')" id="btn-cat-PERFUMERIA" class="cat-btn px-4 py-2 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0">
+                    Perfumería
+                </button>
+                <button onclick="filterByCategory('VARIOS')" id="btn-cat-VARIOS" class="cat-btn px-4 py-2 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0">
+                    Varios
+                </button>
+            </div>
+
+            <!-- Menú Desplegable de Marcas (Petición: 1 sola solapa con listado) -->
+            <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">🏷️ Filtrar por Marca:</span>
+                    <select id="brand-select" onchange="handleBrandSelect(this)" class="bg-slate-100 hover:bg-slate-200 text-xs font-bold px-3 py-2 rounded-xl text-slate-700 outline-none border border-slate-200 cursor-pointer transition-all">
+                        <option value="">Todas las marcas...</option>
+                    </select>
+                </div>
+                <div class="text-xs text-slate-400 font-medium" id="results-counter">
+                    Cargando catálogo...
+                </div>
+            </div>
+
         </div>
     </div>
 
-    <!-- Contenido Principal: Catálogo y Barra Lateral -->
-    <main class="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-4 gap-8">
+    <!-- Contenido: Catálogo y Barra de Pilar -->
+    <main class="max-w-7xl mx-auto px-4 py-4 grid grid-cols-1 lg:grid-cols-4 gap-8">
         
-        <!-- COLUMNA DEL CATÁLOGO (3/4 de ancho en desktop) -->
-        <div class="lg:col-span-3 space-y-12">
+        <!-- Grid del catálogo -->
+        <div class="lg:col-span-3 space-y-6">
+            <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
 
-            <!-- CATEGORÍA 1 -->
-            <section class="level-section">
-                <div class="border-b border-emerald-200 pb-3 mb-6 flex items-center gap-3">
-                    <span class="bg-emerald-100 text-emerald-800 font-extrabold px-3 py-1 rounded-lg text-xs">NIVEL 1</span>
-                    <h2 class="text-lg md:text-xl font-bold text-slate-800">Hidratación Pura y Jugos 100% Naturales</h2>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    
-                    <!-- Sierra de los Padres 600 -->
-                    <div class="product-card bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-code="89051" data-keywords="agua mineral sierra de los padres 600cc 89051" data-base-price="6205.04">
-                        <img src="https://images.unsplash.com/photo-1523362628745-0c100150b504?auto=format&fit=crop&w=400&q=80" alt="Agua Mineral" class="h-44 w-full object-cover">
-                        <div class="p-5 flex-grow flex flex-col justify-between">
-                            <div>
-                                <div class="flex justify-between items-start">
-                                    <span class="text-xs font-semibold text-slate-400">Cód. 89051</span>
-                                    <span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2.5 py-1 rounded-full">AGUA</span>
-                                </div>
-                                <h3 class="font-bold text-slate-800 text-base mt-2 prod-name">Agua SIERRA DE LOS PADRES</h3>
-                                <p class="text-slate-500 text-xs mt-0.5">Pack 12 x 600cc.</p>
-                            </div>
-                            
-                            <!-- CONTROLES ADMIN (OCULTOS POR DEFECTO AL CLIENTE) -->
-                            <div class="admin-controls-card bg-slate-100 p-2.5 rounded-xl border border-slate-200 mt-4 hidden">
-                                <div class="flex items-center justify-between text-xs">
-                                    <label class="flex items-center gap-1.5 font-semibold text-slate-700 cursor-pointer">
-                                        <input type="checkbox" class="individual-check accent-amber-500 rounded">
-                                        Margen Indiv.
-                                    </label>
-                                    <div class="flex items-center gap-1">
-                                        <input type="number" class="individual-input w-12 text-center border rounded py-0.5 text-slate-800 font-bold" min="0" max="100" value="30">
-                                        <span class="font-bold text-slate-500">%</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-1">
-                                <div class="cost-row flex justify-between text-xs text-slate-400"><span>Costo s/IVA:</span><span>$6.205,04</span></div>
-                                <div class="flex justify-between items-center text-slate-600 text-xs mt-0.5"><span>Venta Sugerida s/IVA:</span><span class="sale-price font-bold">$0,00</span></div>
-                                <div class="flex justify-between items-center text-emerald-700 font-extrabold mt-1"><span>Precio Final c/IVA:</span><span class="text-lg final-price">$0,00</span></div>
-                                <button onclick="shareItem(this)" class="text-xs bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-3 py-2 rounded-xl flex items-center justify-center gap-2 transition-all mt-3 font-bold border border-slate-100">
-                                    <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
-                                    Compartir Ficha
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Citric Exprimido -->
-                    <div class="product-card bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-code="89001" data-keywords="jugo citric exprimido natural naranja 250ml 89001" data-base-price="1035.87">
-                        <img src="https://images.unsplash.com/photo-1613478223719-2ab802602423?auto=format&fit=crop&w=400&q=80" alt="Jugo de Naranja" class="h-44 w-full object-cover">
-                        <div class="p-5 flex-grow flex flex-col justify-between">
-                            <div>
-                                <div class="flex justify-between items-start">
-                                    <span class="text-xs font-semibold text-slate-400">Cód. 89001</span>
-                                    <span class="bg-orange-50 text-orange-700 text-[10px] font-bold px-2.5 py-1 rounded-full">NATURAL</span>
-                                </div>
-                                <h3 class="font-bold text-slate-800 text-base mt-2 prod-name">Jugo CITRIC Naranja</h3>
-                                <p class="text-slate-500 text-xs mt-0.5">Exprimido 100% natural 250ml.</p>
-                            </div>
-
-                            <!-- CONTROLES ADMIN (OCULTOS POR DEFECTO AL CLIENTE) -->
-                            <div class="admin-controls-card bg-slate-100 p-2.5 rounded-xl border border-slate-200 mt-4 hidden">
-                                <div class="flex items-center justify-between text-xs">
-                                    <label class="flex items-center gap-1.5 font-semibold text-slate-700 cursor-pointer">
-                                        <input type="checkbox" class="individual-check accent-amber-500 rounded">
-                                        Margen Indiv.
-                                    </label>
-                                    <div class="flex items-center gap-1">
-                                        <input type="number" class="individual-input w-12 text-center border rounded py-0.5 text-slate-800 font-bold" min="0" max="100" value="30">
-                                        <span class="font-bold text-slate-500">%</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-1">
-                                <div class="cost-row flex justify-between text-xs text-slate-400"><span>Costo s/IVA:</span><span>$1.035,87</span></div>
-                                <div class="flex justify-between items-center text-slate-600 text-xs mt-0.5"><span>Venta Sugerida s/IVA:</span><span class="sale-price font-bold">$0,00</span></div>
-                                <div class="flex justify-between items-center text-emerald-700 font-extrabold mt-1"><span>Precio Final c/IVA:</span><span class="text-lg final-price">$0,00</span></div>
-                                <button onclick="shareItem(this)" class="text-xs bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-3 py-2 rounded-xl flex items-center justify-center gap-2 transition-all mt-3 font-bold border border-slate-100">
-                                    <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
-                                    Compartir Ficha
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </section>
-
-            <!-- CATEGORÍA 2 -->
-            <section class="level-section">
-                <div class="border-b border-emerald-200 pb-3 mb-6 flex items-center gap-3">
-                    <span class="bg-emerald-100 text-emerald-800 font-extrabold px-3 py-1 rounded-lg text-xs">NIVEL 2</span>
-                    <h2 class="text-lg md:text-xl font-bold text-slate-800">Tostadas de Arroz (Bajas calorías y sodio)</h2>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    
-                    <!-- Arrocitas con sal -->
-                    <div class="product-card bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-code="850205" data-keywords="galletas de arroz arrocitas con sal 101g 850205" data-base-price="909.53">
-                        <img src="https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&w=400&q=80" alt="Galletas de Arroz" class="h-44 w-full object-cover">
-                        <div class="p-5 flex-grow flex flex-col justify-between">
-                            <div>
-                                <div class="flex justify-between items-start">
-                                    <span class="text-xs font-semibold text-slate-400">Cód. 850205</span>
-                                    <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2.5 py-1 rounded-full">FIBRA</span>
-                                </div>
-                                <h3 class="font-bold text-slate-800 text-base mt-2 prod-name">Galletas ARROCITAS con Sal</h3>
-                                <p class="text-slate-500 text-xs mt-0.5">Paquete x 101g.</p>
-                            </div>
-
-                            <!-- CONTROLES ADMIN -->
-                            <div class="admin-controls-card bg-slate-100 p-2.5 rounded-xl border border-slate-200 mt-4 hidden">
-                                <div class="flex items-center justify-between text-xs">
-                                    <label class="flex items-center gap-1.5 font-semibold text-slate-700 cursor-pointer">
-                                        <input type="checkbox" class="individual-check accent-amber-500 rounded">
-                                        Margen Indiv.
-                                    </label>
-                                    <div class="flex items-center gap-1">
-                                        <input type="number" class="individual-input w-12 text-center border rounded py-0.5 text-slate-800 font-bold" min="0" max="100" value="30">
-                                        <span class="font-bold text-slate-500">%</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-1">
-                                <div class="cost-row flex justify-between text-xs text-slate-400"><span>Costo s/IVA:</span><span>$909,53</span></div>
-                                <div class="flex justify-between items-center text-slate-600 text-xs mt-0.5"><span>Venta Sugerida s/IVA:</span><span class="sale-price font-bold">$0,00</span></div>
-                                <div class="flex justify-between items-center text-emerald-700 font-extrabold mt-1"><span>Precio Final c/IVA:</span><span class="text-lg final-price">$0,00</span></div>
-                                <button onclick="shareItem(this)" class="text-xs bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-3 py-2 rounded-xl flex items-center justify-center gap-2 transition-all mt-3 font-bold border border-slate-100">
-                                    <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
-                                    Compartir Ficha
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Miniarrocitas -->
-                    <div class="product-card bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-code="850115" data-keywords="snack miniarrocitas finas hierbas arroz horneado 850115" data-base-price="1017.88">
-                        <img src="https://images.unsplash.com/photo-1541532713592-79a0317b6b77?auto=format&fit=crop&w=400&q=80" alt="Snacks Saludables" class="h-44 w-full object-cover">
-                        <div class="p-5 flex-grow flex flex-col justify-between">
-                            <div>
-                                <div class="flex justify-between items-start">
-                                    <span class="text-xs font-semibold text-slate-400">Cód. 850115</span>
-                                    <span class="bg-amber-50 text-amber-800 text-[10px] font-bold px-2.5 py-1 rounded-full">SNACK ARROZ</span>
-                                </div>
-                                <h3 class="font-bold text-slate-800 text-base mt-2 prod-name">Miniarrocitas Hierbas</h3>
-                                <p class="text-slate-500 text-xs mt-0.5">Arroz horneado saborizado</p>
-                            </div>
-
-                            <!-- CONTROLES ADMIN -->
-                            <div class="admin-controls-card bg-slate-100 p-2.5 rounded-xl border border-slate-200 mt-4 hidden">
-                                <div class="flex items-center justify-between text-xs">
-                                    <label class="flex items-center gap-1.5 font-semibold text-slate-700 cursor-pointer">
-                                        <input type="checkbox" class="individual-check accent-amber-500 rounded">
-                                        Margen Indiv.
-                                    </label>
-                                    <div class="flex items-center gap-1">
-                                        <input type="number" class="individual-input w-12 text-center border rounded py-0.5 text-slate-800 font-bold" min="0" max="100" value="30">
-                                        <span class="font-bold text-slate-500">%</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-1">
-                                <div class="cost-row flex justify-between text-xs text-slate-400"><span>Costo s/IVA:</span><span>$1.017,88</span></div>
-                                <div class="flex justify-between items-center text-slate-600 text-xs mt-0.5"><span>Venta Sugerida s/IVA:</span><span class="sale-price font-bold">$0,00</span></div>
-                                <div class="flex justify-between items-center text-emerald-700 font-extrabold mt-1"><span>Precio Final c/IVA:</span><span class="text-lg final-price">$0,00</span></div>
-                                <button onclick="shareItem(this)" class="text-xs bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-3 py-2 rounded-xl flex items-center justify-center gap-2 transition-all mt-3 font-bold border border-slate-100">
-                                    <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5(1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
-                                    Compartir Ficha
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </section>
-
-            <!-- CATEGORÍA 3 -->
-            <section class="level-section">
-                <div class="border-b border-emerald-200 pb-3 mb-6 flex items-center gap-3">
-                    <span class="bg-emerald-100 text-emerald-800 font-extrabold px-3 py-1 rounded-lg text-xs">NIVEL 3</span>
-                    <h2 class="text-lg md:text-xl font-bold text-slate-800">Cereales Infantiles y Energía (Libres de excesos)</h2>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    
-                    <!-- Fort Flekos -->
-                    <div class="product-card bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-code="821009" data-keywords="cereal fort barra flekos cereales ninos 18g 821009" data-base-price="418.39">
-                        <img src="https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=400&q=80" alt="Cereales Infantiles" class="h-44 w-full object-cover">
-                        <div class="p-5 flex-grow flex flex-col justify-between">
-                            <div>
-                                <div class="flex justify-between items-start">
-                                    <span class="text-xs font-semibold text-slate-400">Cód. 821009</span>
-                                    <span class="bg-teal-50 text-teal-800 text-[10px] font-bold px-2.5 py-1 rounded-full">INFANTIL</span>
-                                </div>
-                                <h3 class="font-bold text-slate-800 text-base mt-2 prod-name">Barra Cereal FORT Flekos</h3>
-                                <p class="text-slate-500 text-xs mt-0.5">Barrita para chicos x 18g.</p>
-                            </div>
-
-                            <!-- CONTROLES ADMIN -->
-                            <div class="admin-controls-card bg-slate-100 p-2.5 rounded-xl border border-slate-200 mt-4 hidden">
-                                <div class="flex items-center justify-between text-xs">
-                                    <label class="flex items-center gap-1.5 font-semibold text-slate-700 cursor-pointer">
-                                        <input type="checkbox" class="individual-check accent-amber-500 rounded">
-                                        Margen Indiv.
-                                    </label>
-                                    <div class="flex items-center gap-1">
-                                        <input type="number" class="individual-input w-12 text-center border rounded py-0.5 text-slate-800 font-bold" min="0" max="100" value="30">
-                                        <span class="font-bold text-slate-500">%</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-1">
-                                <div class="cost-row flex justify-between text-xs text-slate-400"><span>Costo s/IVA:</span><span>$418,39</span></div>
-                                <div class="flex justify-between items-center text-slate-600 text-xs mt-0.5"><span>Venta Sugerida s/IVA:</span><span class="sale-price font-bold">$0,00</span></div>
-                                <div class="flex justify-between items-center text-emerald-700 font-extrabold mt-1"><span>Precio Final c/IVA:</span><span class="text-lg final-price">$0,00</span></div>
-                                <button onclick="shareItem(this)" class="text-xs bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-3 py-2 rounded-xl flex items-center justify-center gap-2 transition-all mt-3 font-bold border border-slate-100">
-                                    <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
-                                    Compartir Ficha
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Flow Granola -->
-                    <div class="product-card bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden" data-code="824263" data-keywords="barra de cereal flow granola semillas 23g 824263" data-base-price="529.81">
-                        <img src="https://images.unsplash.com/photo-1568254183919-78a4f43a2877?auto=format&fit=crop&w=400&q=80" alt="Barrita de Cereal" class="h-44 w-full object-cover">
-                        <div class="p-5 flex-grow flex flex-col justify-between">
-                            <div>
-                                <div class="flex justify-between items-start">
-                                    <span class="text-xs font-semibold text-slate-400">Cód. 824263</span>
-                                    <span class="bg-teal-50 text-teal-800 text-[10px] font-bold px-2.5 py-1 rounded-full">INTEGRAL</span>
-                                </div>
-                                <h3 class="font-bold text-slate-800 text-base mt-2 prod-name">Flow Semillas y Granola</h3>
-                                <p class="text-slate-500 text-xs mt-0.5">Barra de cereal natural x 23g.</p>
-                            </div>
-
-                            <!-- CONTROLES ADMIN -->
-                            <div class="admin-controls-card bg-slate-100 p-2.5 rounded-xl border border-slate-200 mt-4 hidden">
-                                <div class="flex items-center justify-between text-xs">
-                                    <label class="flex items-center gap-1.5 font-semibold text-slate-700 cursor-pointer">
-                                        <input type="checkbox" class="individual-check accent-amber-500 rounded">
-                                        Margen Indiv.
-                                    </label>
-                                    <div class="flex items-center gap-1">
-                                        <input type="number" class="individual-input w-12 text-center border rounded py-0.5 text-slate-800 font-bold" min="0" max="100" value="30">
-                                        <span class="font-bold text-slate-500">%</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-1">
-                                <div class="cost-row flex justify-between text-xs text-slate-400"><span>Costo s/IVA:</span><span>$529,81</span></div>
-                                <div class="flex justify-between items-center text-slate-600 text-xs mt-0.5"><span>Venta Sugerida s/IVA:</span><span class="sale-price font-bold">$0,00</span></div>
-                                <div class="flex justify-between items-center text-emerald-700 font-extrabold mt-1"><span>Precio Final c/IVA:</span><span class="text-lg final-price">$0,00</span></div>
-                                <button onclick="shareItem(this)" class="text-xs bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-3 py-2 rounded-xl flex items-center justify-center gap-2 transition-all mt-3 font-bold border border-slate-100">
-                                    <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
-                                    Compartir Ficha
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </section>
-
+            <!-- Botón Ver Más -->
+            <div class="flex justify-center pt-4 hidden" id="pagination-container">
+                <button onclick="loadMoreProducts()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm px-8 py-3 rounded-xl shadow-md hover:shadow-lg transition-all">
+                    Ver más productos
+                </button>
+            </div>
         </div>
 
-        <!-- COLUMNA LATERAL (SIDEBAR): COLEGIOS DE PILAR & COBERTURA (1/4 de ancho en desktop) -->
+        <!-- Barra de Pilar -->
         <aside class="space-y-6">
-            
-            <!-- Bloque de Colegios Confianzas -->
             <div class="bg-gradient-to-b from-slate-900 to-slate-800 text-white rounded-2xl p-6 shadow-md border border-slate-700/50">
                 <h3 class="font-extrabold text-base border-b border-slate-700 pb-3 mb-4 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                    Zonas & Colegios
+                    Colegios de Pilar
                 </h3>
-                
                 <p class="text-xs text-slate-300 leading-relaxed mb-6">
                     Suministramos alimentos y colaciones saludables en los quioscos y cantinas de los principales colegios de **Pilar, Zona Norte**.
                 </p>
 
-                <!-- Escudos / Logotipos Simulados Profesionales con puro CSS -->
+                <!-- Escudos Escolares -->
                 <div class="space-y-4">
                     <div class="flex items-center gap-3 bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/40">
                         <div class="w-10 h-10 rounded-full bg-blue-900 border-2 border-red-500 flex items-center justify-center font-bold text-xs text-white">NL</div>
                         <div>
                             <p class="text-xs font-bold text-white leading-tight">Northlands School</p>
-                            <p class="text-[10px] text-slate-400">Campus Nordelta/Pilar</p>
+                            <p class="text-[10px] text-slate-400">Campus Pilar</p>
                         </div>
                     </div>
-
                     <div class="flex items-center gap-3 bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/40">
                         <div class="w-10 h-10 rounded-full bg-emerald-800 border-2 border-amber-400 flex items-center justify-center font-bold text-xs text-white">SJ</div>
                         <div>
@@ -432,71 +227,56 @@
                             <p class="text-[10px] text-slate-400">Sede Pilar</p>
                         </div>
                     </div>
-
                     <div class="flex items-center gap-3 bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/40">
                         <div class="w-10 h-10 rounded-full bg-red-900 border-2 border-blue-500 flex items-center justify-center font-bold text-xs text-white">SG</div>
                         <div>
                             <p class="text-xs font-bold text-white leading-tight">St. George's North</p>
-                            <p class="text-[10px] text-slate-400">Polo Educativo Norte</p>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-3 bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/40">
-                        <div class="w-10 h-10 rounded-full bg-slate-900 border-2 border-emerald-400 flex items-center justify-center font-bold text-xs text-white">SC</div>
-                        <div>
-                            <p class="text-xs font-bold text-white leading-tight">St. Catherine's</p>
-                            <p class="text-[10px] text-slate-400">Moorlands Pilar</p>
+                            <p class="text-[10px] text-slate-400">Polo Educativo Pilar</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Imagen decorativa escolar -->
                 <div class="mt-6">
-                    <img src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=400&q=80" alt="Chicos en Colegio" class="w-full h-32 object-cover rounded-xl shadow border border-slate-700/40">
+                    <img src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=400&q=80" alt="Colegio" class="w-full h-32 object-cover rounded-xl border border-slate-700/40">
                 </div>
             </div>
 
-            <!-- Bloque de Cobertura Logística -->
             <div class="bg-emerald-50 rounded-2xl p-6 border border-emerald-100 shadow-sm">
-                <h4 class="font-extrabold text-sm text-emerald-900 mb-2 flex items-center gap-1.5">
-                    <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    Entrega Directa Barrios
-                </h4>
+                <h4 class="font-extrabold text-sm text-emerald-900 mb-2">Entrega Directa Barrios</h4>
                 <p class="text-xs text-emerald-800 leading-normal">
-                    Despachamos directamente en los barrios privados de Pilar (Estancias del Pilar, Tortugas CC, Highland Park, Mapuche, etc.) con vehículos acondicionados para alimentos.
+                    Despachamos directamente en los barrios privados de Pilar (Estancias, Tortugas CC, Highland, Mapuche, etc.) con vehículos habilitados.
                 </p>
             </div>
-
         </aside>
 
     </main>
 
-    <!-- Footer con Redes Sociales Incorporadas -->
-    <footer class="bg-slate-950 text-slate-400 py-12 px-4 mt-16 border-t border-slate-900">
+    <!-- Footer con Redes Sociales Corregidas y Estilizadas -->
+    <footer class="bg-slate-950 text-slate-400 py-12 px-4 mt-16 border-t border-slate-900 text-center md:text-left">
         <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
             
             <div class="space-y-3">
                 <h3 class="text-white font-extrabold text-base">Catálogo de Saludables</h3>
-                <p class="text-xs max-w-sm">
-                    Distribución de colaciones escolares de calidad bilingüe para colegios de Pilar y corredores de zona norte.
+                <p class="text-xs max-w-sm mx-auto md:mx-0">
+                    Distribución de colaciones de calidad bilingüe para colegios de Pilar y corredores de zona norte.
                 </p>
             </div>
 
-            <!-- Redes Sociales Incorporadas por Pedido de Juliana -->
+            <!-- Redes Sociales de Juliana (Con iconos corregidos) -->
             <div class="space-y-3">
                 <h4 class="text-white font-extrabold text-sm">Seguinos en nuestras Redes</h4>
-                <div class="flex gap-4">
+                <div class="flex justify-center md:justify-start gap-4 text-white">
                     <!-- Instagram -->
-                    <a href="https://instagram.com" target="_blank" class="w-9 h-9 rounded-full bg-slate-800 hover:bg-emerald-600 text-white flex items-center justify-center transition-all shadow-md">
-                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051C.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg>
+                    <a href="https://instagram.com" target="_blank" class="w-10 h-10 rounded-full bg-slate-800 hover:bg-emerald-600 flex items-center justify-center transition-all shadow-md">
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051C.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg>
                     </a>
                     <!-- Facebook -->
-                    <a href="https://facebook.com" target="_blank" class="w-9 h-9 rounded-full bg-slate-800 hover:bg-emerald-600 text-white flex items-center justify-center transition-all shadow-md">
-                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                    <a href="https://facebook.com" target="_blank" class="w-10 h-10 rounded-full bg-slate-800 hover:bg-emerald-600 flex items-center justify-center transition-all shadow-md">
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
                     </a>
                     <!-- TikTok -->
-                    <a href="https://tiktok.com" target="_blank" class="w-9 h-9 rounded-full bg-slate-800 hover:bg-emerald-600 text-white flex items-center justify-center transition-all shadow-md">
-                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.86-.74-3.94-1.74-.22-.21-.42-.45-.61-.7-.02 3.68-.01 7.36-.02 11.04-.1 2.44-1.14 4.88-3.14 6.28-2.23 1.61-5.3 1.91-7.79 1.05-2.73-.91-4.9-3.24-5.51-6.05-1.02-4.32 1.67-8.81 5.97-9.7 1.25-.26 2.56-.16 3.77.25.01 1.48.01 2.96.01 4.43-.97-.33-2.03-.35-2.99.03-.98.37-1.8 1.15-2.22 2.1-.88 1.9-.3 4.39 1.37 5.61 1.46 1.12 3.61 1.27 5.2.37 1.31-.72 2.13-2.15 2.23-3.65.03-3.68.01-7.36.02-11.04V0z"/></svg>
+                    <a href="https://tiktok.com" target="_blank" class="w-10 h-10 rounded-full bg-slate-800 hover:bg-emerald-600 flex items-center justify-center transition-all shadow-md">
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.86-.74-3.94-1.74-.22-.21-.42-.45-.61-.7-.02 3.68-.01 7.36-.02 11.04-.1 2.44-1.14 4.88-3.14 6.28-2.23 1.61-5.3 1.91-7.79 1.05-2.73-.91-4.9-3.24-5.51-6.05-1.02-4.32 1.67-8.81 5.97-9.7 1.25-.26 2.56-.16 3.77.25.01 1.48.01 2.96.01 4.43-.97-.33-2.03-.35-2.99.03-.98.37-1.8 1.15-2.22 2.1-.88 1.9-.3 4.39 1.37 5.61 1.46 1.12 3.61 1.27 5.2.37 1.31-.72 2.13-2.15 2.23-3.65.03-3.68.01-7.36.02-11.04V0z"/></svg>
                     </a>
                 </div>
             </div>
@@ -506,77 +286,1621 @@
                 <p class="text-xs">Juliana Maciel<br>WhatsApp: +54 9 11 7135-2560</p>
                 <p class="text-[10px] text-slate-600">© 2026 Catálogo Pilar. Todos los derechos reservados.</p>
             </div>
-
         </div>
     </footer>
 
-    <!-- LÓGICA JAVASCRIPT DINÁMICA -->
     <script>
-        const markupSlider = document.getElementById('markup-slider');
-        const markupVal = document.getElementById('markup-val');
-        const showCostCheck = document.getElementById('show-cost-check');
-        const cards = document.querySelectorAll('.product-card');
-        const adminPanel = document.getElementById('admin-panel');
-        const restoreBtn = document.getElementById('restore-admin-btn');
+        // BASE DE DATOS INICIAL (430 productos pre-cargados)
+        let database = [
+            ["BEBIDAS","89012","Agua BAGGIO x1,5L.MANZANA",1053.23],
+            ["BEBIDAS","890132","Agua BAGGIO x1,5L.MANZANA SIN AZUCAR",1053.23],
+            ["BEBIDAS","89016","Agua BAGGIO x1,5L.MIX FRUTAL",1053.23],
+            ["BEBIDAS","89013","Agua BAGGIO x1,5L.PERA",1053.23],
+            ["BEBIDAS","89014","Agua BAGGIO x1,5L.POMELO",1053.23],
+            ["BEBIDAS","890131","Agua BAGGIO x1,5L.POMELO SIN AZUCAR",1053.23],
+            ["BEBIDAS","89300","TERMA CITRUS CERO x1.35Lts",1646.38],
+            ["BEBIDAS","89213","TERMA CITRUS X 1.35L",1646.38],
+            ["BEBIDAS","89218","TERMA CUYANO CERO X 1.35 L",1646.38],
+            ["BEBIDAS","89217","TERMA CUYANO X 1.35 L",1646.38],
+            ["BEBIDAS","89219","TERMA LIMON x 1.35 L",1646.38],
+            ["BEBIDAS","89220","TERMA LIMON CERO X 1.35 L",1646.38],
+            ["BEBIDAS","89222","TERMA MANZANA CERO x 1.35L",1646.38],
+            ["BEBIDAS","89240","TERMA PATAGONICO CERO x1.35 L",1646.38],
+            ["BEBIDAS","89216","TERMA PATAGONICO x1.35 L",1646.38],
+            ["BEBIDAS","89227","TERMA POMELO CERO x1.35L",1646.38],
+            ["BEBIDAS","89212","TERMA POMELO PET 1.35 Lts",1646.38],
+            ["BEBIDAS","89221","TERMA POMELO ROSADO X 1.35L",1646.38],
+            ["BEBIDAS","89237","TERMA POMELO ROSADO X 1.35L CERO",1646.38],
+            ["BEBIDAS","89214","TERMA SERRANO X 1.35 L",1646.38],
+            ["BEBIDAS","89215","TERMA SERRANO CERO X 1.35L",1646.38],
+            ["BEBIDAS","89224","TRES TORRES BLANCO PET x 1,5L",1006.90],
+            ["BEBIDAS","89239","TRES TORRES CITRUS X 1.5L",1006.90],
+            ["BEBIDAS","89225","TRES TORRES LIMON x 1,5L",1006.90],
+            ["BEBIDAS","89226","TRES TORRES POMELO ROSADO X 1.5L",1006.90],
+            ["BEBIDAS","89223","TRES TORRES SERRANO x 1,5L",1006.90],
+            ["BEBIDAS","89004","AMERICANO GANCIA 950ml",6097.86],
+            ["BEBIDAS","99450","Cerveza 361 x1Lts PET",1324.04],
+            ["BEBIDAS","99451","Cerveza 361 x473ml LATA",885.32],
+            ["BEBIDAS","994510","Cerveza 361 x710ml LATA",1426.17],
+            ["BEBIDAS","892092","DR. LEMON GIN TONIC x473ml",1588.50],
+            ["BEBIDAS","892093","DR. LEMON GREEN APPLE x 1LT",2847.08],
+            ["BEBIDAS","89207","DR. LEMON LIMÓN x 1L",2847.08],
+            ["BEBIDAS","89209","DR. LEMON LIMÓN x473ml",1588.50],
+            ["BEBIDAS","89202","DR. LEMON MOJITO x 1lt",2847.08],
+            ["BEBIDAS","89241","DR. LEMON MOJITO x473ml",1588.50],
+            ["BEBIDAS","79999","DR. LEMON RED BERRY x 1 L",2847.08],
+            ["BEBIDAS","101051","DR. LEMON TROPICAL GIN x473ml",1588.50],
+            ["BEBIDAS","89208","DR. LEMON VODKA x473ml",1588.50],
+            ["BEBIDAS","89238","DR. LEMON VODKA POMELO x473ml",1588.50],
+            ["BEBIDAS","89203","DR. LEMON VODKA POMELO x1L",2847.08],
+            ["BEBIDAS","89204","DR. LEMON VODKA x 1 L",2847.08],
+            ["BEBIDAS","89210","FERNET 1882 750ml",7365.19],
+            ["BEBIDAS","89211","FERNET 1882 CON COLA 473ml",1371.00],
+            ["BEBIDAS","89266","FERNET 1882 CON POMELO 473ml",1371.00],
+            ["BEBIDAS","89550","FERNET BRANCA x750cc.",13492.50],
+            ["BEBIDAS","89552","FERNET BRANCA x750cc.MENTA",13528.67],
+            ["BEBIDAS","89017","GANCIA + LIMA LIMÓN 473ml.",1865.41],
+            ["BEBIDAS","710122","GANCIA + LIMA SIN ALCOHOL 473ml.",1502.86],
+            ["BEBIDAS","1010129","GANCIA HIBISCUS VODKA SPRITZ x473cc",1930.19],
+            ["BEBIDAS","89255","GIN BOMBAY SAPPHIRE x750cc.",27625.37],
+            ["BEBIDAS","89096","MARCELA AMERICANO x 950",3791.96],
+            ["BEBIDAS","89097","MARTINI ROSSO X1lt",6435.78],
+            ["BEBIDAS","89201","PRONTO BITT x473ml",1572.75],
+            ["BEBIDAS","89200","PRONTO SHAKE x473ml",1572.75],
+            ["BEBIDAS","89525","Vino UVITA x1Lts.BLANCO",1224.29],
+            ["BEBIDAS","89527","Vino UVITA x1Lts.BLANCO DULCE",1224.29],
+            ["BEBIDAS","89526","Vino UVITA x1Lts.TINTO",1224.29],
+            ["BEBIDAS","312139","Vino UVITA x1Lts.TINTO DULCE",1224.29],
+            ["BEBIDAS","89564","VODKA SERNOVA x700cl. CARIBBEAN BLEND",7585.66],
+            ["BEBIDAS","89565","VODKA SERNOVA x700cl. WILD BERRIES",7585.66],
+            ["BEBIDAS","890021","Chocolatada BAGGIO x1Lt.",1705.00],
+            ["BEBIDAS","890020","Chocolatada BAGGIO x200ml.",516.51],
+            ["BEBIDAS","89023","Energizante MONSTER ENERGY",2737.74],
+            ["BEBIDAS","89032","Energizante MONSTER MANGO LOCO",2737.74],
+            ["BEBIDAS","89112","Energizante MONSTER PEACHY KEEN",2737.74],
+            ["BEBIDAS","89068","Energizante MONSTER SUNRISE",2737.77],
+            ["BEBIDAS","890194","Energizante MONSTER THE DOCTOR",2737.77],
+            ["BEBIDAS","89033","Energizante MONSTER ULTRA",2737.77],
+            ["BEBIDAS","890195","Energizante MONSTER WATERMELON",2737.77],
+            ["BEBIDAS","101101","Energizante MONSTER WHITE PINEAPPLE",2737.77],
+            ["BEBIDAS","890187","Energizante MONSTER PIPELINE PUNCH",2737.74],
+            ["BEBIDAS","89003","Energizante SPEED 250/269ml.",1185.33],
+            ["BEBIDAS","89047","POWER ADE FRUTAS TROPICALES",1085.54],
+            ["BEBIDAS","89046","POWER ADE MANZANA",1085.54],
+            ["BEBIDAS","89049","POWER ADE MOUNTAIN BLAST",1085.54],
+            ["BEBIDAS","890513","POWER ADE UVA",1085.54],
+            ["BEBIDAS","890085","Jugo BAGGIO x1,5Lts MULTIFRUTA",1835.93],
+            ["BEBIDAS","890083","Jugo BAGGIO x1,5Lts NARANJA",1835.93],
+            ["BEBIDAS","89113","Jugo BAGGIO x125ml.MANZANA",277.00],
+            ["BEBIDAS","89114","Jugo BAGGIO x125ml.MULTIFRUTA",277.00],
+            ["BEBIDAS","890094","Jugo BAGGIO x1Lt. EXPRIMIDO 100% NARANJA",2682.32],
+            ["BEBIDAS","890093","Jugo BAGGIO x1Lt.FRESH MULTIFRUTA",966.20],
+            ["BEBIDAS","890081","Jugo BAGGIO x1Lt.MANZANA",1437.37],
+            ["BEBIDAS","890082","Jugo BAGGIO x1Lt.MULTIFRUTAL",1437.37],
+            ["BEBIDAS","890080","Jugo BAGGIO x1Lt.NARANJA",1437.37],
+            ["BEBIDAS","890011","Jugo BAGGIO x200ml.MANZANA",424.46],
+            ["BEBIDAS","890015","Jugo BAGGIO x200ml.MULTIFRUTAL",424.46],
+            ["BEBIDAS","890010","Jugo BAGGIO x200ml.NARANJA",424.46],
+            ["BEBIDAS TEOLOGISTICA","89010","Agua CELLIER 600cc.SIN GAS",361.38],
+            ["BEBIDAS TEOLOGISTICA","710129","Agua CELLIER x1500cc. MANZANA",928.56],
+            ["BEBIDAS TEOLOGISTICA","710127","Agua CELLIER x1500cc. NARANJA",928.56],
+            ["BEBIDAS TEOLOGISTICA","710128","Agua CELLIER x1500cc. POMELO",928.56],
+            ["BEBIDAS TEOLOGISTICA","99758","Agua CELLIER x2000cc. CON GAS",706.53],
+            ["BEBIDAS TEOLOGISTICA","89024","Agua CELLIER x2000cc. SIN GAS",621.08],
+            ["BEBIDAS TEOLOGISTICA","89051","Agua SIERRA DE LOS PADRES 12x600cc.",6205.04],
+            ["BEBIDAS TEOLOGISTICA","89038","Agua SIERRA DE LOS PADRES 6x2000cc.",5056.26],
+            ["BEBIDAS TEOLOGISTICA","14281","Soda SIERRA DE LOS PADRES LIMONADA 6x1.75cc",8176.00],
+            ["BEBIDAS TEOLOGISTICA","89056","Soda SIERRA DE LOS PADRES SIFON 6x1.75cc",6832.00],
+            ["BEBIDAS TEOLOGISTICA","890413","Cunnington 1.5LT .COLA",954.00],
+            ["BEBIDAS TEOLOGISTICA","890414","Cunnington 1.5LT. COLA SIN AZUCAR",906.05],
+            ["BEBIDAS TEOLOGISTICA","890400","Cunnington 2250cc.COLA",1366.12],
+            ["BEBIDAS TEOLOGISTICA","890401","Cunnington 2250cc.COLA SIN AZUCAR",1319.01],
+            ["BEBIDAS TEOLOGISTICA","89060","Cunnington 2250cc.INDIAN TONIC",1366.12],
+            ["BEBIDAS TEOLOGISTICA","890407","Cunnington 2250cc.INDIAN TONIC SUAVE",1319.01],
+            ["BEBIDAS TEOLOGISTICA","890404","Cunnington 2250cc.LIMA LIMON",1371.86],
+            ["BEBIDAS TEOLOGISTICA","890405","Cunnington 2250cc.LIMA LIMON SIN AZUCAR",1324.56],
+            ["BEBIDAS TEOLOGISTICA","890403","Cunnington 2250cc.NARANJA",1366.12],
+            ["BEBIDAS TEOLOGISTICA","890406","Cunnington 2250cc.NARANJA SIN AZUCAR",1324.56],
+            ["BEBIDAS TEOLOGISTICA","89061","Cunnington 2250cc.POMELO",1366.12],
+            ["BEBIDAS TEOLOGISTICA","890402","Cunnington 2250cc.POMELO SIN AZUCAR",1324.56],
+            ["BEBIDAS TEOLOGISTICA","89021","Cunnington 500cc.POMELO CLASSI",565.06],
+            ["BEBIDAS TEOLOGISTICA","89001","Jugo CITRIC 250ml.NARANJA",1035.87],
+            ["COMESTIBLE","790881","ACEITE CAÑUELAS PET x500ml.OLIVA CLASICO",10599.91],
+            ["COMESTIBLE","790897","ACEITE CAÑUELAS PET x500ml.OLIVA INTENSO",10599.91],
+            ["COMESTIBLE","790880","ACEITE CAÑUELAS PET x500ml.OLIVA SUAVE",10599.91],
+            ["COMESTIBLE","790899","ACEITE CAÑUELAS x1.5Lt.GIRASOL",5402.07],
+            ["COMESTIBLE","790900","ACEITE CAÑUELAS x900ml.GIRASOL",3344.72],
+            ["COMESTIBLE","998177","ACEITE CASTELL OLIVA EXTRA VIRGEN x500ml",11236.82],
+            ["COMESTIBLE","790716","ACEITE NATURA x1,5Lt.GIRASOL",5185.79],
+            ["COMESTIBLE","790719","ACEITE NATURA x3000cc.GIRASOL",10163.89],
+            ["COMESTIBLE","790715","ACEITE NATURA x900ml.GIRASOL",3275.31],
+            ["COMESTIBLE","890016","ACEITE OLIVA LA POSTA x250cc",5868.17],
+            ["COMESTIBLE","790707","Rocio Vegetal NATURA x120g.",3301.46],
+            ["COMESTIBLE","99933","ACEITUNA CASTELL 100gr. NEGRAS SACHET",1234.52],
+            ["COMESTIBLE","99932","ACEITUNA CASTELL VERDES RELLENA SACHET",1206.26],
+            ["COMESTIBLE","99927","ACEITUNA CASTELL 100gr. VERDES SACHET",789.45],
+            ["COMESTIBLE","998174","ACEITUNA CASTELL VERDES DESCAROZADAS XL",2495.83],
+            ["COMESTIBLE","998187","ACEITUNA CASTELL VERDES LIVIANAS DP",2287.62],
+            ["COMESTIBLE","99928","ACEITUNA CASTELL VERDES DESCAROZADAS",1436.00],
+            ["COMESTIBLE","99930","ACEITUNA CASTELL VERDES RODAJAS SACHET",1558.93],
+            ["COMESTIBLE","998173","ACEITUNA CASTELL 170gr. VERDES XL SACHET",2163.90],
+            ["COMESTIBLE","100003","ACEITUNA CASTELL 180gr. NEGRAS SACHET",2002.76],
+            ["COMESTIBLE","99978","ACEITUNA CASTELL VERDES RELLENA SACHET",1945.72],
+            ["COMESTIBLE","99926","ACEITUNA CASTELL 180gr. VERDES SACHET",1321.20],
+            ["COMESTIBLE","99934","ACEITUNA CASTELL NEGRAS DESCAROZADAS",961.90],
+            ["COMESTIBLE","998190","ACEITUNA CASTELL VERDES DESCAROZADAS PICANTE",1609.25],
+            ["COMESTIBLE","99929","ACEITUNA CASTELL VERDES DESCAROZADAS",825.79],
+            ["COMESTIBLE","99931","ACEITUNA CASTELL VERDES RODAJAS SACHET",920.66],
+            ["COMESTIBLE","998176","CEBOLLITAS CASTELL 140gr. SACHET",1730.23],
+            ["COMESTIBLE","998178","PEPINITOS CASTELL 140gr. SACHET",2239.96],
+            ["COMESTIBLE","998175","PICKLES CASTELL 140gr. SACHET",1050.50],
+            ["COMESTIBLE","790711","Ketchup NATURA 250g",1328.64],
+            ["COMESTIBLE","790705","Mayonesa MAYOLIVA 125cc.",996.96],
+            ["COMESTIBLE","790706","Mayonesa MAYOLIVA 250cc.",1938.92],
+            ["COMESTIBLE","790722","Mayonesa MAYOLIVA 500cc.",3771.64],
+            ["COMESTIBLE","790703","Mayonesa NATURA 1000g",4684.47],
+            ["COMESTIBLE","790702","Mayonesa NATURA 125cc.",581.38],
+            ["COMESTIBLE","790701","Mayonesa NATURA 250cc.",1219.56],
+            ["COMESTIBLE","790704","Mayonesa NATURA 500cc.",2389.24],
+            ["COMESTIBLE","790710","Mostaza NATURA 250g.",889.26],
+            ["COMESTIBLE","790743","SALSA ALIOLI 2 ANCLAS x340g",3234.34],
+            ["COMESTIBLE","790787","SALSA BARBACOA 2 ANCLAS x410g",2546.29],
+            ["COMESTIBLE","790782","SALSA CAESAR LIGHT 2 ANCLAS x360",3088.53],
+            ["COMESTIBLE","790788","SALSA CHEDDAR 2 ANCLAS x350",3276.81],
+            ["COMESTIBLE","790780","SALSA CHIMICHURRI 2 ANCLAS x375g",2772.09],
+            ["COMESTIBLE","790775","SALSA DE SOJA 2 ANCLAS x500cc",3889.03],
+            ["COMESTIBLE","790712","Salsa Golf NATURA 250g.",1395.27],
+            ["COMESTIBLE","790789","SALSA MOSTAZA 2 ANCLAS x400g",3361.16],
+            ["COMESTIBLE","211110","Arroz DOS HERMANOS DOBLE CAROLINA 1kg",1611.52],
+            ["COMESTIBLE","211105","Arroz DOS HERMANOS DOBLE CAROLINA 500GR",918.35],
+            ["COMESTIBLE","211111","Arroz DOS HERMANOS LARGO FINO 1kg",1031.79],
+            ["COMESTIBLE","211103","Arroz DOS HERMANOS LARGO FINO 500gr",572.46],
+            ["COMESTIBLE","211101","Arroz DOS HERMANOS PARBOIL 1kg",1093.42],
+            ["COMESTIBLE","211104","Arroz DOS HERMANOS PARBOIL 500gr",629.57],
+            ["COMESTIBLE","84756","FIDEOS TERRABUSI CODITO 500gr",806.17],
+            ["COMESTIBLE","84720","FIDEOS TERRABUSI MOSTACHOL 500gr",806.17],
+            ["COMESTIBLE","84719","FIDEOS TERRABUSI SPAGHETTI 500gr",806.17],
+            ["COMESTIBLE","84723","FIDEOS TERRABUSI TALLARINES 500gr",806.17],
+            ["COMESTIBLE","84724","FIDEOS TERRABUSI TIRABUZON 500gr",806.16],
+            ["COMESTIBLE","803307","Garbanzo LISETTA X400 grs",817.60],
+            ["COMESTIBLE","803301","Lentejas LISETTA X400 grs",896.00],
+            ["COMESTIBLE","803303","Lentejones LISETTA X400 grs",1086.40],
+            ["COMESTIBLE","803306","Maiz Blanco LISETTA X400 grs",1052.80],
+            ["COMESTIBLE","803302","Pisingallo LISETTA X400 grs",515.20],
+            ["COMESTIBLE","803308","Porotos Alubia LISETTA X500grs",1478.40],
+            ["COMESTIBLE","803309","Porotos Negros LISETTA X400grs",1237.60],
+            ["COMESTIBLE","803304","Semola LISETTA X400 grs",560.00],
+            ["COMESTIBLE","710148","Almohaditas MANTECOL x180g",2429.32],
+            ["COMESTIBLE","710362","Almohaditas TODDY CHOCO CRUSH x180g",2429.32],
+            ["COMESTIBLE","27202","BROWNIE 9 ORO x45g.",525.91],
+            ["COMESTIBLE","84526","Crema NUTELLA x140g.",3334.66],
+            ["COMESTIBLE","84536","Crema NUTELLA x350g.",7356.79],
+            ["COMESTIBLE","84524","Crema NUTELLA x650g.",11632.04],
+            ["COMESTIBLE","804747","MANTECOL UNTABLE x250g.",1906.63],
+            ["COMESTIBLE","71005","PASTA MANI KING x245g.",1678.45],
+            ["COMESTIBLE","71003","PASTA MANI KING x350g. CRUNCKY",2074.56],
+            ["COMESTIBLE","710013","PASTA MANI KING x350g. VITA +",2282.03],
+            ["COMESTIBLE","71020","PASTA MANI KING x485g.",2465.37],
+            ["COMESTIBLE","894052","PUDDING BONAFIDE CHOCOLATE",2449.27],
+            ["COMESTIBLE","894053","PUDDING BONAFIDE NARANJA",2449.27],
+            ["COMESTIBLE","894051","PUDDING BONAFIDE VAINILLA DDL",2449.27],
+            ["COMESTIBLE","80206","Acelga LA BANDA Cortada LATA",1018.74],
+            ["COMESTIBLE","780002","ARVEJA INCA x350g",458.92],
+            ["COMESTIBLE","80213","Arvejas LA BANDA TETRA x340 grs",507.45],
+            ["COMESTIBLE","80247","Arvejas LA BANDA LATA x350grs",535.65],
+            ["COMESTIBLE","80215","Atun LA BANDA Desmenuzado LATA",1158.90],
+            ["COMESTIBLE","790944","ATUN GOMES DESMENUZADO ACEITE",1540.22],
+            ["COMESTIBLE","790946","ATUN GOMES DESMENUZADO NATURAL",1540.22],
+            ["COMESTIBLE","790939","ATUN GOMES LOMO NATURAL",2675.09],
+            ["COMESTIBLE","790940","ATUN GOMES TROZOS ACEITE",2358.42],
+            ["COMESTIBLE","790936","ATUN GOMES TROZOS NATURAL",2358.42],
+            ["COMESTIBLE","80216","Atun LA BANDA Aceite LOMO",2139.57],
+            ["COMESTIBLE","80214","Atun LA BANDA Desm. LATA",1198.86],
+            ["COMESTIBLE","80217","Atun LA BANDA Natural LOMO",2084.43],
+            ["COMESTIBLE","790230","ATUN NOEL DESMENUZADO ACEITE",1639.13],
+            ["COMESTIBLE","790231","ATUN NOEL DESMENUZADO NATURAL",1639.13],
+            ["COMESTIBLE","80233","CABALLA LA BANDA EN ACEITE",3356.82],
+            ["COMESTIBLE","99104","Caballa PENNISI EN ACEITE",2574.88],
+            ["COMESTIBLE","80235","Champiñon LA BANDA Entero",2309.81],
+            ["COMESTIBLE","80236","Champiñon LA BANDA Trozos",2057.25],
+            ["COMESTIBLE","780001","CHOCLO INCA CREMOSO x350g",892.20],
+            ["COMESTIBLE","780000","CHOCLO INCA AMARILLO x300g",1053.53],
+            ["COMESTIBLE","80209","Choclo LA BANDA Cremoso LATA",928.42],
+            ["COMESTIBLE","80228","Choclo LA BANDA Cremoso TETRA",879.59],
+            ["COMESTIBLE","80211","Choclo LA BANDA Blanco LATA",666.39],
+            ["COMESTIBLE","80226","Choclo LA BANDA Blanco TETRA",657.93],
+            ["COMESTIBLE","80223","Choclo LA BANDA entero TETRA",952.50],
+            ["COMESTIBLE","80210","Choclo LA BANDA Grano LATA",1035.21],
+            ["COMESTIBLE","710862","Choclo NOEL CREMOSO",1148.91],
+            ["COMESTIBLE","790199","Choclo NOEL ENTERO",1276.56],
+            ["COMESTIBLE","780015","Durazno INCA MITADES x820g",2471.38],
+            ["COMESTIBLE","80208","Espinaca LA BANDA Natural LATA",1107.30],
+            ["COMESTIBLE","780010","EXTRACTO TOMATE INCA x150g",777.46],
+            ["COMESTIBLE","780003","GARBANZOS INCA x350g",631.17],
+            ["COMESTIBLE","80224","Garbanzos LA BANDA TETRA X340",788.28],
+            ["COMESTIBLE","780004","JARDINERA INCA x350g",685.44],
+            ["COMESTIBLE","780005","LENTEJAS INCA x350g",712.58],
+            ["COMESTIBLE","80220","Lentejas LA BANDA TETRA X340",838.99],
+            ["COMESTIBLE","80231","Morrones enteros LA BANDA x200g",1438.64],
+            ["COMESTIBLE","80237","PALMITOS FRUTAS DE ORO ENTEROS",2501.63],
+            ["COMESTIBLE","80238","PALMITOS FRUTAS DE ORO RODAJAS",1462.61],
+            ["COMESTIBLE","80239","PALMITOS FRUTAS DE ORO TROZOS",1358.71],
+            ["COMESTIBLE","780006","POROTOS INCA x350g",752.69],
+            ["COMESTIBLE","80218","Porotos LA BANDA ALUBIA TETRA",744.27],
+            ["COMESTIBLE","80242","Porotos LA BANDA ALUBIA LATA",785.61],
+            ["COMESTIBLE","80243","Porotos LA BANDA NEGROS LATA",785.61],
+            ["COMESTIBLE","80227","Porotos LA BANDA Pallares LATA",1249.84],
+            ["COMESTIBLE","80219","Porotos LA BANDA Pallares TETRA",1184.06],
+            ["COMESTIBLE","80244","Porotos LA BANDA ROJOS LATA",864.18],
+            ["COMESTIBLE","80249","Porotos LA BANDA ROJOS TETRA",818.69],
+            ["COMESTIBLE","780007","PRIMAVERA INCA x350g",777.46],
+            ["COMESTIBLE","790901","Pure Tomate D LA HUERTA 530g.",720.47],
+            ["COMESTIBLE","780009","Pure Tomate INCA 520gr",699.60],
+            ["COMESTIBLE","790801","Pure Tomate NOEL 520g.",673.44],
+            ["COMESTIBLE","80246","Remolacha LA BANDA CUBO LATA",1002.73],
+            ["COMESTIBLE","80221","Remolacha LA BANDA CUBO TETRA",981.08],
+            ["COMESTIBLE","80245","Remolacha LA BANDA REBANADA LATA",1055.50],
+            ["COMESTIBLE","790830","SALSA NOEL FILETO",825.86],
+            ["COMESTIBLE","790831","SALSA NOEL PIZZA",825.86],
+            ["COMESTIBLE","790832","SALSA NOEL POMAROLA",825.86],
+            ["COMESTIBLE","790833","SALSA NOEL PORTUGUESA",825.86],
+            ["COMESTIBLE","790733","SARDINA GOMES TOMATE",2757.15],
+            ["COMESTIBLE","80232","Sardinas LA BANDA BUEN PIQUE",1715.97],
+            ["COMESTIBLE","90067","Sardinas PENNISI ACEITE",2100.56],
+            ["COMESTIBLE","790811","Tomate Perita NOEL 400g.",944.00],
+            ["COMESTIBLE","780008","Tomate TRITURADO INCA 910 gr",1882.90],
+            ["COMESTIBLE","804916","BATATA CHOCOLATE NOEL 5kg",9916.97],
+            ["COMESTIBLE","894782","BATATA CHOCOLATE NOEL LATA 5kg",12645.09],
+            ["COMESTIBLE","804915","BATATA NOEL CAJON 5kg",9916.97],
+            ["COMESTIBLE","894781","BATATA NOEL LATA 5kg",12645.09],
+            ["COMESTIBLE","894780","MEMBRILLO NOEL LATA 5kg",15487.90],
+            ["COMESTIBLE","890018","Mermelada BAGGIO MULTIFRUTA",1383.31],
+            ["COMESTIBLE","790905","Mermelada BAGGIO CIRUELA",1383.31],
+            ["COMESTIBLE","790914","Mermelada BAGGIO MIX FRUTAL",1383.31],
+            ["COMESTIBLE","790184","Mermelada NOEL CIRUELA LIGHT",1666.41],
+            ["COMESTIBLE","790183","Mermelada NOEL DAMASCO LIGHT",1666.41],
+            ["COMESTIBLE","790182","Mermelada NOEL DURAZNO LIGHT",1666.41],
+            ["COMESTIBLE","790188","Mermelada NOEL FRUTILLA LIGHT",2166.29],
+            ["COMESTIBLE","790189","Mermelada NOEL NARANJA LIGHT",1666.41],
+            ["COMESTIBLE","790185","Mermelada NOEL CIRUELA 454g",1571.19],
+            ["COMESTIBLE","790187","Mermelada NOEL DAMASCO 454g",1571.19],
+            ["COMESTIBLE","790181","Mermelada NOEL DURAZNO 454g",1571.19],
+            ["COMESTIBLE","790180","Mermelada NOEL FRUTILLA 454g",2042.50],
+            ["COMESTIBLE","790186","Mermelada NOEL NARANJA 454g",1571.19],
+            ["COMESTIBLE","89762","Azucar LEDESMA MASCABO",1331.89],
+            ["COMESTIBLE","790875","Edulcorante CAÑUELAS CLASICO",1098.03],
+            ["COMESTIBLE","790876","Edulcorante CAÑUELAS STEVIA",2004.34],
+            ["COMESTIBLE","790877","Edulcorante CAÑUELAS SUCRALOSA",1403.04],
+            ["COMESTIBLE","89772","Edulcorante LEDESMA STEVIA Liquido",2257.76],
+            ["COMESTIBLE","89769","Edulcorante LEDESMA STEVIA x198un",3701.12],
+            ["COMESTIBLE","89770","Edulcorante LEDESMA STEVIA x396un",7274.38],
+            ["COMESTIBLE","89767","Edulcorante LEDESMA STEVIA x50un",1166.90],
+            ["COMESTIBLE","1010182","Edulcorante LEDESMA SUCRALOSA x200u.",2865.98],
+            ["COMESTIBLE","89765","Edulcorante LEDESMA SUCRALOSA x400u.",5325.33],
+            ["COMESTIBLE","89763","Edulcorante LEDESMA SUCRALOSA x48u.",846.66],
+            ["COMESTIBLE","790908","Edulcorante SI DIET x200ml.",984.07],
+            ["COMESTIBLE","790622","Edulcorante SI DIET STEVIA x200ml",1163.16],
+            ["COMESTIBLE","790907","Edulcorante SI DIET x500ml.",1833.49],
+            ["COMESTIBLE","790623","Edulcorante SI DIET STEVIA x500ml",2171.08],
+            ["COMESTIBLE","790953","HILERET 1 a 10 FORTE x250cc.LIQUIDO",1311.27],
+            ["COMESTIBLE","791016","HILERET 1 a 10 FORTE x400 sobres",5876.28],
+            ["COMESTIBLE","790954","HILERET 1 a 10 FORTE x500cc.LIQUIDO",2404.58],
+            ["COMESTIBLE","790950","HILERET 1 a 10 x100 sobres",1963.61],
+            ["COMESTIBLE","790977","HILERET 1 a 10 x50 sobres",1146.03],
+            ["COMESTIBLE","790965","HILERET LIGHT x250g.",901.99],
+            ["COMESTIBLE","790966","HILERET LIGHT x500g.",1513.69],
+            ["COMESTIBLE","790980","HILERET STEVIA x100 sobres",2475.59],
+            ["COMESTIBLE","790981","HILERET STEVIA x200cc. LIQUIDO",2681.61],
+            ["COMESTIBLE","790976","HILERET STEVIA x50 sobres",1426.75],
+            ["COMESTIBLE","790960","HILERET SWEET FORTE x100 sobres",2071.32],
+            ["COMESTIBLE","790962","HILERET SWEET FORTE x200cc.LIQUIDO",1347.66],
+            ["COMESTIBLE","790963","HILERET SWEET FORTE x400cc.LIQUIDO",2331.98],
+            ["COMESTIBLE","790978","HILERET SWEET FORTE x50 sobres",1213.99],
+            ["COMESTIBLE","790970","HILERET ZUCRA x100 sobres",2093.99],
+            ["COMESTIBLE","790971","HILERET ZUCRA x200cc.LIQUIDO",1720.35],
+            ["COMESTIBLE","790979","HILERET ZUCRA x400cc.LIQUIDO",2830.13],
+            ["COMESTIBLE","790975","HILERET ZUCRA x50 sobres",1251.87],
+            ["COMESTIBLE","790106","ESENCIA DE VAINILLA 2 ANCLAS x100cc",1300.42],
+            ["COMESTIBLE","213828","FLAN NOEL DDL x25g.",399.74],
+            ["COMESTIBLE","213830","GELATINA NOEL CEREZA x25g.",545.65],
+            ["COMESTIBLE","213831","GELATINA NOEL FRUTILLA x25g.",545.65],
+            ["COMESTIBLE","790817","Harina CAÑUELAS 000 x1kg.",726.42],
+            ["COMESTIBLE","790826","Harina PUREZA 000 x1kg.",832.74],
+            ["COMESTIBLE","790816","Harina PUREZA 0000 x1kg.",993.74],
+            ["COMESTIBLE","790827","Harina PUREZA LEUDANTE x1kg.",1224.43],
+            ["COMESTIBLE","790815","Harina PUREZA x1Kg.PIZZA CASERA",1445.03],
+            ["COMESTIBLE","790809","Pan Rallado MAMA COCINA x1Kg.",1831.58],
+            ["COMESTIBLE","790800","Pan Rallado MAMA COCINA x500g",1064.29],
+            ["COMESTIBLE","790814","PREMEZCLA BIZCOCHUELO CHOCOLATE",2400.73],
+            ["COMESTIBLE","790813","PREMEZCLA BIZCOCHUELO VAINILLA",1961.78],
+            ["COMESTIBLE","790804","Rebozador Freir MAMA COCINA x500g",1023.29],
+            ["COMESTIBLE","790805","Rebozador Horno MAMA COCINA x500g",1344.16],
+            ["COMESTIBLE","79501","Botella Termica TARAGUI",3023.92],
+            ["COMESTIBLE","84759","CAFE ARLISTAN x170g.",6583.14],
+            ["COMESTIBLE","84710","CAFE ARLISTAN Frasco 100 g",4049.85],
+            ["COMESTIBLE","84713","CAFE ARLISTAN Seleccion 50g",2333.34],
+            ["COMESTIBLE","89470","Cafe BONAFIDE saquito x18u.INTENSO",3287.76],
+            ["COMESTIBLE","89496","Cafe BONAFIDE MOLINO EQUILIBRADO",5944.70],
+            ["COMESTIBLE","89497","Cafe BONAFIDE MOLINO INTENSO",5944.70],
+            ["COMESTIBLE","89465","Cafe SENSACIONES x125g.INTENSO",2539.02],
+            ["COMESTIBLE","89464","Cafe SENSACIONES x125g.SUAVE",2539.02],
+            ["COMESTIBLE","89461","Cafe SENSACIONES x250g.INTENSO",4567.63],
+            ["COMESTIBLE","89460","Cafe SENSACIONES x250g.SUAVE",4567.63],
+            ["COMESTIBLE","89463","Cafe SENSACIONES x500g.INTENSO",9025.97],
+            ["COMESTIBLE","89462","Cafe SENSACIONES x500g.SUAVE",9025.97],
+            ["COMESTIBLE","89493","Capsula BONAFIDE CLASICO DG x10u.",5121.40],
+            ["COMESTIBLE","89468","Capsula BONAFIDE CORTADO DG x10u.",5121.40],
+            ["COMESTIBLE","89495","Capsula BONAFIDE ESPRESSO DG x10u.",5121.40],
+            ["COMESTIBLE","89494","Capsula BONAFIDE LUNGO DG x10u.",5121.40],
+            ["COMESTIBLE","89106","MATE COCIDO x25s.TARAGUI",997.24],
+            ["COMESTIBLE","89107","MATE COCIDO x25s.UNION",997.24],
+            ["COMESTIBLE","89170","MATE COCIDO x50s.TARAGUI",1794.60],
+            ["COMESTIBLE","89171","MATE COCIDO x50s.UNION",1794.60],
+            ["COMESTIBLE","89701","Mate Listo TARAGUI",1864.93],
+            ["COMESTIBLE","821326","NESQUIK x180g.",2091.58],
+            ["COMESTIBLE","821321","NESQUIK x360g.",3824.73],
+            ["COMESTIBLE","1071026","Te TARAGUI x20s.AVELLANAS",2110.82],
+            ["COMESTIBLE","790610","Te TARAGUI x20s.BOLDO",1444.87],
+            ["COMESTIBLE","790615","Te TARAGUI x20s.ENSUEÑOS",1461.15],
+            ["COMESTIBLE","89118","Te TARAGUI x20s.FRUTAS ROJAS",2110.82],
+            ["COMESTIBLE","1071024","Te TARAGUI x20s.LIMON JENGIBRE",2110.82],
+            ["COMESTIBLE","790611","Te TARAGUI x20s.MANZANILLA",1189.96],
+            ["COMESTIBLE","89116","Te TARAGUI x20s.Manz Can Miel",2110.82],
+            ["COMESTIBLE","790614","Te TARAGUI x20s.MEZCLA HIERBAS",1306.70],
+            ["COMESTIBLE","790613","Te TARAGUI x20s.TILO",1925.81],
+            ["COMESTIBLE","89104","Te TARAGUI x25s.",727.21],
+            ["COMESTIBLE","89180","Te TARAGUI x50s.",1310.33],
+            ["COMESTIBLE","827012","TODDY POLVO x180g. ORIGINAL",1199.72],
+            ["COMESTIBLE","827009","TODDY POLVO x360gr. ORIGINAL",2389.85],
+            ["COMESTIBLE","101075","Yerba BUENAS Y SANTAS HIERBAS",1780.98],
+            ["COMESTIBLE","808751","Yerba CANARIAS x1kg.",8689.76],
+            ["COMESTIBLE","808753","Yerba CANARIAS SERENA x1kg",9328.53],
+            ["COMESTIBLE","808750","Yerba CANARIAS x500g.",4573.42],
+            ["COMESTIBLE","808752","Yerba CANARIAS SERENA x500g",4985.61],
+            ["COMESTIBLE","84714","YERBA CRUZ DE MALTA 500g",2013.30],
+            ["COMESTIBLE","89732","Yerba LA MERCED BARBACUA",3743.33],
+            ["COMESTIBLE","89730","Yerba LA MERCED CAMPO",3743.33],
+            ["COMESTIBLE","89731","Yerba LA MERCED CAMPO MONTE",3743.33],
+            ["COMESTIBLE","89188","Yerba LA MERCED CAMPO SUR",3743.33],
+            ["COMESTIBLE","89189","Yerba LA MERCED MONTE",3743.33],
+            ["COMESTIBLE","89721","Yerba MAÑANITA x250g.BCP",1274.48],
+            ["COMESTIBLE","89720","Yerba MAÑANITA x500g.",1603.43],
+            ["COMESTIBLE","84718","YERBA NOBLEZA GAUCHA 500g",1709.32],
+            ["COMESTIBLE","89704","Yerba TARAGUI x250g.",1274.48],
+            ["COMESTIBLE","89702","Yerba TARAGUI x500g.",1603.43],
+            ["COMESTIBLE","89705","Yerba UNION x250g.",1274.48],
+            ["COMESTIBLE","89703","Yerba UNION x500g.",1603.43],
+            ["COMESTIBLE","790767","SAL x1Kg GRUESA 2 ANCLAS",1613.35],
+            ["COMESTIBLE","790771","SAL LIGHT 500g 2 ANCLAS",3279.45],
+            ["COMESTIBLE","790774","SAL GRUESA 500g 2 ANCLAS",897.59],
+            ["COMESTIBLE","790772","SAL ENTREFINA 500g 2 ANCLAS",872.61],
+            ["COMESTIBLE","790791","SAL FINA 500g 2 ANCLAS",1037.14],
+            ["COMESTIBLE","790768","SAL FINA 2 ESTRELLAS",498.57],
+            ["COMESTIBLE","790769","SAL FINA 500g PAQUETE 2 ANCLAS",915.71],
+            ["COMESTIBLE","790770","SAL GRUESA 1kg 2 ESTRELLAS",879.91],
+            ["COMESTIBLE","790764","SALERO FINA 250g 2 ANCLAS",1811.78],
+            ["COMESTIBLE","790763","SALERO FINA 500g 2 ANCLAS",2225.34],
+            ["COMESTIBLE","790740","SALERO FINA 100g 2 ANCLAS",1352.67],
+            ["COMESTIBLE","790741","SALERO LIGHT 100g 2 ANCLAS",2317.25],
+            ["COMESTIBLE","790773","SALERO ENTREFINA 500g 2 ANCLAS",2181.75],
+            ["COMESTIBLE","790762","ACETO BALSAMICO x250 2 ANCLAS",2085.01],
+            ["COMESTIBLE","790765","VINAGRE ALCOHOL 1L 2 ANCLAS",1129.02],
+            ["COMESTIBLE","790766","VINAGRE ALCOHOL 500cc 2 ANCLAS",781.63],
+            ["GALLETITAS","83902","Bizc.9 ORO x170g.LIGHT",930.63],
+            ["GALLETITAS","83904","Bizc.9 ORO x200g.AGRIDULCE",930.63],
+            ["GALLETITAS","83905","Bizc.9 ORO x200g.CLASICO",930.63],
+            ["GALLETITAS","83903","Bizc.9 ORO x200g.SALVADO",930.63],
+            ["GALLETITAS","83907","Bizc.9 ORO x210g.AZUCARADO",930.63],
+            ["GALLETITAS","828516","Bizc.DON SATUR x140g.QUESO",1635.62],
+            ["GALLETITAS","828515","Bizc.DON SATUR REDUCIDO GRASA",850.22],
+            ["GALLETITAS","828512","Bizc.DON SATUR x200g.DULCE",850.22],
+            ["GALLETITAS","828513","Bizc.DON SATUR x200g.NEGRITO",887.50],
+            ["GALLETITAS","828511","Bizc.DON SATUR x200g.SALADO",887.50],
+            ["GALLETITAS","81605","Bizc.JORGITO x200g.GRASA",698.98],
+            ["GALLETITAS","81606","Bizc.JORGITO x400g.GRASA",1397.95],
+            ["GALLETITAS","90032","BUDIN 100 DUCADOS FRUTAS",944.63],
+            ["GALLETITAS","90034","BUDIN 100 DUCADOS MANZANA CANELA",944.63],
+            ["GALLETITAS","90037","BUDIN 100 DUCADOS MARACUYA",944.63],
+            ["GALLETITAS","90031","BUDIN 100 DUCADOS NARANJA CHIPS",944.63],
+            ["GALLETITAS","81745","Madalena VALENTE CHOCO DDL",1613.91],
+            ["GALLETITAS","81743","Madalena VALENTE MARMOLADA",1613.91],
+            ["GALLETITAS","81742","Madalena VALENTE RELLENA DDL",1613.91],
+            ["GALLETITAS","81741","Madalena VALENTE VAINILLA",1613.91],
+            ["GALLETITAS","828523","Magdalena D.SATUR CHIPS",1546.03],
+            ["GALLETITAS","828524","Magdalena D.SATUR MARMOLADA",1546.03],
+            ["GALLETITAS","828521","Magdalena D.SATUR VAINILLA",1546.03],
+            ["GALLETITAS","828525","Magdalena D.SATUR CHOCO DDL",1546.03],
+            ["GALLETITAS","828522","Magdalena D.SATUR RELLENA DDL",1546.03],
+            ["GALLETITAS","90023","PUDDING 100 DUCADOS CHOCO CHIPS",1876.14],
+            ["GALLETITAS","90025","PUDDING 100 DUCADOS CHIPS DDL",1876.14],
+            ["GALLETITAS","90020","PUDDING 100 DUCADOS LIMON AMAPOLA",1876.14],
+            ["GALLETITAS","90024","PUDDING 100 DUCADOS NARANJA CASCARA",1876.14],
+            ["GALLETITAS","90039","PUDDING 100 DUCADOS PISTACHO",1876.14],
+            ["GALLETITAS","90022","PUDDING 100 DUCADOS VAINILLA SECOS",1876.14],
+            ["GALLETITAS","90028","PUDDING 100 DUCADOS FRUTOS BOSQUE",1876.14],
+            ["GALLETITAS","90027","PUDDING 100 DUCADOS MANZANA",1876.14],
+            ["GALLETITAS","90030","PUDDING 100 DUCADOS VAINILLA DDL",1876.14],
+            ["GALLETITAS","90029","PUDDING 100 DUCADOS MARROC",1876.14],
+            ["GALLETITAS","81116","Galletas Arroz RISKY-DIT SAL",820.96],
+            ["GALLETITAS","81115","Galletas Arroz RISKY-DIT DULCE",820.96],
+            ["GALLETITAS","81117","Galletas Arroz RISKY-DIT SIN SAL",820.96],
+            ["GALLETITAS","850205","GALLETAS DE ARROZ ARROCITAS CON SAL",909.53],
+            ["GALLETITAS","850207","GALLETAS DE ARROZ ARROCITAS DULCE",909.53],
+            ["GALLETITAS","850206","GALLETAS DE ARROZ ARROCITAS SIN SAL",909.53],
+            ["GALLETITAS","850200","GALLETAS DE ARROZ MACROBIOTICA SAL",832.42],
+            ["GALLETITAS","850202","GALLETAS DE ARROZ MACROBIOTICA DULCE",832.42],
+            ["GALLETITAS","850201","GALLETAS DE ARROZ MACROBIOTICA SIN SAL",832.42],
+            ["GALLETITAS","100238","Grisin TOSTI x100g.CLASICO",662.32],
+            ["GALLETITAS","81120","Tostada Arroz MOLINOS DEL BOSQUE DULCE",1399.34],
+            ["GALLETITAS","81118","Tostada Arroz MOLINOS ORIGINAL",1399.34],
+            ["GALLETITAS","81119","Tostada Arroz MOLINOS SIN SAL",1399.34],
+            ["GALLETITAS","81110","Tostada Arroz RISKY-DIT CLASICA",1030.40],
+            ["GALLETITAS","81112","Tostada Arroz RISKY-DIT DULCE",1030.40],
+            ["GALLETITAS","81111","Tostada Arroz RISKY-DIT SIN SAL",1030.40],
+            ["GALLETITAS","100234","Tostada TOSTI FINITAS CLASICAS",1154.43],
+            ["GALLETITAS","100235","Tostada TOSTI FINITAS LIGHT",1154.43],
+            ["GALLETITAS","100236","Tostada TOSTI FINITAS MULTICEREAL",1154.43],
+            ["GALLETITAS","100237","Tostada TOSTI FINITAS SIN SAL",1154.43],
+            ["GALLETITAS","100209","Tostada TOSTI x200g.CLASICAS",788.60],
+            ["GALLETITAS","100213","Tostada TOSTI x200g.DULCE",788.60],
+            ["GALLETITAS","100210","Tostada TOSTI x200g.LIGHT",824.45],
+            ["GALLETITAS","100211","Tostada TOSTI x200g.MULTICEREAL",824.45],
+            ["GALLETITAS","100212","Tostada TOSTI x200g.SIN SAL",788.60],
+            ["GALLETITAS","211145","Tostadas DOS HERMANOS Arroz CLASICAS",1087.06],
+            ["GALLETITAS","211144","Tostadas DOS HERMANOS Arroz SIN SAL",1087.06],
+            ["GALLETITAS","83906","Bizc.9 ORO x200g.SCONCITOS",951.17],
+            ["GALLETITAS","247434","Chocodonas FANTOCHE FUN x120g.",943.39],
+            ["GALLETITAS","828636","Cintitas TOSTEX CHOCOLATE",1090.24],
+            ["GALLETITAS","828637","Cintitas TOSTEX CREMA COOKIES",1090.24],
+            ["GALLETITAS","828638","Cintitas TOSTEX FRUTILLA",1090.24],
+            ["GALLETITAS","89421","DONUTS x78g.BLANCA",1420.60],
+            ["GALLETITAS","89420","DONUTS x78g.LECHE",1420.60],
+            ["GALLETITAS","83959","Gall. 9 DE ORO MENTA x110g",2639.20],
+            ["GALLETITAS","80758","Gall.BAGLEY x400g.SURTIDO",2277.07],
+            ["GALLETITAS","99147","Gall.CACHAFAZ INTEGRALES ALGARROBA",1744.62],
+            ["GALLETITAS","99148","Gall.CACHAFAZ INTEGRALES AVENA PASAS",1744.62],
+            ["GALLETITAS","99149","Gall.CACHAFAZ INTEGRALES CHIPS CHOCO",2225.96],
+            ["GALLETITAS","99150","Gall.CACHAFAZ INTEGRALES GRANOLA",2105.60],
+            ["GALLETITAS","99151","Gall.CACHAFAZ ORGANICAS AVENA MIEL",1473.92],
+            ["GALLETITAS","99152","Gall.CACHAFAZ ORGANICAS CACAO MIEL",1473.92],
+            ["GALLETITAS","81250","Gall.CELOSAS x110g.",531.22],
+            ["GALLETITAS","81251","Gall.CELOSAS x230g.",1062.44],
+            ["GALLETITAS","81252","Gall.CELOSAS x350g.",1593.66],
+            ["GALLETITAS","710269","Gall.CHOCOLIA x170g.",731.74],
+            ["GALLETITAS","710873","Gall.CHOCOLINAS RELLENAS CHOCO",984.73],
+            ["GALLETITAS","803188","Gall.CHOCOLINAS x262/250g.",1600.11],
+            ["GALLETITAS","80708","Gall.COQUITAS x157/177g.",1200.08],
+            ["GALLETITAS","80263","Gall.CORONITAS RELLENA CEREZA",803.10],
+            ["GALLETITAS","80260","Gall.CORONITAS FRUTOS DEL BOSQUE",803.11],
+            ["GALLETITAS","820072","Gall.FANTOCHE HOROSCOPO TUBO",1076.62],
+            ["GALLETITAS","820071","Gall.FANTOCHE YAYITA BLACK",1327.77],
+            ["GALLETITAS","820066","Gall.FANTOCHE x275g.YAYITAS",1327.77],
+            ["GALLETITAS","820069","Gall.FANTOCHE x300g.ESPUMITAS",1202.51],
+            ["GALLETITAS","820067","Gall.FANTOCHE x300g.HOROSCOPO",1327.77],
+            ["GALLETITAS","820068","Gall.FANTOCHE x350g.MARMOLADAS",1270.53],
+            ["GALLETITAS","828716","Gall.FRUTIGRAN x240g.CHIA/LINO",1502.44],
+            ["GALLETITAS","1010130","Gall.FRUTIGRAN FRUTOS ROJOS",1832.03],
+            ["GALLETITAS","828712","Gall.FRUTIGRAN AVENA/PASAS",1502.44],
+            ["GALLETITAS","828711","Gall.FRUTIGRAN x250g.SALVADO",1421.33],
+            ["GALLETITAS","828718","Gall.FRUTIGRAN x250g.TROPICAL",1832.03],
+            ["GALLETITAS","828714","Gall.FRUTIGRAN x255g.C/CHIPS",1859.06],
+            ["GALLETITAS","828715","Gall.FRUTIGRAN SESAMO/Am",1502.44],
+            ["GALLETITAS","80153","Gall.HOJALMAR LARGUITA 150g",1016.40],
+            ["GALLETITAS","80154","Gall.HOJALMAR PALMERAS 150g",1368.75],
+            ["GALLETITAS","80151","Gall.HOJALMAR TRIANGULO 150g",1016.40],
+            ["GALLETITAS","80152","Gall.HOJALMAR LARGUITA 250g",1593.72],
+            ["GALLETITAS","80150","Gall.HOJALMAR TRIANGULO 250g",1593.72],
+            ["GALLETITAS","81005","Gall.KOKIS CAÑONCITO MEMBRILLOS",2045.27],
+            ["GALLETITAS","81007","Gall.KOKIS GALLEGUITAS 500g",1712.25],
+            ["GALLETITAS","81004","Gall.KOKIS MEMBRILLITOS 500g",2045.27],
+            ["GALLETITAS","84611","Gall.LINCOLN x153g.",1251.01],
+            ["GALLETITAS","804063","Gall.MANA LIVIANA LECHE",800.05],
+            ["GALLETITAS","804064","Gall.MANA LIVIANA LIMON",800.05],
+            ["GALLETITAS","804062","Gall.MANA LIVIANA VAINILLA",800.05],
+            ["GALLETITAS","84627","Gall.MANON x182g.",1041.69],
+            ["GALLETITAS","846242","Gall.MINI PEPITOS x50g.",776.02],
+            ["GALLETITAS","80258","Gall.MINI TAPITAS FACHITAS 200g",1011.74],
+            ["GALLETITAS","80257","Gall.MINI TAPITAS FACHITAS 400g",1937.36],
+            ["GALLETITAS","81210","Gall.MOLINO 10 SEMILLAS",1545.74],
+            ["GALLETITAS","81213","Gall.MOLINO NATURAL PASAS",1545.74],
+            ["GALLETITAS","81211","Gall.MOLINO NATURAL GRANOLA",1545.74],
+            ["GALLETITAS","81214","Gall.MOLINO NATURAL NARANJA",1545.74],
+            ["GALLETITAS","81212","Gall.MOLINO NATURAL CACAO",1545.74],
+            ["GALLETITAS","81161","Gall.OKEBON 165g.LECHE",967.61],
+            ["GALLETITAS","81171","Gall.OKEBON 273g.LECHE",1286.25],
+            ["GALLETITAS","81204","Gall.OKEBON LECHE CHOCOLATADA",1286.25],
+            ["GALLETITAS","81205","Gall.OKEBON LECHE DDLECHE",1286.25],
+            ["GALLETITAS","81191","Gall.OKEBON GIROTONDO CHIPS",1091.70],
+            ["GALLETITAS","81199","Gall.OKEBON GIROTONDO CHOCO",1091.70],
+            ["GALLETITAS","81202","Gall.OKEBON GIROTONDO VAINILLA",1091.70],
+            ["GALLETITAS","4511955","Gall.OKEBON PANAL COCO",1183.30],
+            ["GALLETITAS","81200","Gall.OKEBON PANAL VAINILLA",1183.30],
+            ["GALLETITAS","80168","Gall.PARNOR CHIPPIS CHOCO",749.15],
+            ["GALLETITAS","80173","Gall.PARNOR MOROCHITAS",675.98],
+            ["GALLETITAS","80172","Gall.PARNOR SUAVECITAS",675.98],
+            ["GALLETITAS","80175","Gall.PARNOR PEPITAS",675.98],
+            ["GALLETITAS","80171","Gall.PARNOR COCO",675.98],
+            ["GALLETITAS","80178","Gall.PARNOR COQUITOS",675.98],
+            ["GALLETITAS","80174","Gall.PARNOR MANTECADAS",675.98],
+            ["GALLETITAS","80180","Gall.PARNOR MARMOLADAS",675.98],
+            ["GALLETITAS","828542","Gall.PEPAS DON SATUR x300g.",1115.80],
+            ["GALLETITAS","846244","Gall.PEPITOS CHIPS CADBURY",1517.60],
+            ["GALLETITAS","710872","Gall.PORTEÑITAS TRIPACK",2338.62],
+            ["GALLETITAS","710268","Gall.SURTIDO LIA x400g.",1488.27],
+            ["GALLETITAS","80201","Gall.TEREPIN x200g.",598.99],
+            ["GALLETITAS","80203","Gall.TEREPIN x260g.BATATA",919.95],
+            ["GALLETITAS","80269","Gall.TEREPIN x260g.DURAZNO",919.95],
+            ["GALLETITAS","80204","Gall.TEREPIN FRUTOS DEL BOSQUE",919.95],
+            ["GALLETITAS","80312","Gall.TEREPIN SURTIBLACK",1554.94],
+            ["GALLETITAS","80286","Gall.TEREPIN SURTIPEPAS",1275.98],
+            ["GALLETITAS","80202","Gall.TEREPIN x400g.",1186.40],
+            ["GALLETITAS","827702","Gall.TODDY CHISPAS CHOCO",1645.04],
+            ["GALLETITAS","89619","Gall.TRIO CHOCOLATINA",733.19],
+            ["GALLETITAS","89606","Gall.TRIO OSKITO",733.19],
+            ["GALLETITAS","89601","Gall.TRIO FROLITAS MEMBRILLO",545.56],
+            ["GALLETITAS","89604","Gall.TRIO GLASY 175g",545.56],
+            ["GALLETITAS","89611","Gall.TRIO CHOCOTRIO PEPA",733.19],
+            ["GALLETITAS","89612","Gall.TRIO PEPAS ALEMANAS",545.56],
+            ["GALLETITAS","89620","Gall.TRIO PEPONAS",545.56],
+            ["GALLETITAS","89603","Gall.TRIO TRICHOC",545.56],
+            ["GALLETITAS","89608","Gall.TRIO PEPAS x200g",545.56],
+            ["GALLETITAS","89617","Gall.TRIO TRICHIPS ARCO IRIS",1087.28],
+            ["GALLETITAS","89616","Gall.TRIO TRICHIPS DDL",1087.28],
+            ["GALLETITAS","89614","Gall.TRIO TRICHIPS CHIPS",1087.28],
+            ["GALLETITAS","89615","Gall.TRIO TRICHISPAS BLANCAS",1087.28],
+            ["GALLETITAS","89613","Gall.TRIO MARQUISE BOSQUE",1188.31],
+            ["GALLETITAS","89628","Gall.TRIO MINI PEPAS",965.08],
+            ["GALLETITAS","89671","Gall.TRIO ANILLOS COCO",965.08],
+            ["GALLETITAS","89670","Gall.TRIO ANILLOS LIMON",965.08],
+            ["GALLETITAS","89647","Gall.TRIO BESITOS",965.08],
+            ["GALLETITAS","89633","Gall.TRIO CHOCOLATINA x300g",1298.96],
+            ["GALLETITAS","89648","Gall.TRIO CHOCOTRIO PEPA 300g",1298.96],
+            ["GALLETITAS","89639","Gall.TRIO FROLITAS BATATA",965.08],
+            ["GALLETITAS","89631","Gall.TRIO FROLITAS MEMBRILLO 300g",965.08],
+            ["GALLETITAS","89634","Gall.TRIO GLASY x300g",965.08],
+            ["GALLETITAS","89653","Gall.TRIO KRUMIRI",965.08],
+            ["GALLETITAS","89640","Gall.TRIO LINGUINI",965.08],
+            ["GALLETITAS","89643","Gall.TRIO OSKITO x300g",1298.96],
+            ["GALLETITAS","89650","Gall.TRIO PEPAS ALEMANAS 300g",965.08],
+            ["GALLETITAS","89644","Gall.TRIO PEPAS CHIPS",965.08],
+            ["GALLETITAS","89627","Gall.TRIO PEPAS VEGETAL",965.08],
+            ["GALLETITAS","89635","Gall.TRIO PEPONAS x300g",965.08],
+            ["GALLETITAS","89623","Gall.TRIO TARTELETTES FRUTILLA",965.08],
+            ["GALLETITAS","89602","Gall.TRIO TARTELETTES BOSQUE",965.08],
+            ["GALLETITAS","89632","Gall.TRIO TRICHOC x300g",965.08],
+            ["GALLETITAS","89630","Gall.TRIO PEPAS x320g",882.33],
+            ["GALLETITAS","89645","Gall.TRIO SCONS",965.08],
+            ["GALLETITAS","89669","Gall.TRIO VARIETTE x350g",965.08],
+            ["GALLETITAS","89662","Gall.TRIO CHOCOTRIO PEPA 500g",1857.03],
+            ["GALLETITAS","89638","Gall.TRIO FROLITAS BATATA 500g",1487.55],
+            ["GALLETITAS","89661","Gall.TRIO FROLITAS MEMB. 500g",1487.55],
+            ["GALLETITAS","89668","Gall.TRIO PEPAS x500g",1378.82],
+            ["GALLETITAS","89665","Gall.TRIO PEPAS ALEMANAS 500g",1487.55],
+            ["GALLETITAS","89663","Gall.TRIO PEPAS CHIPS 500g",1487.55],
+            ["GALLETITAS","89660","Gall.TRIO PEPONAS x500g",1487.55],
+            ["GALLETITAS","89664","Gall.TRIO TRICHOC x500g",1487.55],
+            ["GALLETITAS","89667","Gall.TRIO VARIETTE x500g",1378.82],
+            ["GALLETITAS","84643","Gall.VARIEDAD CHOCOLATE",2120.49],
+            ["GALLETITAS","84641","Gall.VARIEDAD DORADA",2120.49],
+            ["GALLETITAS","84647","Gall.VARIEDAD x390g.",2576.29],
+            ["GALLETITAS","804471","Gall.VOCACION CLASICA",585.39],
+            ["GALLETITAS","80726","Gall.VOCACION ACARAMELADA",585.39],
+            ["GALLETITAS","804472","Gall.VOCACION CLASICAS 384g",1463.47],
+            ["GALLETITAS","80747","Gall.VOCACION ACARAMELADA 435g",1463.47],
+            ["GALLETITAS","81753","Galletitas DULCE MAMA CANELA",913.46],
+            ["GALLETITAS","8047291","Galletitas TODDY CHIPS x50g",686.23],
+            ["GALLETITAS","820053","Tapita FANTOCHE MARMOLADA 350g",1375.71],
+            ["GALLETITAS","81725","Vainilla VALENTE x12u.",1108.01],
+            ["GALLETITAS","81728","Vainilla VALENTE x36u.",3001.36],
+            ["GALLETITAS","83928","Gall.9 ORO Brigitte Choco Limon",1035.07],
+            ["GALLETITAS","83925","Gall.9 ORO Brigitte Choco Choco",1035.07],
+            ["GALLETITAS","83927","Gall.9 ORO Brigitte Vaini Limon",1035.07],
+            ["GALLETITAS","83926","Gall.9 ORO Brigitte Vaini Choco",1035.07],
+            ["GALLETITAS","80721","Gall.AMOR x108/110g.",984.68],
+            ["GALLETITAS","99492","Gall.COFLER COOKIES BAÑADAS",1945.98],
+            ["GALLETITAS","99493","Gall.COFLER COOKIES BON O BON",1945.98],
+            ["GALLETITAS","99494","Gall.COFLER COOKIES CHOCOLATE",1945.98],
+            ["GALLETITAS","99489","Gall.COFLER RELLENAS BON O BON",760.05],
+            ["GALLETITAS","99487","Gall.COFLER RELLENAS CREAMY",760.05],
+            ["GALLETITAS","99488","Gall.COFLER RELLENAS CHOCO",760.05],
+            ["GALLETITAS","80264","Gall.CORONITAS x140g.BLACK",803.10],
+            ["GALLETITAS","80252","Gall.CORONITAS CHOC.BLANCO",803.10],
+            ["GALLETITAS","80253","Gall.CORONITAS CHOCOLATE",803.10],
+            ["GALLETITAS","80255","Gall.CORONITAS DURAZNO",803.10],
+            ["GALLETITAS","80254","Gall.CORONITAS FRAMBUESA",803.10],
+            ["GALLETITAS","80250","Gall.CORONITAS FRUTILLA",803.10],
+            ["GALLETITAS","80251","Gall.CORONITAS VAINILLA",803.10],
+            ["GALLETITAS","84649","Gall.DUQUESA x115g.",1030.66],
+            ["GALLETITAS","22024","Gall.HAMLET RELLENA BLACK",618.59],
+            ["GALLETITAS","99486","Gall.HAMLET RELLENA VAINILLA",618.59],
+            ["GALLETITAS","99485","Gall.HAMLET VAINILLA RELLENA CHOCO",618.59],
+            ["GALLETITAS","816017","Gall.JORGITO MOUSSE LIMON",2441.02],
+            ["GALLETITAS","807136","Gall.MACUCAS x110g.",643.93],
+            ["GALLETITAS","807135","Gall.MACUCAS x85g",468.33],
+            ["GALLETITAS","804078","Gall.MANA CHOCO/VAINI",1046.22],
+            ["GALLETITAS","804077","Gall.MANA LIMON/LIMON",1046.22],
+            ["GALLETITAS","804075","Gall.MANA VAINILLA/CHOCO",1046.22],
+            ["GALLETITAS","84616","Gall.MELBA x120g.",1030.66],
+            ["GALLETITAS","80713","Gall.MELLIZAS x108/110g.",984.68],
+            ["GALLETITAS","80728","Gall.MERENGADAS x88g.",984.68],
+            ["GALLETITAS","846255","Gall.MILKA MOUSSE VAINILLA",1667.39],
+            ["GALLETITAS","846254","Gall.MILKA MOUSSE CHOCOLATE",1667.39],
+            ["GALLETITAS","846048","Gall.MINI OREO x50g.",776.02],
+            ["GALLETITAS","80714","Gall.OPERA x55g.",553.88],
+            ["GALLETITAS","80703","Gall.OPERA x92g.",800.05],
+            ["GALLETITAS","846041","Gall.OREO BAÑADAS CHOCOLATE",3900.94],
+            ["GALLETITAS","846051","Gall.OREO x118g. MENTA",1664.92],
+            ["GALLETITAS","846044","Gall.OREO ORIGINAL VAINILLA",1664.92],
+            ["GALLETITAS","846047","Gall.OREO x118g.CHOCOLATE",1531.72],
+            ["GALLETITAS","846049","Gall.OREO x118g.GOLDEN",1531.72],
+            ["GALLETITAS","846046","Gall.OREO MILKSHAKE FRUTILLA",1531.72],
+            ["GALLETITAS","846045","Gall.OREO VAINILLA FLOW 182g",2240.23],
+            ["GALLETITAS","14151","Gall.OREO VAINILLA SIN TACC",1997.90],
+            ["GALLETITAS","80169","Gall.PARNOR BARRITAS FRUTOS BOSQUE",675.98],
+            ["GALLETITAS","80192","Gall.PARNOR BARRITAS MEMBRILLO",675.98],
+            ["GALLETITAS","80190","Gall.PITUSAS MERENGUE 120g",749.15],
+            ["GALLETITAS","80196","Gall.PITUSAS BLACK 130g",749.15],
+            ["GALLETITAS","80191","Gall.PITUSAS JALEA FRAMBUESA",749.15],
+            ["GALLETITAS","80181","Gall.PITUSAS CHOCOLATE 160g",749.15],
+            ["GALLETITAS","80184","Gall.PITUSAS FRUTILLA 160g",749.15],
+            ["GALLETITAS","80185","Gall.PITUSAS LIMON 160g",749.15],
+            ["GALLETITAS","80182","Gall.PITUSAS MOUSSE 160g",749.15],
+            ["GALLETITAS","80183","Gall.PITUSAS VAINILLA 160g",749.15],
+            ["GALLETITAS","80187","Gall.PITUSAS CHOCOLATE 300g",1339.33],
+            ["GALLETITAS","80189","Gall.PITUSAS FRUTILLA 300g",1339.33],
+            ["GALLETITAS","80188","Gall.PITUSAS VAINILLA 300g",1339.33],
+            ["GALLETITAS","80698","Gall.POLVORITA TUBO CHOCOLATE",760.98],
+            ["GALLETITAS","80699","Gall.POLVORITA TUBO FRUTILLA",760.98],
+            ["GALLETITAS","80700","Gall.POLVORITA TUBO VAINILLA",707.71],
+            ["GALLETITAS","80711","Gall.POLVORITA x81g.CHOCOLATE",381.08],
+            ["GALLETITAS","80715","Gall.POLVORITA x81g.FRUTILLA",381.08],
+            ["GALLETITAS","80712","Gall.POLVORITA x81g.VAINILLA",381.08],
+            ["GALLETITAS","80718","Gall.RUMBA x108g.",984.68],
+            ["GALLETITAS","807137","Gall.SONRISAS FRAMBUESA",984.68],
+            ["GALLETITAS","80270","Gall.TEREPIN RELLENA BOSQUE",898.22],
+            ["GALLETITAS","80272","Gall.TEREPIN RELLENA LIMON",898.22],
+            ["GALLETITAS","80271","Gall.TEREPIN RELLENA MEMBRILLO",898.22],
+            ["GALLETITAS","828634","Cintitas TOSTEX MOSTAZA MIEL",803.43],
+            ["GALLETITAS","828628","Cintitas TOSTEX OLIVA",803.43],
+            ["GALLETITAS","828629","Cintitas TOSTEX TOMATE OREGANO",803.43],
+            ["GALLETITAS","828624","Cintitas TOSTEX ASADO",803.43],
+            ["GALLETITAS","828675","Cintitas TOSTEX BARBACOA",803.43],
+            ["GALLETITAS","828674","Cintitas TOSTEX CEBOLLA",803.43],
+            ["GALLETITAS","828676","Cintitas TOSTEX CHEDDAR",803.43],
+            ["GALLETITAS","828670","Cintitas TOSTEX CLASICAS",803.43],
+            ["GALLETITAS","101112","Cintitas TOSTEX JALAPEÑO",803.43],
+            ["GALLETITAS","828672","Cintitas TOSTEX JAMON",803.43],
+            ["GALLETITAS","101113","Cintitas TOSTEX KETCHUP",803.43],
+            ["GALLETITAS","828627","Cintitas TOSTEX MILANESA",803.43],
+            ["GALLETITAS","828626","Cintitas TOSTEX PANCHO MOSTAZA",803.43],
+            ["GALLETITAS","828673","Cintitas TOSTEX PIZZA",803.43],
+            ["GALLETITAS","828677","Cintitas TOSTEX PROVOLETA",803.43],
+            ["GALLETITAS","828671","Cintitas TOSTEX QUESO",803.43],
+            ["GALLETITAS","828678","Cintitas TOSTEX SALAME",803.43],
+            ["GALLETITAS","828635","Cintitas TOSTEX + CHEDDAR PICANTE",803.43],
+            ["GALLETITAS","828633","Cintitas TOSTEX + PANCETA AHUMADA",803.43],
+            ["GALLETITAS","81101","Gall.CEREALITAS x212g.",1321.75],
+            ["GALLETITAS","84654","Gall.CLUB SOCIAL JAMON",2093.90],
+            ["GALLETITAS","84601","Gall.CLUB SOCIAL ORIGINAL",2093.90],
+            ["GALLETITAS","80723","Gall.CRIOLLITAS x100g.",443.11],
+            ["GALLETITAS","80725","Gall.CRIOLLITAS x300g.",1230.85],
+            ["GALLETITAS","804083","Gall.MEDIATARDE PENTAPACK",1832.07],
+            ["GALLETITAS","80722","Gall.MEDIATARDE TRIPACK",1085.20],
+            ["GALLETITAS","27214","Gall.PASEO Mini Crackers JAMON",1224.10],
+            ["GALLETITAS","27213","Gall.PASEO Mini Crackers CEBOLLA",1224.10],
+            ["GALLETITAS","28059","Gall.PASEO OLIVA ROMERO",1224.11],
+            ["GALLETITAS","28060","Gall.PASEO PIZZA x250g",1224.11],
+            ["GALLETITAS","28061","Gall.PASEO QUESO x250g",1224.11],
+            ["GALLETITAS","83912","Gall.PASEO MINI 5 SEMILL",1321.52],
+            ["GALLETITAS","83911","Gall.PASEO MINI CEREALES",1321.52],
+            ["GALLETITAS","83908","Gall.PASEO MINI CRACKERS",1064.40],
+            ["GALLETITAS","83909","Gall.PASEO MINI SALVADO",1321.52],
+            ["GALLETITAS","83910","Gall.PASEO MINI SESAMO",1321.52],
+            ["GALLETITAS","83917","Gall.PASEO MINI SIN SAL",1064.40],
+            ["GALLETITAS","790131","Gall.TRAVIATA KESITAS",615.43],
+            ["GALLETITAS","790127","Gall.TRAVIATA PORTEÑITA",615.43],
+            ["GALLETITAS","790130","Gall.TRAVIATA REX",615.43],
+            ["GALLETITAS","828518","TALITAS DON SATUR QUESO",1043.43],
+            ["GALLETITAS","828514","TALITAS DON SATUR x140g.",948.54],
+            ["GALLETITAS","828517","TALITAS DON SATUR SEMILLA",1043.43],
+            ["GALLETITAS","100215","Talitas TOSTI JAMON",662.32],
+            ["GALLETITAS","100216","Talitas TOSTI PIZZA",662.32],
+            ["GALLETITAS","100217","Talitas TOSTI QUESO",662.32],
+            ["GALLETITAS","100218","Talitas TOSTI SEMILLAS",662.32],
+            ["GALLETITAS","81011","Obleas RECITAL DJ CHOCOLATE",584.80],
+            ["GALLETITAS","81010","Obleas RECITAL DJ CLASICA",584.80],
+            ["GALLETITAS","81012","Obleas RECITAL DJ FRUTILLA",584.80],
+            ["GOLOSINAS","820057","Alf. BARRIGON BLANCO 100g",1314.32],
+            ["GOLOSINAS","820055","Alf. BARRIGON BLANCO 70g",765.72],
+            ["GOLOSINAS","820054","Alf. BARRIGON de barrio 45g",369.60],
+            ["GOLOSINAS","820074","Alf. BARRIGON MEGA BROWNIE S/G",1314.32],
+            ["GOLOSINAS","820058","Alf. BARRIGON NEGRO 100g",1314.32],
+            ["GOLOSINAS","820056","Alf. BARRIGON NEGRO 70g",765.72],
+            ["GOLOSINAS","820075","Alf. BARRIGON TRIPLAZO CREMA",1314.47],
+            ["GOLOSINAS","820059","Alf. BARRIGON TRIPLAZO FRUTILLA",1314.47],
+            ["GOLOSINAS","804760","Alf. MILKA blanco extra DDL",1263.06],
+            ["GOLOSINAS","804759","Alf. MILKA chocolate extra DDL",1263.06],
+            ["GOLOSINAS","803414","Alf.AGUILA CHOCO BLANCO",1044.97],
+            ["GOLOSINAS","803411","Alf.AGUILA MINI TORTA",1044.97],
+            ["GOLOSINAS","803415","Alf.AGUILA MINI COCO",1044.97],
+            ["GOLOSINAS","803413","Alf.AGUILA BROWNIE",1044.97],
+            ["GOLOSINAS","804127","Alf.BAGLEY 3.0 BLANCO",1044.97],
+            ["GOLOSINAS","804128","Alf.BAGLEY 3.0 NEGRO",1044.97],
+            ["GOLOSINAS","804847","Alf.BON-O-BON MINI x6u.LECHE",2092.45],
+            ["GOLOSINAS","804846","Alf.BON-O-BON x40g.LECHE",626.98],
+            ["GOLOSINAS","804845","Alf.BON-O-BON x60g.LECHE",1044.97],
+            ["GOLOSINAS","99315","Alf.CACHAFAZ 72% CACAO ALMENDRAS",1953.35],
+            ["GOLOSINAS","99145","Alf.CACHAFAZ BLANCO x60g",1321.39],
+            ["GOLOSINAS","99144","Alf.CACHAFAZ MAICENA x60g",1321.39],
+            ["GOLOSINAS","99146","Alf.CACHAFAZ MOUSSE x50g",1321.39],
+            ["GOLOSINAS","99143","Alf.CACHAFAZ NEGRO x60g",1321.39],
+            ["GOLOSINAS","84704","Alf.CHOCOARROZ BLANCO",652.57],
+            ["GOLOSINAS","84701","Alf.CHOCOARROZ D.D.LECHE",652.57],
+            ["GOLOSINAS","84707","Alf.CHOCOARROZ LIMON",652.57],
+            ["GOLOSINAS","84708","Alf.CHOCOARROZ MARROC",652.57],
+            ["GOLOSINAS","84709","Alf.CHOCOARROZ PISTACHO 28g",848.35],
+            ["GOLOSINAS","84706","Alf.CHOCOARROZ SUPER DDL 36g",848.35],
+            ["GOLOSINAS","790133","Alf.CHOCOTORTA x71,5g.",1044.97],
+            ["GOLOSINAS","804110","Alf.COFLER BLOCK x60g.",1044.97],
+            ["GOLOSINAS","710854","Alf.COFLER CHOCO CREAMY x60g.",1002.36],
+            ["GOLOSINAS","820041","Alf.FANTOCHE 3 CHOCOLATE",617.49],
+            ["GOLOSINAS","820044","Alf.FANTOCHE 3 DAY",635.47],
+            ["GOLOSINAS","820042","Alf.FANTOCHE 3 LECHE",617.49],
+            ["GOLOSINAS","820043","Alf.FANTOCHE 3 NIGHT",635.47],
+            ["GOLOSINAS","820018","Alf.FANTOCHE ELIXIR 70% CACAO",1013.03],
+            ["GOLOSINAS","820017","Alf.FANTOCHE ELIXIR CHOC BLANCO",1013.03],
+            ["GOLOSINAS","820009","Alf.FANTOCHE ELIXIR CHOCOLATE",734.95],
+            ["GOLOSINAS","820026","Alf.FANTOCHE MINI CHOCO",1463.81],
+            ["GOLOSINAS","820027","Alf.FANTOCHE MINI LECHE",1463.81],
+            ["GOLOSINAS","820050","Alf.FANTOCHE RAUL SIMPLE BLANCO",521.00],
+            ["GOLOSINAS","820049","Alf.FANTOCHE RAUL SIMPLE NEGRO",521.00],
+            ["GOLOSINAS","820051","Alf.FANTOCHE SUPER TRIPLE 100g",747.54],
+            ["GOLOSINAS","820052","Alf.FANTOCHE TRIPLE RED VELVET",747.54],
+            ["GOLOSINAS","825021","Alf.GUAYMALLEN BLANCO x40u",9058.16],
+            ["GOLOSINAS","825022","Alf.GUAYMALLEN CHOCO x40u",9058.16],
+            ["GOLOSINAS","825023","Alf.GUAYMALLEN FRUTA x40u",9058.16],
+            ["GOLOSINAS","825025","Alf.GUAYMALLEN DE ORO x48g",469.94],
+            ["GOLOSINAS","825026","Alf.GUAYMALLEN DE PLATINO x48g",654.14],
+            ["GOLOSINAS","825041","Alf.GUAYMALLEN BLANCO TRIPLE",377.42],
+            ["GOLOSINAS","825042","Alf.GUAYMALLEN CHOCO TRIPLE",377.42],
+            ["GOLOSINAS","825043","Alf.GUAYMALLEN FRUTA TRIPLE",377.42],
+            ["GOLOSINAS","1010880","Alf.HAMLET MOUSSE MANI 34g",275.97],
+            ["GOLOSINAS","1010879","Alf.HAMLET SIMPLE DDL 36g",275.97],
+            ["GOLOSINAS","816091","Alf.JORGELIN MAXI BLANCO",912.35],
+            ["GOLOSINAS","816093","Alf.JORGELIN MAXI GLASEADO",912.35],
+            ["GOLOSINAS","816092","Alf.JORGELIN MAXI NEGRO",912.35],
+            ["GOLOSINAS","816018","Alf.JORGITO MOUSSE x45g",704.81],
+            ["GOLOSINAS","816020","Alf.JORGITO CHOCO SIN TACC",730.15],
+            ["GOLOSINAS","816033","Alf.JORGITO FRUTA x50g",679.66],
+            ["GOLOSINAS","816031","Alf.JORGITO LECHE x50g",679.66],
+            ["GOLOSINAS","816032","Alf.JORGITO CHOCO x55g",679.66],
+            ["GOLOSINAS","816015","Alf.JORGITO TUB.CHOC.BCO x6u",2083.15],
+            ["GOLOSINAS","816011","Alf.JORGITO TUBITO BLANCO x6u",2083.15],
+            ["GOLOSINAS","816014","Alf.JORGITO TUBITO FRUTA x6u",2083.15],
+            ["GOLOSINAS","816013","Alf.JORGITO TUBITO MOUSSE x6u",2160.41],
+            ["GOLOSINAS","816012","Alf.JORGITO TUBITO NEGRO x6u",2083.15],
+            ["GOLOSINAS","239085","Alf.MILKA MOUSSE MINI 114g",2450.67],
+            ["GOLOSINAS","846123","Alf.MILKA MOUSSE x42g",755.04],
+            ["GOLOSINAS","101014","Alf.MILKA MOUSSE TRIPLE 55g",1263.06],
+            ["GOLOSINAS","846107","Alf.MILKA TORTA OREO 61g",1263.05],
+            ["GOLOSINAS","846106","Alf.OREO TRIPLE 56g",1263.05],
+            ["GOLOSINAS","846115","Alf.PEPITOS TRIPLE 57g",1263.06],
+            ["GOLOSINAS","239084","Alf.SHOT MINI 114g",2450.67],
+            ["GOLOSINAS","14144","Alf.SHOT PASTA MANI 44g",755.04],
+            ["GOLOSINAS","101003","Alf.SHOT TRIPLE 60g",1263.06],
+            ["GOLOSINAS","846101","Alf.TERRABUSI CHOCO 50g",792.04],
+            ["GOLOSINAS","846111","Alf.TERRABUSI CHOC.TRIPLE",1263.04],
+            ["GOLOSINAS","846116","Alf.TERRABUSI TORTA 70g",1263.05],
+            ["GOLOSINAS","804761","Alf.TERRABUSI TRIPLE BLANCO",1263.06],
+            ["GOLOSINAS","89930","Alf.VAUQUITA SUBLEME x70g",712.73],
+            ["GOLOSINAS","82434","Alfajor FULL MANI x40g.",537.80],
+            ["GOLOSINAS","804757","Alfajor MANTECOL TRIPLE x60g",956.09],
+            ["GOLOSINAS","804758","Alfajor MANTECOL x40g.",628.02],
+            ["GOLOSINAS","804753","Alfajor TODDY MOUSSE BLANCO",725.44],
+            ["GOLOSINAS","804756","Alfajor TODDY MOUSSE TRIPLE",956.09],
+            ["GOLOSINAS","900503","Barra de cereal y mani HIT x25g",615.40],
+            ["GOLOSINAS","804734","Barra TODDY CEREAL x21g.",529.81],
+            ["GOLOSINAS","827431","Cereal BNB PROTEICA SURTIDO",16018.03],
+            ["GOLOSINAS","821025","Cereal CROCO x19g.",418.39],
+            ["GOLOSINAS","821009","Cereal FORT FLEKOS x18g.",418.39],
+            ["GOLOSINAS","821013","Cereal FORT CHOCOLATE x19g.",418.39],
+            ["GOLOSINAS","821010","Cereal FORT FRUTOS ROJOS x19g.",418.39],
+            ["GOLOSINAS","821008","Cereal FORT GRANRICO x19g.",418.39],
+            ["GOLOSINAS","821000","Cereal FORT LADY x19g.",418.39],
+            ["GOLOSINAS","821007","Cereal FORT FRUTILLA x21g.",418.39],
+            ["GOLOSINAS","821002","Cereal FORT NUTRI x21g.",418.39],
+            ["GOLOSINAS","821003","Cereal FORT MANZANA/ALMEN",418.39],
+            ["GOLOSINAS","821001","Cereal FORT x23g.",418.39],
+            ["GOLOSINAS","821012","Cereal FORT ACTION x23g.",418.39],
+            ["GOLOSINAS","804021","Cereal MIX x23g.",626.98],
+            ["GOLOSINAS","804022","Cereal MIX CHOCO ALMENDRA CHIPS",626.98],
+            ["GOLOSINAS","804024","Cereal MIX MANZANA LIGHT",626.98],
+            ["GOLOSINAS","804023","Cereal MIX FRUTILLA CHOCO",626.98],
+            ["GOLOSINAS","804026","Cereal MIX YOGURT FRUTILLA",626.98],
+            ["GOLOSINAS","804027","Cereal MIX YOGURT LIGHT",626.98],
+            ["GOLOSINAS","20408","Cereal MIX PISTACHO x38g",679.24],
+            ["GOLOSINAS","82154","Cereal TORRONCINO x23g.",1277.56],
+            ["GOLOSINAS","82150","Cereal TORRONCINO 5 CEREALES",1277.56],
+            ["GOLOSINAS","824261","Flow CEREAL MANZANA LIGHT",529.81],
+            ["GOLOSINAS","824265","Flow CEREAL CHIPS ALMENDRAS",529.81],
+            ["GOLOSINAS","824266","Flow CEREAL FRUTOS DEL BOSQUE",529.81],
+            ["GOLOSINAS","824263","Flow CEREAL GRANOLA SEMILLAS",529.81],
+            ["GOLOSINAS","824264","Flow CEREAL MIX DE FRUTAS",529.81],
+            ["GOLOSINAS","824267","Flow CEREAL YOGURT FRUTOS",529.81],
+            ["GOLOSINAS","824297","Flow CEREAL PURO CACAO",529.81],
+            ["GOLOSINAS","824260","Flow CEREAL ROJOS CON YOGUR",529.81],
+            ["GOLOSINAS","824268","Flow CEREAL ALMENDRAS PISO CHOCO",626.57],
+            ["GOLOSINAS","824299","Flow CEREAL ALMENDRAS MIEL",626.57],
+            ["GOLOSINAS","824298","Flow CEREAL AVELLANA ARANDANOS",626.57],
+            ["GOLOSINAS","804749","Flow CEREAL CAJU CARAMELO SAL",626.57],
+            ["GOLOSINAS","804227","CALABAZA CON MASTICABLES HW",10385.99],
+            ["GOLOSINAS","804237","CALAVERA CON MASTICABLES HW",13665.78],
+            ["GOLOSINAS","894019","Caram.BULL DOG EXPLOSIVO TIRA",1680.45],
+            ["GOLOSINAS","804102","Caramelo ALKA CHERRY 800g",7608.50],
+            ["GOLOSINAS","804106","Caramelo ALKA CREMOSO 800g",7608.50],
+            ["GOLOSINAS","804104","Caramelo ALKA MENTA 800g",7608.50],
+            ["GOLOSINAS","804101","Caramelo ALKA STRONG 800g",7608.50],
+            ["GOLOSINAS","804173","Caramelo ARCOR CHOCO MENTA 715g",6704.89],
+            ["GOLOSINAS","80292","Caramelo ARCOR CHOCO MENTA 80g",875.94],
+            ["GOLOSINAS","80444","Caramelo ARCOR CRISTAL FRESH x90u",4458.43],
+            ["GOLOSINAS","804421","Caramelo ARCOR CRISTAL MENTA 810g",8916.86],
+            ["GOLOSINAS","804182","Caramelo ARCOR masticable FRUTALES",6257.63],
+            ["GOLOSINAS","80294","Caramelo ARCOR MIEL 80g",875.94],
+            ["GOLOSINAS","804402","Caramelo ARCOR MIEL+MENTA x66u",3346.21],
+            ["GOLOSINAS","804153","Caramelo ARCOR RELLENO FRUTALES",6704.89],
+            ["GOLOSINAS","804401","Caramelo ARCOR RELLENO MIEL 675g",6704.89],
+            ["GOLOSINAS","80293","Caramelo ARCOR RELLENOS FRUTALES 80g",875.94],
+            ["GOLOSINAS","894021","Caramelo BILLIKEN FRUTAL 600g",3533.24],
+            ["GOLOSINAS","894022","Caramelo BILLIKEN YOGHURT 600g",3533.24],
+            ["GOLOSINAS","804103","Caramelo BUTTER AVELLANAS 648g",6088.30],
+            ["GOLOSINAS","80295","Caramelo BUTTER CHOCOLATE 80g",1027.00],
+            ["GOLOSINAS","80297","Caramelo BUTTER LECHE 80g",1027.00],
+            ["GOLOSINAS","80296","Caramelo BUTTER SURTIDO 80g",1027.00],
+            ["GOLOSINAS","804093","Caramelo BUTTER CAFE 822g",8044.69],
+            ["GOLOSINAS","804098","Caramelo BUTTER CHOC BLANCO",8044.69],
+            ["GOLOSINAS","804096","Caramelo BUTTER CHOCOLATE 822g",8044.69],
+            ["GOLOSINAS","804092","Caramelo BUTTER CHOKKO MINT",8044.69],
+            ["GOLOSINAS","804097","Caramelo BUTTER DULCE/LECHE",8044.69],
+            ["GOLOSINAS","804095","Caramelo BUTTER LECHE 822g",8044.69],
+            ["GOLOSINAS","99471","Caramelo LENGUETAZO MANZANA x32u",5981.58],
+            ["GOLOSINAS","804732","Caramelo LENGUETAZO PINTA LENGUA",5981.58],
+            ["GOLOSINAS","710147","Caramelo LENGUETAZO TROPICAL PUNCH",5981.58],
+            ["GOLOSINAS","843364","Caramelo LENGUETAZO TUTTI FRUTTI",5981.58],
+            ["GOLOSINAS","829025","Caramelo LIPO GAJITOS TROPICALES",3720.82],
+            ["GOLOSINAS","829023","Caramelo LIPO GAJITOS 454g",3720.82],
+            ["GOLOSINAS","829024","Caramelo LIPO SUPER ACIDO MASTICABLE",2399.21],
+            ["GOLOSINAS","829022","Caramelo LIPO SUPERACIDO 454g",3720.82],
+            ["GOLOSINAS","803071","Caramelo MISKY SURTIDO 800g",5299.63],
+            ["GOLOSINAS","803029","Caramelo MOGUL EXTREME ROLL",5119.46],
+            ["GOLOSINAS","803023","Caramelo MOGUL CONFITADOS x16u",10726.48],
+            ["GOLOSINAS","803024","Caramelo MOGUL CONFITADOS 70g",1220.38],
+            ["GOLOSINAS","803030","Caramelo MOGUL MASTI ROLL x24u",5119.46],
+            ["GOLOSINAS","803028","Caramelo MOGUL SPLASH EXTREME",1220.38],
+            ["GOLOSINAS","803026","Caramelo MOGUL SPLASH UVA ANANA",1220.38],
+            ["GOLOSINAS","803021","Caramelo MOGUL CONFITADOS x16u",10726.52],
+            ["GOLOSINAS","803022","Caramelo MOGUL CONFITADOS x70g",1220.38],
+            ["GOLOSINAS","804226","Caramelo MOGUL PALOTE PINTA HW",4103.76],
+            ["GOLOSINAS","803034","Caramelo MOGUL PALOTES EXTREME",1055.73],
+            ["GOLOSINAS","803032","Caramelo MOGUL PALOTES EXTREME 8u",5363.24],
+            ["GOLOSINAS","803033","Caramelo MOGUL PALOTES TUTTI UVA",1055.73],
+            ["GOLOSINAS","843233","Caramelo PALITOS SELVA 150g",1752.36],
+            ["GOLOSINAS","843231","Caramelo PALITOS SELVA 660g",7752.98],
+            ["GOLOSINAS","82804","Caramelo Pico Dulce MASTICABLE",3659.69],
+            ["GOLOSINAS","82821","Caramelo PICO DULCE x90u",5417.24],
+            ["GOLOSINAS","80866","Caramelo STARBURST x59g.",1883.54],
+            ["GOLOSINAS","82225","Caramelo SUGUS MAX ANANA MUNDIAL",4501.63],
+            ["GOLOSINAS","804595","Caramelo SUGUS MAX FRUTILLA",4501.63],
+            ["GOLOSINAS","104026","Caramelo SUGUS x150g",1233.76],
+            ["GOLOSINAS","104019","Caramelo SUGUS CONFITADO 50g",833.18],
+            ["GOLOSINAS","22025","Caramelo SUGUS CONFITADO ACIDO",708.20],
+            ["GOLOSINAS","82223","Caramelo SUGUS CONFITADO MUNDIAL",833.16],
+            ["GOLOSINAS","104021","Caramelo SUGUS x700g.",5366.03],
+            ["GOLOSINAS","803020","Caramelo SUGUS SURTIDO ESPECIAL",5366.03],
+            ["GOLOSINAS","808012","Caramelo XTREME BERRY x12u",4929.13],
+            ["GOLOSINAS","808011","Caramelo XTREME RAINBOW x12u",4929.13],
+            ["GOLOSINAS","808010","Caramelo XTREME TROPICAL x12u",4929.13],
+            ["GOLOSINAS","24252","Caramelos BUBBALOO CONFITADOS",512.43],
+            ["GOLOSINAS","80823","Conf.SKITTLES x204g.",5399.08],
+            ["GOLOSINAS","80828","Conf.SKITTLES SOUR ACIDOS",1883.54],
+            ["GOLOSINAS","80855","Conf.SKITTLES x61,5g.",1883.54],
+            ["GOLOSINAS","80857","Conf.SKITTLES TROPICAL",1883.54],
+            ["GOLOSINAS","80856","Conf.SKITTLES WILDBERRY",1883.54],
+            ["GOLOSINAS","82402","FLYNN PAFF CONFITADOS 50g",747.14],
+            ["GOLOSINAS","82408","FLYNN PAFF CONFITADOS ACIDO",747.14],
+            ["GOLOSINAS","82410","FLYNN PAFF CONFITADOS YOGUR",747.14],
+            ["GOLOSINAS","824201","FLYNN PAFF BANANA x70u",5454.80],
+            ["GOLOSINAS","824204","FLYNN PAFF FRUTI/VAINI",5454.80],
+            ["GOLOSINAS","824207","FLYNN PAFF FRUTILLA",5454.80],
+            ["GOLOSINAS","824206","FLYNN PAFF MANZANA",5454.80],
+            ["GOLOSINAS","824208","FLYNN PAFF PINTA LENGUA",5454.80],
+            ["GOLOSINAS","824205","FLYNN PAFF TUTTI FRUTTI",5454.80],
+            ["GOLOSINAS","824202","FLYNN PAFF UVA x70u",5454.80],
+            ["GOLOSINAS","827429","FRUITTELLA VITAC x40g",13410.89],
+            ["GOLOSINAS","827430","FRUITTELLA SOUR x40g",13410.89],
+            ["GOLOSINAS","72509","FUN CANDY SAFE xUn",2221.17],
+            ["GOLOSINAS","80897","FUN Caramelo CATY HOUSE",1812.66],
+            ["GOLOSINAS","804247","FUN CATZ TUTTI FRUTTI",1719.52],
+            ["GOLOSINAS","804245","FUN G-RAF JIRAFA xUn",2221.17],
+            ["GOLOSINAS","80899","FUN La Gallina Coquita",2009.91],
+            ["GOLOSINAS","80898","FUN PUPPY HOUSE",1845.62],
+            ["GOLOSINAS","808747","FUN WACKY MONKEY BAND",2104.56],
+            ["GOLOSINAS","808736","FUN WATER POP xun.",1787.88],
+            ["GOLOSINAS","804221","LOTSA FIZZ EXTREME ACIDO",9350.32],
+            ["GOLOSINAS","804222","Lotsa FIZZ x494g.HW",4974.34],
+            ["GOLOSINAS","710149","PALITOS DE LA SELVA MARSHMALLOW",7647.44],
+            ["GOLOSINAS","804225","SUGUS CONFITADOS ACIDOS HW",708.20],
+            ["GOLOSINAS","843346","BAZOOKA MENTA x80u",5351.56],
+            ["GOLOSINAS","843237","Chicle BELDENT INFINIT CITRUS",1439.01],
+            ["GOLOSINAS","843240","Chicle BELDENT INFINIT MENTA",1439.01],
+            ["GOLOSINAS","843239","Chicle BELDENT INFINIT SPEARMINT",1439.01],
+            ["GOLOSINAS","843132","Chicle BELDENT FRUTILLA POSEIDON",555.77],
+            ["GOLOSINAS","843131","Chicle BELDENT MENTA FUERTE",555.77],
+            ["GOLOSINAS","843130","Chicle BELDENT MENTA POSEIDON",555.77],
+            ["GOLOSINAS","843133","Chicle BELDENT MENTOL POSEIDON",555.77],
+            ["GOLOSINAS","843103","Chicle BELDENT SANDIA",555.77],
+            ["GOLOSINAS","843134","Chicle BELDENT TUTTI GLOBO",555.77],
+            ["GOLOSINAS","801081","Chicle BUBBALOO FRUTILLA x60u",4702.23],
+            ["GOLOSINAS","801083","Chicle BUBBALOO MENTA x60u",4702.23],
+            ["GOLOSINAS","801082","Chicle BUBBALOO TUTTI FRUTTI",4702.23],
+            ["GOLOSINAS","801084","Chicle BUBBALOO UVA x60u",4702.23],
+            ["GOLOSINAS","80893","Chicle BUBBLE ROLL FUN SURTIDO",1580.95],
+            ["GOLOSINAS","80894","Chicle BUBBLE ROLL FUN PINK",1580.95],
+            ["GOLOSINAS","80884","Chicle BUBBLE TAPE TUTTI",3390.35],
+            ["GOLOSINAS","804312","Chicle FLICS FRUTA x12u",5415.84],
+            ["GOLOSINAS","804313","Chicle FLICS MENTA x12u",5415.84],
+            ["GOLOSINAS","107104","chicle TOPLINE BUBBLE FUN",571.58],
+            ["GOLOSINAS","804270","Chicle TOPLINE MANDARINA",571.58],
+            ["GOLOSINAS","804278","Chicle TOPLINE MENTA",571.58],
+            ["GOLOSINAS","804271","Chicle TOPLINE MENTHOL",571.58],
+            ["GOLOSINAS","805300","Chicle TOPLINE SANDIA MANIA",571.58],
+            ["GOLOSINAS","804276","Chicle TOPLINE STRAWBERRY",571.58],
+            ["GOLOSINAS","804268","Chicle TOPLINE STRONG",571.58],
+            ["GOLOSINAS","22028","Chicle TOPLINE CITRUS BLUEBERRY",1281.02],
+            ["GOLOSINAS","80824","Chicle WRIGLEY'S DOUBLEMINT",1036.25],
+            ["GOLOSINAS","827432","MENTOS GUMS FRUTILLA",3335.84],
+            ["GOLOSINAS","827433","MENTOS GUMS MENTA",3335.84],
+            ["GOLOSINAS","827435","MENTOS GUMS UP2U TUTTI",3335.84],
+            ["GOLOSINAS","827434","MENTOS GUMS WINTER GREEN",3335.84],
+            ["GOLOSINAS","99153","b. MARROC CACHAFAZ x54u.",30017.43],
+            ["GOLOSINAS","991407","b. MARROC CACHAFAZ x6u.",3335.27],
+            ["GOLOSINAS","82130","b.2 CORAZONES x20u.",18709.49],
+            ["GOLOSINAS","804538","b.ARCOR SELECCION x228g.",6948.64],
+            ["GOLOSINAS","804539","b.ARCOR SURTIDO KIOSCO",7553.25],
+            ["GOLOSINAS","89407","b.BONAFIDE DDL x24u.",12221.11],
+            ["GOLOSINAS","804529","b.BON-O-BON COOKIES CREAM",6640.38],
+            ["GOLOSINAS","804535","b.BON-O-BON AGUILA",6640.38],
+            ["GOLOSINAS","804552","b.BON-O-BON BLANCO",6640.38],
+            ["GOLOSINAS","804537","b.BON-O-BON CHOCOLINAS",6640.38],
+            ["GOLOSINAS","790132","b.BON-O-BON COCO",6640.38],
+            ["GOLOSINAS","804551","b.BON-O-BON LECHE",6640.38],
+            ["GOLOSINAS","804532","b.BON-O-BON BLANCO x30u",10856.49],
+            ["GOLOSINAS","804531","b.BON-O-BON LECHE x30u",10856.49],
+            ["GOLOSINAS","80302","b.CABSHA x48u.",16014.95],
+            ["GOLOSINAS","82113","b.CERICET x24u.Felfort",34290.36],
+            ["GOLOSINAS","850110","b.DANCING x50u.",6318.11],
+            ["GOLOSINAS","81151","b.DULECH DDL x20u.",12440.74],
+            ["GOLOSINAS","84551","b.F.ROCHER ESTUCHE 4x50g",3592.99],
+            ["GOLOSINAS","84571","b.F.ROCHER COLLECTION x7u.",8181.61],
+            ["GOLOSINAS","84570","b.F.ROCHER x12u.",10829.29],
+            ["GOLOSINAS","84540","b.F.ROCHER x24u.",19980.52],
+            ["GOLOSINAS","84538","b.F.ROCHER x3u.",2388.85],
+            ["GOLOSINAS","84544","b.F.ROCHER x8u.",7180.77],
+            ["GOLOSINAS","821101","b.FELFORT DDL x20u.",13879.48],
+            ["GOLOSINAS","82135","b.JACKELIN x30u.",20527.21],
+            ["GOLOSINAS","82112","b.KOOKY BON FELFORT x30u.",7919.45],
+            ["GOLOSINAS","821221","b.LICORFORT WHISKY x30u.",20527.21],
+            ["GOLOSINAS","82117","b.MARROC CRIC Felfort x60u.",31465.85],
+            ["GOLOSINAS","82125","b.MARROC Felfort x60u.",31465.85],
+            ["GOLOSINAS","82141","b.MARROC x20u.",11622.87],
+            ["GOLOSINAS","82134","b.MENTITAS FELFORT x30u.",12954.49],
+            ["GOLOSINAS","106110","b.MILKA OREO x11u.",6690.18],
+            ["GOLOSINAS","89918","b.VAUQUITA x140g.",1357.59],
+            ["GOLOSINAS","89924","b.VAUQUITA SUAVE x140g",1357.59],
+            ["GOLOSINAS","89917","b.VAUQUITA x18u.",6733.47],
+            ["GOLOSINAS","89916","b.VAUQUITA SUAVE x18u.",6733.47],
+            ["GOLOSINAS","84223","Bananita DOLCA x16u. 14g",8333.02],
+            ["GOLOSINAS","84224","Bananita DOLCA x16u. 30g",14398.65],
+            ["GOLOSINAS","843503","Barra CADBURY FRUTILLA",1670.02],
+            ["GOLOSINAS","804014","Barra Cofler EXTRA COCO 40g",1025.87],
+            ["GOLOSINAS","84002","Bloque BIZNIKKE x28g.",908.48],
+            ["GOLOSINAS","107038","Bloque SHOT x35g.",1479.78],
+            ["GOLOSINAS","820035","BOCADITO FANTOCHE x20u",5505.46],
+            ["GOLOSINAS","991410","Bocadito PISTACHINO CACHAFAZ x36u.",23654.40],
+            ["GOLOSINAS","89928","bombon VAUQUITA x30u.",6048.00],
+            ["GOLOSINAS","821343","Bombones GAROTO x250g.",4904.48],
+            ["GOLOSINAS","82120","Botellita LICORITAS x25u.",18287.88],
+            ["GOLOSINAS","82144","Botellita WHISKY FELFORT x20u",21460.27],
+            ["GOLOSINAS","900500","BROWNIE CHIPS SABE BIEN!",1057.19],
+            ["GOLOSINAS","900501","BROWNIE mini SABE BIEN!",730.72],
+            ["GOLOSINAS","804259","Choc. Tableta COFLER CHOCOTORTA",1538.91],
+            ["GOLOSINAS","804258","Choc. Tableta COFLER COOKIE&CREAM",1538.91],
+            ["GOLOSINAS","804260","Choc. Tableta COFLER DOBLE MOUSSE",1538.91],
+            ["GOLOSINAS","71046","Choc. TODDY AIREADO MIX",1648.76],
+            ["GOLOSINAS","710144","Choc. TODDY COOKIES AND CREAM",1648.76],
+            ["GOLOSINAS","710145","Choc. TODDY MILK",1648.76],
+            ["GOLOSINAS","710143","Choc. TODDY MOUSSE",1648.76],
+            ["GOLOSINAS","80753","Choc.AGUILA FRAMBUESA 70g",3182.46],
+            ["GOLOSINAS","80752","Choc.AGUILA mix doypack",8610.12],
+            ["GOLOSINAS","804113","Choc.AGUILA x100g.TAZA",3643.42],
+            ["GOLOSINAS","804144","Choc.AGUILA NARANJA x14g",778.00],
+            ["GOLOSINAS","80730","Choc.AGUILA INDIVIDUAL x14g",706.93],
+            ["GOLOSINAS","804111","Choc.AGUILA TAZA CACAO 60",778.00],
+            ["GOLOSINAS","804112","Choc.AGUILA TAZA CACAO 70%",778.00],
+            ["GOLOSINAS","80287","Choc.ARCOR 50% CACAO x80g.",2154.77],
+            ["GOLOSINAS","80290","Choc.ARCOR BLANCO MANI x80g",1939.29],
+            ["GOLOSINAS","80288","Choc.ARCOR CRISPY x80g.",1939.29],
+            ["GOLOSINAS","80291","Choc.ARCOR LECHE MANI x80g",1939.29],
+            ["GOLOSINAS","80289","Choc.ARCOR MARMOLADO x80g.",1939.29],
+            ["GOLOSINAS","840441","Choc.ARCOR x25g.BLANCO",769.53],
+            ["GOLOSINAS","840442","Choc.ARCOR x25g.LECHE",769.53],
+            ["GOLOSINAS","840443","Choc.ARCOR x25g.SEMIAMARGO",769.53],
+            ["GOLOSINAS","821310","Choc.BATON LECHE x30u",11883.16],
+            ["GOLOSINAS","843723","Choc.CADBURY x162g.INTENSE",7929.70],
+            ["GOLOSINAS","843725","Choc.CADBURY YOGHURT FRUTILLA",7929.70],
+            ["GOLOSINAS","843507","Choc.CADBURY TRES SUEÑOS",1670.03],
+            ["GOLOSINAS","843712","Choc.CADBURY ALMENDRAS 82g",4249.82],
+            ["GOLOSINAS","843714","Choc.CADBURY TRES SUEÑOS 82g",4249.82],
+            ["GOLOSINAS","843722","Choc.CADBURY YOGHURT 82g",4249.82],
+            ["GOLOSINAS","804903","Choc.COFLER ALMENDRA AIREADO",4191.24],
+            ["GOLOSINAS","804902","Choc.COFLER BLANCO AIREADO",4191.24],
+            ["GOLOSINAS","804901","Choc.COFLER COMBINADO AIREADO",4191.24],
+            ["GOLOSINAS","804900","Choc.COFLER LECHE AIREADO",4191.24],
+            ["GOLOSINAS","804910","Choc.COFLER AIREADO 27g BLANCO",1267.20],
+            ["GOLOSINAS","804909","Choc.COFLER AIREADO COMBINADO",1267.20],
+            ["GOLOSINAS","804908","Choc.COFLER AIREADO 27g LECHE",1267.20],
+            ["GOLOSINAS","804907","Choc.COFLER AIREADO ALMENDRA 55g",2436.89],
+            ["GOLOSINAS","804906","Choc.COFLER AIREADO BLANCO 55g",2436.89],
+            ["GOLOSINAS","804905","Choc.COFLER AIREADO COMBINADO 55g",2436.89],
+            ["GOLOSINAS","804904","Choc.COFLER AIREADO LECHE 55g",2436.89],
+            ["GOLOSINAS","80409","Choc.COFLER BLOCK MITI MITI",5619.60],
+            ["GOLOSINAS","80402","Choc.COFLER BLOCK x110g.",3077.92],
+            ["GOLOSINAS","80407","Choc.COFLER BLOCK x170g.",5619.60],
+            ["GOLOSINAS","80406","Choc.COFLER BLOCK x1Kg.",25921.72],
+            ["GOLOSINAS","80404","Choc.COFLER BLOCK x300g",9063.49],
+            ["GOLOSINAS","80401","Choc.COFLER BLOCK x38g.",1231.23],
+            ["GOLOSINAS","80413","Choc.COFLER BLOCK BLANCO 38g",1231.23],
+            ["GOLOSINAS","804055","Choc.COFLER ESTILO DUBAI 45g.",2052.20],
+            ["GOLOSINAS","82431","Choc.GEORGALOS x150g.FULL MANI",2666.49],
+            ["GOLOSINAS","82433","Choc.GEORGALOS x30g.FULL MANI",784.86],
+            ["GOLOSINAS","82422","Choc.GEORGALOS SIN AZUCAR BLANCO",1688.90],
+            ["GOLOSINAS","82407","Choc.GEORGALOS SIN AZUCAR LECHE",1688.90],
+            ["GOLOSINAS","82421","Choc.GEORGALOS RELLENO FRUTILLA",1688.90],
+            ["GOLOSINAS","82438","Choc.GEORGALOS SIN AZUCAR MANI",1688.65],
+            ["GOLOSINAS","82423","Choc.GEORGALOS SIN AZUCAR BLANCO",3930.39],
+            ["GOLOSINAS","82418","Choc.GEORGALOS SIN AZUCAR LECHE",3930.39],
+            ["GOLOSINAS","82432","Choc.GEORGALOS x90g.FULL MANI",1674.50],
+            ["GOLOSINAS","82441","Choc.GEORGALOS ALMENDRA 70g",3930.39],
+            ["GOLOSINAS","84572","Choc.KINDER BUENO DARK",2106.30],
+            ["GOLOSINAS","84534","Choc.KINDER BUENO x39g.Blanco",2106.30],
+            ["GOLOSINAS","84533","Choc.KINDER BUENO x43g.",2106.30],
+            ["GOLOSINAS","84530","Choc.KINDER x210g.MAXI",10365.40],
+            ["GOLOSINAS","84549","Choc.KINDER x24u.",15654.20],
+            ["GOLOSINAS","84545","Choc.KINDER x50g.(4)",2407.88],
+            ["GOLOSINAS","89489","Choc.MECANO x19g.BLANCO",587.34],
+            ["GOLOSINAS","89446","Choc.MECANO x19g.DDL",587.34],
+            ["GOLOSINAS","107061","Choc.MILKA DULCE DE LECHE 135g",6741.04],
+            ["GOLOSINAS","107139","Choc.MILKA ALMENDRA 55g",3232.72],
+            ["GOLOSINAS","107135","Choc.MILKA BLANCO 55g",3232.72],
+            ["GOLOSINAS","107136","Choc.MILKA CASTAÑAS 55g",3232.71],
+            ["GOLOSINAS","107137","Choc.MILKA LECHE 55g",3232.72],
+            ["GOLOSINAS","107033","Choc.MILKA DDL BLANCO 67.5g",3564.49],
+            ["GOLOSINAS","107032","Choc.MILKA DULCE de LECHE 67.5g",3564.44],
+            ["GOLOSINAS","107115","Choc.MILKA CHOCO PAUSE x45g.",1572.67],
+            ["GOLOSINAS","107116","Choc.MILKA CHOCO PAUSE OREO",1572.67],
+            ["GOLOSINAS","107054","Choc.MILKA OREO BLANCO 155g",7328.09],
+            ["GOLOSINAS","107034","Choc.MILKA OREO BLANCO 20g",845.17],
+            ["GOLOSINAS","107134","Choc.MILKA OREO BLANCO 55g",3232.71],
+            ["GOLOSINAS","846005","Choc.MILKA OREO BARRITA 37g.",2221.12],
+            ["GOLOSINAS","80164","Choc.MILKA COOKIES 100g",6438.02],
+            ["GOLOSINAS","107093","Choc.MILKA OREO 100g",6438.02],
+            ["GOLOSINAS","80166","Choc.MILKA RASPBERRY CREME",6438.02],
+            ["GOLOSINAS","107051","Choc.MILKA LECHE 150/155g",7328.09],
+            ["GOLOSINAS","107059","Choc.MILKA ALMENDRAS 155g",7328.09],
+            ["GOLOSINAS","107055","Choc.MILKA CASTAÑAS 155g",7328.09],
+            ["GOLOSINAS","14152","Choc.MILKA LUFLEE CARAMEL",19314.07],
+            ["GOLOSINAS","14153","Choc.MILKA ALMOND CARAMEL",19314.07],
+            ["GOLOSINAS","801040","Choc.MILKA CARAMELO AVELLANAS",19314.07],
+            ["GOLOSINAS","107075","Choc.MILKA CHOCO-SWING",19314.07],
+            ["GOLOSINAS","107076","Choc.MILKA OREO x300g",19314.07],
+            ["GOLOSINAS","14143","Choc.MILKA STRAWBERRY CHEESECAKE",19314.07],
+            ["GOLOSINAS","80165","Choc.MILKA WHOLE NUTS 95g",6438.02],
+            ["GOLOSINAS","850450","Choc.MISKY TAZA x100g.",2047.00],
+            ["GOLOSINAS","850449","Choc.MISKY BLANCO x20u",4430.32],
+            ["GOLOSINAS","850448","Choc.MISKY LECHE x20u",4430.32],
+            ["GOLOSINAS","850441","Choc.MISKY BLANCO x25g",642.19],
+            ["GOLOSINAS","22069","Choc.MISKY CRUNCH x25g",287.79],
+            ["GOLOSINAS","850442","Choc.MISKY LECHE x25g",642.19],
+            ["GOLOSINAS","850446","Choc.MISKY BLANCO x50g",1107.78],
+            ["GOLOSINAS","850447","Choc.MISKY LECHE x50g",1107.78],
+            ["GOLOSINAS","821389","Choc.NESTLE ALPINO x85g.",6068.80],
+            ["GOLOSINAS","821305","Choc.NESTLE KIT KAT x41g.",1146.64],
+            ["GOLOSINAS","821299","Choc.NESTLE KIT KAT DARK",1146.64],
+            ["GOLOSINAS","821494","Choc.NESTLE KIT KAT MISTERY",1146.64],
+            ["GOLOSINAS","821337","Choc.NESTLE KIT KAT TRIPLE",1146.64],
+            ["GOLOSINAS","821312","Choc.NESTLE KIT KAT BLANCO",1146.64],
+            ["GOLOSINAS","821445","Choc.NESTLE SEMIAMARGO x25g.",1149.95],
+            ["GOLOSINAS","821444","Choc.NESTLE SUAVE CREMOSO",1942.28],
+            ["GOLOSINAS","82122","Choc.NOBEL FELFORT x15u.",15694.91],
+            ["GOLOSINAS","82149","Choc.PARAGUITAS x20u.",11906.25],
+            ["GOLOSINAS","82111","Choc.PARAGUITAS x40u.",21544.36],
+            ["GOLOSINAS","107058","Choc.SHOT x170g.",6109.36],
+            ["GOLOSINAS","107057","Choc.SHOT x90g.",3175.76],
+            ["GOLOSINAS","80859","Choc.SNICKERS x22g.",983.30],
+            ["GOLOSINAS","80867","Choc.SNICKERS ALMENDRAS 40g",1883.54],
+            ["GOLOSINAS","80864","Choc.SNICKERS x48g.",1883.54],
+            ["GOLOSINAS","107087","Choc.TOBLERONE x100g.",7242.77],
+            ["GOLOSINAS","803172","Choc.TOFI BLANCO x27g",1179.99],
+            ["GOLOSINAS","803171","Choc.TOFI LECHE x28g",1179.99],
+            ["GOLOSINAS","213127","Choc.TOFI BLANCO x55g",2206.09],
+            ["GOLOSINAS","1010177","Choc.TOFI LECHE x55g",2206.09],
+            ["GOLOSINAS","80854","Choc.TWIX x45g.",1883.54],
+            ["GOLOSINAS","894033","CHOCMAN MINITORTA x68g",843.63],
+            ["GOLOSINAS","894032","CHOCMAN MINITORTA BLACK",843.63],
+            ["GOLOSINAS","89430","CHOCMAN x35g",509.18],
+            ["GOLOSINAS","89487","CHOCMAN BLACK x35g",509.18],
+            ["GOLOSINAS","894034","CHOCMAN COCO x35g",509.18],
+            ["GOLOSINAS","894035","CHOCOLATE BONAFIDE MANI x30g",504.56],
+            ["GOLOSINAS","894036","CHOCOLATE BONAFIDE MANI x90g",1316.25],
+            ["GOLOSINAS","89473","CHOCOLATE TAZA BONAFIDE",3233.52],
+            ["GOLOSINAS","804481","Chocolatin ARCOR BLANCO x20u",6150.68],
+            ["GOLOSINAS","82440","Chocolatin GEORGALOS BLANCO",10307.73],
+            ["GOLOSINAS","82420","Chocolatin GEORGALOS LECHE",10307.73],
+            ["GOLOSINAS","82216","Chocolatin JACK LECHE MAFALDA",1267.11],
+            ["GOLOSINAS","82126","CHUPELATIN x32u.",26263.78],
+            ["GOLOSINAS","80820","Conf.M&M CHOCOLATE 150g",5355.41],
+            ["GOLOSINAS","80821","Conf.M&M MANI 150g",5355.41],
+            ["GOLOSINAS","80868","Conf.M&M CARAMELO 40g",1883.54],
+            ["GOLOSINAS","80865","Conf.M&M PEANUT BUTTER",1883.54],
+            ["GOLOSINAS","80851","Conf.M&M CHOCOLATE 48g",1883.54],
+            ["GOLOSINAS","80852","Conf.M&M MANI 49g",1883.54],
+            ["GOLOSINAS","804748","Confites ROCKLETS MINI x44u",14662.31],
+            ["GOLOSINAS","80473","Confites ROCKLETS CHOCO 20g",564.38],
+            ["GOLOSINAS","790818","Confites ROCKLETS EXTREME",256.49],
+            ["GOLOSINAS","82220","Confites ROCKLETS MUNDIAL",564.38],
+            ["GOLOSINAS","790147","Confites ROCKLETS PICANTES",256.49],
+            ["GOLOSINAS","790136","Confites ROCKLETS BOLLS CEREAL",738.70],
+            ["GOLOSINAS","790128","Confites ROCKLETS COOKIE 35g",974.67],
+            ["GOLOSINAS","804741","Confites ROCKLETS CHOCO 40g",1025.97],
+            ["GOLOSINAS","804745","Confites ROCKLETS MANI 40g",1025.97],
+            ["GOLOSINAS","99308","Conito CACHAFAZ NEGRO x12u",13788.37],
+            ["GOLOSINAS","81602","CONITO Jorgito x12u.",9185.50],
+            ["GOLOSINAS","790144","Cubanito COFLER AVELLANAS",10060.07],
+            ["GOLOSINAS","710371","Cubanito MANTECOL x40u 40g",9076.42],
+            ["GOLOSINAS","82156","Cubanito TIVIS x25g.",711.20],
+            ["GOLOSINAS","81153","Cubanito WINING x19gr.",604.76],
+            ["GOLOSINAS","84636","Cubanitos SNACKY x60g.",1975.11],
+            ["GOLOSINAS","82152","FEELING DDL x20g.",486.84],
+            ["GOLOSINAS","84619","Gall.MINI RHODESIA x60g.",1956.99],
+            ["GOLOSINAS","84637","HABANITOS x60g.",1975.11],
+            ["GOLOSINAS","84504","Huevo KINDER 20g.NENA",1851.96],
+            ["GOLOSINAS","80408","MANI COFLER BLOCK x40g.",1385.06],
+            ["GOLOSINAS","107022","Milka LEGER ALMENDRAS 110g",6118.11],
+            ["GOLOSINAS","107023","Milka LEGER COMBINADO 110g",6118.11],
+            ["GOLOSINAS","107020","Milka LEGER LECHE 110g",6118.11],
+            ["GOLOSINAS","107117","Milka LEGER ALMENDRA 50g",3085.78],
+            ["GOLOSINAS","107118","Milka LEGER COMBINADO 50g",3085.78],
+            ["GOLOSINAS","107119","Milka LEGER LECHE 50g",3085.78],
+            ["GOLOSINAS","81155","Moneditas JACK Felfort x60u",17688.88],
+            ["GOLOSINAS","82121","Moneditas PIRATAS Felfort x60u",17688.88],
+            ["GOLOSINAS","84529","NUTELLA B-READY Display x10u",11370.02],
+            ["GOLOSINAS","804069","Oblea BON-O-BON BLANCA x20",13333.48],
+            ["GOLOSINAS","804068","Oblea BON-O-BON LECHE x20",13333.48],
+            ["GOLOSINAS","22093","Oblea COFLER MAX BLOCK",16413.85],
+            ["GOLOSINAS","22091","Oblea COFLER MAX CHOCOLINAS",16413.85],
+            ["GOLOSINAS","89411","Oblea GALLO CHOCOBAR x20g",649.95],
+            ["GOLOSINAS","89410","Oblea GALLO x20g.",649.95]
+        ];
 
-        // Formateador de pesos
+        // Lógica de Paginación y Filtrado
+        const itemsPerPage = 24;
+        let currentPage = 1;
+        let currentTab = 'todas';
+        let searchQuery = '';
+        let selectedCategory = '';
+        let selectedBrand = '';
+
+        // Formateador de moneda en pesos argentinos
         const formatter = new Intl.NumberFormat('es-AR', {
             style: 'currency',
             currency: 'ARS',
             minimumFractionDigits: 2
         });
 
-        // ====== RECALCULO DE PRECIOS DINÁMICOS ======
-        function calculatePrices() {
-            const globalMarkup = parseFloat(markupSlider.value);
-            markupVal.textContent = globalMarkup + "%";
+        const markupSlider = document.getElementById('markup-slider');
+        const markupVal = document.getElementById('markup-val');
+        const showCostCheck = document.getElementById('show-cost-check');
+        const productGrid = document.getElementById('product-grid');
+        const resultsCounter = document.getElementById('results-counter');
+        const adminPanel = document.getElementById('admin-panel');
+        const restoreBtn = document.getElementById('restore-admin-btn');
+        const paginationContainer = document.getElementById('pagination-container');
+        const brandSelect = document.getElementById('brand-select');
+        const totalCountBadge = document.getElementById('total-count-badge');
 
-            cards.forEach(card => {
-                const baseCost = parseFloat(card.getAttribute('data-base-price'));
-                const individualCheck = card.querySelector('.individual-check');
-                const individualInput = card.querySelector('.individual-input');
+        const individualMarkups = {};
 
-                let currentMarkup = globalMarkup;
+        // ====== INICIALIZACIÓN DE LA MEMORIA LOCAL ======
+        function initDatabase() {
+            const savedDb = localStorage.getItem("juliana_catalog_db");
+            if (savedDb) {
+                try {
+                    database = JSON.parse(savedDb);
+                } catch(e) {
+                    console.log("Error cargando backup.");
+                }
+            }
+            totalCountBadge.textContent = database.length;
+            buildDropdownFilters();
+        }
+
+        // Trigger del Input File oculto
+        function triggerFileInput() {
+            document.getElementById('txt-file-input').click();
+        }
+
+        // ====== IMPORTADOR INTELIGENTE (TXT DE 1750 LÍNEAS) ======
+        function handleFileImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                parseAndLoadTXT(text);
+            };
+            reader.readAsText(file, "UTF-8"); 
+        }
+
+        function parseAndLoadTXT(text) {
+            const lines = text.split("\n");
+            const newDatabase = [];
+            
+            lines.forEach((line, idx) => {
+                if (idx === 0 && line.toLowerCase().includes("rubro")) return;
                 
-                // Si está tildado el margen individual, usa ese valor en vez del global
-                if (individualCheck && individualCheck.checked) {
-                    currentMarkup = parseFloat(individualInput.value) || 0;
+                const parts = line.split(";");
+                if (parts.length >= 4) {
+                    const category = parts[0].trim().replace(/^"|"$/g, '').toUpperCase();
+                    const code = parts[1].trim().replace(/^"|"$/g, '');
+                    const name = parts[2].trim().replace(/^"|"$/g, '');
+                    
+                    let priceStr = parts[3].trim().replace(/^"|"$/g, '');
+                    priceStr = priceStr.replace(/\./g, "").replace(",", ".");
+                    const price = parseFloat(priceStr) || 0;
+
+                    if (category && code && name && price > 0) {
+                        newDatabase.push([category, code, name, price]);
+                    }
                 }
+            });
 
-                // Cálculo financiero
-                const salePrice = baseCost * (1 + (currentMarkup / 100));
-                const finalPrice = salePrice * 1.21;
+            if (newDatabase.length > 0) {
+                database = newDatabase;
+                localStorage.setItem("juliana_catalog_db", JSON.stringify(database));
+                totalCountBadge.textContent = database.length;
+                showToast(`¡Catálogo de ${database.length} productos cargado con éxito!`);
+                
+                currentPage = 1;
+                currentTab = 'todas';
+                searchQuery = '';
+                selectedCategory = '';
+                selectedBrand = '';
+                brandSelect.value = '';
+                
+                resetCategoryButtons();
+                buildDropdownFilters();
+                renderCatalog();
+            } else {
+                alert("No se pudo detectar el formato de columnas de forma correcta. Verifique el archivo .txt");
+            }
+        }
 
-                // Render en el DOM
-                card.querySelector('.sale-price').textContent = formatter.format(salePrice);
-                card.querySelector('.final-price').textContent = formatter.format(finalPrice);
+        // ====== DETECTOR DE IMÁGENES SEGÚN CATEGORÍA ======
+        function getProductImage(category, name) {
+            const lowerName = name.toLowerCase();
+            if (lowerName.includes("cereal") || lowerName.includes("flow") || lowerName.includes("barrita") || lowerName.includes("granola")) {
+                return "https://images.unsplash.com/photo-1568254183919-78a4f43a2877?auto=format&fit=crop&w=400&q=80";
+            }
+            if (lowerName.includes("chocolinas") || lowerName.includes("oreo") || lowerName.includes("cookies") || lowerName.includes("milka")) {
+                return "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=400&q=80";
+            }
+            switch (category) {
+                case "BEBIDAS":
+                case "BEBIDAS TEOLOGISTICA":
+                    if (lowerName.includes("jugo") || lowerName.includes("citric") || lowerName.includes("baggio")) {
+                        return "https://images.unsplash.com/photo-1613478223719-2ab802602423?auto=format&fit=crop&w=400&q=80";
+                    }
+                    return "https://images.unsplash.com/photo-1523362628745-0c100150b504?auto=format&fit=crop&w=400&q=80"; 
+                case "GALLETITAS":
+                    if (lowerName.includes("arroz") || lowerName.includes("arrocitas") || lowerName.includes("tostada")) {
+                        return "https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&w=400&q=80";
+                    }
+                    return "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=400&q=80"; 
+                case "GOLOSINAS":
+                    return "https://images.unsplash.com/photo-1581798459219-318e76aecc7b?auto=format&fit=crop&w=400&q=80"; 
+                case "COMESTIBLE":
+                default:
+                    return "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=400&q=80"; 
+            }
+        }
 
-                // Ver costos de lista s/IVA
-                const costRow = card.querySelector('.cost-row');
-                if (showCostCheck.checked) {
-                    costRow.classList.remove('hidden');
-                } else {
-                    costRow.classList.add('hidden');
+        // ====== EXTRACTOR DE MARCA INTELIGENTE ======
+        function extractBrand(name) {
+            const words = name.split(" ");
+            const ignoreList = ["agua", "jugo", "goma", "gall.", "choc.", "cereal", "barra", "papas", "snack", "pilas", "vino", "soda", "aceite", "mayonesa", "salsa", "fideos", "porotos", "lentejas", "harina", "te", "yerba", "sal", "salero", "vinagre", "bizc.", "magdalena", "tostada", "obleas", "alf.", "chupetin", "past.", "pegamento", "profilactico", "protector", "detergente", "lavandina", "lavavajilla", "limpiador", "papel", "rollo", "suavizante", "afeitadora", "crema", "encendedor", "lampara", "naipes", "auriculares", "mochila", "parlante", "pelota", "vaso", "b.", "bombon", "conito", "cubanito", "oblea", "gomas", "pastillas", "bastonitos", "chizitos", "nachos", "palitos", "girasol", "turron"];
+            
+            let brand = "";
+            for (let i = 0; i < words.length; i++) {
+                const cleanWord = words[i].replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+                if (cleanWord && !ignoreList.includes(cleanWord)) {
+                    brand = words[i].toUpperCase().replace(/[^A-Z0-9]/g, "");
+                    break;
                 }
+            }
+
+            if (!brand && words[0]) {
+                brand = words[0].toUpperCase().replace(/[^A-Z0-9]/g, "");
+            }
+
+            if (brand.includes("BAGGIO")) return "BAGGIO";
+            if (brand.includes("TERMA")) return "TERMA";
+            if (brand.includes("KRACHITOS")) return "KRACHITOS";
+            if (brand.includes("CACHAFAZ")) return "CACHAFAZ";
+            if (brand.includes("MOGUL")) return "MOGUL";
+            if (brand.includes("ARCOR")) return "ARCOR";
+            if (brand.includes("COFLER")) return "COFLER";
+            if (brand.includes("MILKA")) return "MILKA";
+            if (brand.includes("OREO")) return "OREO";
+            if (brand.includes("TODDY")) return "TODDY";
+            if (brand.includes("FORT")) return "FORT";
+            if (brand.includes("INCA")) return "INCA";
+            if (brand.includes("NOEL")) return "NOEL";
+            if (brand.includes("LEDESMA")) return "LEDESMA";
+            if (brand.includes("HILERET")) return "HILERET";
+            if (brand.includes("ANCLAS")) return "2 ANCLAS";
+            if (brand.includes("SATUR")) return "DON SATUR";
+            if (brand.includes("JORGITO")) return "JORGITO";
+            if (brand.includes("FANTOCHE")) return "FANTOCHE";
+            if (brand.includes("TOSTEX")) return "TOSTEX";
+
+            return brand;
+        }
+
+        // Filtro Saludables
+        function checkIsSaludable(category, name) {
+            const n = name.toLowerCase();
+            const c = category;
+            
+            const matchesBebidas = (c.includes("BEBIDAS") && (n.includes("sin azucar") || n.includes("agua") || n.includes("sierra") || n.includes("cellier") || n.includes("citric") || n.includes("cero") || n.includes("light")));
+            const matchesGrains = (n.includes("arroz") || n.includes("arrocitas") || n.includes("avena") || n.includes("cereal") || n.includes("semilla") || n.includes("fibra") || n.includes("frutigran") || n.includes("salvado") || n.includes("integral") || n.includes("quinoa") || n.includes("lentejas") || n.includes("porotos") || n.includes("organica"));
+            
+            return matchesBebidas || matchesGrains;
+        }
+
+        // ====== GENERACIÓN DINÁMICA DE FILTROS EN SOLAPAS ======
+        function buildDropdownFilters() {
+            const marcas = new Set();
+            database.forEach(item => {
+                marcas.add(extractBrand(item[2]));
+            });
+
+            brandSelect.innerHTML = '<option value="">Todas las marcas...</option>';
+            Array.from(marcas).filter(Boolean).sort().forEach(marca => {
+                brandSelect.innerHTML += `<option value="${marca}">${marca}</option>`;
             });
         }
 
-        // Eventos en vivo del panel admin
-        markupSlider.addEventListener('input', calculatePrices);
-        showCostCheck.addEventListener('change', calculatePrices);
+        // ====== OBTENER ARTÍCULOS FILTRADOS EN TIEMPO REAL ======
+        function getFilteredProducts() {
+            return database.filter(item => {
+                const category = item[0];
+                const code = item[1];
+                const name = item[2];
+                const isSaludable = checkIsSaludable(category, name);
+                const brand = extractBrand(name);
 
-        // Eventos para detectar cambios en márgenes individuales en vivo
-        cards.forEach(card => {
-            const check = card.querySelector('.individual-check');
-            const input = card.querySelector('.individual-input');
-            if (check && input) {
-                check.addEventListener('change', calculatePrices);
-                input.addEventListener('input', calculatePrices);
+                // Solapa rápida (Saludables)
+                if (currentTab === 'saludables' && !isSaludable) return false;
+
+                // Solapa de Categorías (Rubros)
+                if (selectedCategory && category !== selectedCategory) return false;
+
+                // Desplegable único de Marcas (Petición)
+                if (selectedBrand && brand !== selectedBrand) return false;
+
+                // Filtro de Barra de Búsqueda
+                if (searchQuery !== '') {
+                    const q = searchQuery.toLowerCase();
+                    return name.toLowerCase().includes(q) || code.includes(q) || category.toLowerCase().includes(q);
+                }
+
+                return true;
+            });
+        }
+
+        // ====== RENDERIZADO DEL CATÁLOGO DE PRODUCTOS ======
+        function renderCatalog(append = false) {
+            const filtered = getFilteredProducts();
+            resultsCounter.textContent = `Mostrando ${Math.min(currentPage * itemsPerPage, filtered.length)} de ${filtered.length} artículos.`;
+
+            if (!append) {
+                productGrid.innerHTML = '';
             }
+
+            const startIndex = append ? (currentPage - 1) * itemsPerPage : 0;
+            const endIndex = Math.min(startIndex + itemsPerPage, filtered.length);
+            const sliceToRender = filtered.slice(startIndex, endIndex);
+
+            const globalMarkup = parseFloat(markupSlider.value);
+            const isAdminMode = !adminPanel.classList.contains('hidden');
+
+            sliceToRender.forEach(item => {
+                const category = item[0];
+                const code = item[1];
+                const name = item[2];
+                const cost = item[3];
+                const imageUrl = getProductImage(category, name);
+
+                const indConfig = individualMarkups[code] || { checked: false, val: 30 };
+                let markup = indConfig.checked ? indConfig.val : globalMarkup;
+
+                if (markup < 20) markup = 20;
+
+                const salePrice_x1 = cost * (1 + (markup / 100)) * 1.21;
+                const salePrice_x5 = salePrice_x1 * 0.97;
+                const salePrice_x10 = salePrice_x1 * 0.95;
+
+                const card = document.createElement('div');
+                card.className = "product-card bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden";
+                card.setAttribute('data-code', code);
+                
+                card.innerHTML = `
+                    <img src="${imageUrl}" alt="${name}" class="h-44 w-full object-cover">
+                    <div class="p-5 flex-grow flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start">
+                                <span class="text-xs font-semibold text-slate-400">Cód. ${code}</span>
+                                <span class="bg-emerald-50 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-md uppercase">${category}</span>
+                            </div>
+                            <h3 class="font-bold text-slate-800 text-xs mt-2 leading-snug">${name}</h3>
+                        </div>
+
+                        <div class="admin-controls-card mt-3 bg-slate-100 p-2 rounded-xl border border-slate-200 text-xs ${isAdminMode ? '' : 'hidden'}">
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center gap-1.5 font-bold text-slate-700 cursor-pointer">
+                                    <input type="checkbox" class="individual-check accent-amber-500 rounded" ${indConfig.checked ? 'checked' : ''} onchange="toggleIndividualMarkup('${code}', this)">
+                                    Margen Indiv.
+                                </label>
+                                <div class="flex items-center gap-0.5">
+                                    <input type="number" class="individual-input w-12 text-center border rounded py-0.5 font-bold text-slate-800" min="20" max="100" value="${indConfig.val}" oninput="updateIndividualMarkupValue('${code}', this)">
+                                    <span class="font-bold text-slate-500">%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-t border-slate-100 space-y-2">
+                            <div class="cost-row flex justify-between text-xs text-slate-400 ${showCostCheck.checked ? '' : 'hidden'}">
+                                <span>Costo s/IVA:</span>
+                                <span>${formatter.format(cost)}</span>
+                            </div>
+                            
+                            <div class="bg-slate-50 rounded-xl p-2.5 space-y-1.5 border border-slate-100">
+                                <div class="flex justify-between items-center text-[10px] text-slate-600">
+                                    <span>x1 Unidad:</span>
+                                    <span class="font-bold text-slate-900 text-xs">${formatter.format(salePrice_x1)}</span>
+                                </div>
+                                <div class="flex justify-between items-center text-[10px] text-emerald-700">
+                                    <span class="font-medium">x5 Unid (-3%):</span>
+                                    <span class="font-extrabold text-xs">${formatter.format(salePrice_x5)}</span>
+                                </div>
+                                <div class="flex justify-between items-center text-[10px] text-emerald-800">
+                                    <span class="font-medium">x10 Unid (-5%):</span>
+                                    <span class="font-black text-xs">${formatter.format(salePrice_x10)}</span>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-2 mt-3">
+                                <button onclick="shareItem('${code}', '${name}')" class="flex-1 text-[10px] bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 py-2 rounded-xl font-bold transition-all border border-slate-100">
+                                    Compartir
+                                </button>
+                                <a href="https://wa.me/5491171352560?text=Hola%20Juliana,%20quiero%20hacer%20un%20pedido%20mayorista%20del%20C%C3%B3d%20${code}%20-%20${encodeURIComponent(name)}" target="_blank" class="flex-1 text-center text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-xl font-bold transition-all shadow-sm">
+                                    Pedir
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                productGrid.appendChild(card);
+            });
+
+            if (filtered.length > endIndex) {
+                paginationContainer.classList.remove('hidden');
+            } else {
+                paginationContainer.classList.add('hidden');
+            }
+        }
+
+        function loadMoreProducts() {
+            currentPage++;
+            renderCatalog(true);
+        }
+
+        // ====== NAVEGACIÓN Y FILTROS ======
+        function filterByCategory(catId) {
+            currentPage = 1;
+            selectedBrand = '';
+            brandSelect.value = '';
+
+            // Resetear estilos de todos los botones de categoría
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.className = "cat-btn px-4 py-2 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0";
+            });
+
+            if (catId === 'todas') {
+                currentTab = 'todas';
+                selectedCategory = '';
+                document.getElementById('btn-cat-todas').className = "cat-btn px-4 py-2 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white shadow-sm shrink-0";
+            } else if (catId === 'saludables') {
+                currentTab = 'saludables';
+                selectedCategory = '';
+                document.getElementById('btn-cat-saludables').className = "cat-btn px-4 py-2 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white shadow-sm shrink-0";
+            } else {
+                currentTab = 'categoria';
+                selectedCategory = catId;
+                const btnId = catId.includes("LIMPIEZA") ? 'btn-cat-LIMPIEZA' : `btn-cat-${catId}`;
+                const targetBtn = document.getElementById(btnId);
+                if (targetBtn) {
+                    targetBtn.className = "cat-btn px-4 py-2 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white shadow-sm shrink-0";
+                }
+            }
+
+            renderCatalog();
+        }
+
+        function resetCategoryButtons() {
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.className = "cat-btn px-4 py-2 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0";
+            });
+            document.getElementById('btn-cat-todas').className = "cat-btn px-4 py-2 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white shadow-sm shrink-0";
+        }
+
+        function handleBrandSelect(select) {
+            selectedBrand = select.value;
+            currentPage = 1;
+            renderCatalog();
+        }
+
+        function toggleIndividualMarkup(code, checkbox) {
+            if (!individualMarkups[code]) {
+                individualMarkups[code] = { checked: false, val: 30 };
+            }
+            individualMarkups[code].checked = checkbox.checked;
+            calculatePricesDirectly();
+        }
+
+        function updateIndividualMarkupValue(code, input) {
+            let val = parseFloat(input.value) || 20;
+            if (val < 20) val = 20;
+
+            if (!individualMarkups[code]) {
+                individualMarkups[code] = { checked: true, val: 30 };
+            }
+            individualMarkups[code].val = val;
+            calculatePricesDirectly();
+        }
+
+        function calculatePricesDirectly() {
+            currentPage = 1;
+            renderCatalog();
+        }
+
+        markupSlider.addEventListener('input', () => {
+            markupVal.textContent = markupSlider.value + "%";
+            calculatePricesDirectly();
         });
+        showCostCheck.addEventListener('change', calculatePricesDirectly);
 
-
-        // ====== MODAL DE LOGIN (CONTRASEÑA SECTOR VENDEDOR) ======
+        // ====== MODAL DE LOGIN ======
         function openLoginModal() {
             document.getElementById('login-modal').classList.remove('hidden');
         }
@@ -602,100 +1926,73 @@
         function showAdminView() {
             adminPanel.classList.remove('hidden');
             restoreBtn.classList.add('hidden');
-            // Revelar también los controles individuales de cada producto
-            document.querySelectorAll('.admin-controls-card').forEach(el => el.classList.remove('hidden'));
-            calculatePrices();
+            calculatePricesDirectly();
             showToast("Modo Vendedora Activado");
         }
 
         function hideAdminPanelDirectly() {
             adminPanel.classList.add('hidden');
             restoreBtn.classList.remove('hidden');
-            // Ocultar controles individuales de cada producto
-            document.querySelectorAll('.admin-controls-card').forEach(el => el.classList.add('hidden'));
-            calculatePrices();
+            calculatePricesDirectly();
             showToast("Vista Cliente Activada");
         }
 
-
-        // ====== DETECTAR PARÁMETROS EN URL (MODO CLIENTE AUTOMÁTICO) ======
+        // ====== DETECTAR URL EN CLIENTE AUTOMÁTICAMENTE ======
         function checkUrlParams() {
             const params = new URLSearchParams(window.location.search);
             const globalParam = params.get('m');
             const overridesParam = params.get('overrides');
 
             if (globalParam !== null) {
-                // Al venir con parámetros, ocultamos el panel de control (Modo Cliente)
                 adminPanel.classList.add('hidden');
                 restoreBtn.classList.remove('hidden');
-                document.querySelectorAll('.admin-controls-card').forEach(el => el.classList.add('hidden'));
-
-                // Establecer Markup General
                 markupSlider.value = globalParam;
 
-                // Aplicar desvíos individuales de productos
                 if (overridesParam) {
                     const overridesArray = overridesParam.split(',');
                     overridesArray.forEach(pair => {
                         const [code, val] = pair.split(':');
-                        const card = document.querySelector(`.product-card[data-code="${code}"]`);
-                        if (card) {
-                            const check = card.querySelector('.individual-check');
-                            const input = card.querySelector('.individual-input');
-                            if (check && input) {
-                                check.checked = true;
-                                input.value = val;
-                            }
-                        }
+                        individualMarkups[code] = { checked: true, val: parseFloat(val) };
                     });
                 }
             } else {
-                // Si no hay parámetros (Ingreso inicial de Juliana), arranca con el panel visible
                 showAdminView();
             }
-            calculatePrices();
+            initDatabase();
+            renderCatalog();
         }
 
-
-        // ====== GENERAR ENLACE COMERCIAL PERSONALIZADO ======
+        // ====== GENERAR LINK DINÁMICO ======
         function generateCustomLink() {
             const globalMarkup = markupSlider.value;
             let overrides = [];
 
-            cards.forEach(card => {
-                const code = card.getAttribute('data-code');
-                const check = card.querySelector('.individual-check');
-                const input = card.querySelector('.individual-input');
-
-                if (check && check.checked) {
-                    overrides.push(`${code}:${input.value}`);
+            for (const code in individualMarkups) {
+                if (individualMarkups[code].checked) {
+                    overrides.push(`${code}:${individualMarkups[code].val}`);
                 }
-            });
+            }
 
             let customUrl = window.location.origin + window.location.pathname + `?m=${globalMarkup}`;
             if (overrides.length > 0) {
                 customUrl += `&overrides=${overrides.join(',')}`;
             }
 
-            // Copiar al portapapeles
             navigator.clipboard.writeText(customUrl).then(() => {
-                showToast("¡Enlace de Catálogo Copiado!");
+                showToast("¡Enlace de catálogo copiado!");
             });
         }
 
+        // ====== COMPARTIR PRODUCTOS ======
+        function shareItem(code, name) {
+            const card = document.querySelector(`.product-card[data-code="${code}"]`);
+            const finalPriceText = card ? card.querySelector('.final-price').textContent : '';
 
-        // ====== COMPARTIR PRODUCTO INDIVIDUAL ======
-        function shareItem(btn) {
-            const card = btn.closest('.product-card');
-            const productName = card.querySelector('.prod-name').textContent;
-            const finalPriceText = card.querySelector('.final-price').textContent;
-            const code = card.getAttribute('data-code');
-
-            const message = `¡Hola! Te recomiendo este producto:\n\n🍏 *${productName}*\n📌 Cód. ${code}\n💵 *Precio Final: ${finalPriceText}*\n\nConsultas con Juliana Maciel al +54 9 11 7135-2560.`;
+            const message = `¡Hola! Te recomiendo este producto:\n\n🍏 *${name}*\n📌 Cód. ${code}\n💵 *Precio Final: ${finalPriceText}*\n\nConsultas con Juliana Maciel al +54 9 11 7135-2560.`;
 
             if (navigator.share) {
                 navigator.share({
-                    title: productName,
+                    title: name,
                     text: message,
                     url: window.location.href
                 }).catch(err => console.log(err));
@@ -704,54 +2001,25 @@
             }
         }
 
-
-        // ====== SISTEMA DE NOTIFICACIONES (TOAST) ======
+        // ====== NOTIFICACIONES TOAST ======
         function showToast(msg) {
             const toast = document.getElementById('toast');
-            document.getElementById('toast-msg').textContent = msg;
+            toast.textContent = msg;
             toast.classList.remove('opacity-0', 'pointer-events-none');
             setTimeout(() => {
                 toast.classList.add('opacity-0', 'pointer-events-none');
             }, 3000);
         }
 
-
-        // ====== FILTRO EN TIEMPO REAL ======
+        // ====== EVENTO DEL BUSCADOR ======
         const searchInput = document.getElementById('search');
-        const searchInfo = document.getElementById('search-info');
-        const sections = document.querySelectorAll('.level-section');
-
         searchInput.addEventListener('input', function() {
-            const query = searchInput.value.toLowerCase().trim();
-            let matches = 0;
-
-            if (query === "") {
-                cards.forEach(card => card.style.display = 'flex');
-                sections.forEach(sec => sec.style.display = 'block');
-                searchInfo.classList.add('hidden');
-                return;
-            }
-
-            cards.forEach(card => {
-                const keywords = card.getAttribute('data-keywords').toLowerCase();
-                if (keywords.includes(query)) {
-                    card.style.display = 'flex';
-                    matches++;
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-
-            sections.forEach(sec => {
-                const visibles = sec.querySelectorAll('.product-card[style="display: flex;"]');
-                sec.style.display = visibles.length === 0 ? 'none' : 'block';
-            });
-
-            searchInfo.classList.remove('hidden');
-            searchInfo.textContent = `Se encontraron ${matches} productos.`;
+            searchQuery = searchInput.value.trim();
+            currentPage = 1;
+            renderCatalog();
         });
 
-        // Inicializar el sistema al cargar
+        // Inicializar
         window.addEventListener('DOMContentLoaded', checkUrlParams);
     </script>
 </body>
