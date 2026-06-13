@@ -100,3 +100,37 @@ class Producto(db.Model):
 
     def __repr__(self):
         return f'<Producto {self.codigo} {self.nombre[:25]}>'
+
+
+class Ajustes(db.Model):
+    """
+    Configuracion del negocio (una sola fila). Centraliza markup, descuentos,
+    minimo de compra y WhatsApp. Se usa para calcular los precios de venta.
+    """
+    __tablename__ = 'ajustes'
+
+    id = db.Column(db.Integer, primary_key=True)
+    # Markup general de la web (margen sobre venta, Opcion 1). Editable por Juliana.
+    markup_general = db.Column(db.Numeric(5, 2), nullable=False, default=30)
+    # Piso de seguridad: nunca se vende por debajo de este margen
+    markup_minimo = db.Column(db.Numeric(5, 2), nullable=False, default=20)
+    # Descuentos por volumen (sobre el precio)
+    desc_x5 = db.Column(db.Numeric(5, 2), nullable=False, default=3)
+    desc_x10 = db.Column(db.Numeric(5, 2), nullable=False, default=5)
+    # Compra minima del carrito (con IVA) -> v0.4
+    minimo_compra = db.Column(db.Numeric(12, 2), nullable=False, default=30000)
+    # WhatsApp de Juliana (formato internacional sin +, ej 5491171352560)
+    whatsapp = db.Column(db.String(30), nullable=False, default='5491171352560')
+    nombre_negocio = db.Column(db.String(120), nullable=False, default='Saludables')
+
+    actualizado = db.Column(db.DateTime, default=_ahora)
+
+
+def get_ajustes():
+    """Devuelve la fila de ajustes; la crea con valores por defecto si no existe."""
+    a = Ajustes.query.first()
+    if a is None:
+        a = Ajustes()
+        db.session.add(a)
+        db.session.commit()
+    return a

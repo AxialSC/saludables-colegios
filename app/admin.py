@@ -1,22 +1,24 @@
 """
 app/admin.py — Blueprint del panel administrativo (El Arquitecto).
 v0.1.0 -> Dashboard
-v0.2.0 -> Catalogo (ver productos) + Importar planilla (solo super admin)
+v0.2.0 -> Catalogo + Importar planilla (solo super admin)
+v0.3.0 -> Ajustes (markup/descuentos) + precio de venta visible en el catalogo
 """
 import os
 import tempfile
 
 from flask import (Blueprint, render_template, redirect, url_for,
-                   request, flash, current_app)
+                   request, flash)
 from flask_login import login_required, current_user
 from sqlalchemy import select, or_
 from werkzeug.utils import secure_filename
 
 from .extensions import db
-from .models import Producto
+from .models import Producto, get_ajustes
 from .services import aplicar_importacion
 from .utils.decorators import admin_requerido, super_admin_requerido
 from .utils.import_planilla import leer_planilla
+from . import pricing
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -60,6 +62,13 @@ def catalogo():
 
     paginacion = db.paginate(stmt, page=page, per_page=50, error_out=False)
 
+    ajustes = get_ajustes()
+    # Calculamos el precio de venta (x1) de cada producto para que Juliana lo vea
+    filas = []
+    for p in paginacion.items:
+        filas.append({'p': p, 'venta': pricing.precio_final(p, ajustes, 'x1'),
+                      'margen': pricing.margen_efectivo(p, ajustes)})
+
     rubros = db.session.execute(
         select(Producto.rubro).distinct().order_by(Producto.rubro)
     ).scalars().all()
@@ -67,8 +76,49 @@ def catalogo():
     total = Producto.query.count()
 
     return render_template('admin/catalogo.html',
-                           paginacion=paginacion, rubros=rubros,
-                           q=q, rubro_sel=rubro, total=total)
+                           filas=filas, paginacion=paginacion, rubros=rubros,
+                           q=q, rubro_sel=rubro, total=total, ajustes=ajustes)
+
+
+@admin_bp.route('/ajustes', methods=['GET', 'POST'])
+@admin_requerido
+def ajustes():
+    aj = get_ajustes()
+
+    if request.method == 'POST':
+        try:
+            markup = float(request.form.get('markup_general', aj.markup_general))
+            minimo = float(request.form.get('markup_minimo', aj.markup_minimo))
+            dx5 = float(request.form.get('desc_x5', aj.desc_x5))
+            dx10 = float(request.form.get('desc_x10', aj.desc_x10))
+            min_compra = float(request.form.get('minimo_compra', aj.minimo_compra))
+            whatsapp = (request.form.get('whatsapp') or aj.whatsapp).strip()
+            negocio = (request.form.get('nombre_negocio') or aj.nombre_negocio).strip()
+        except ValueError:
+            flash('Revisá los valores: tienen que ser números.', 'error')
+            return redirect(url_for('admin.ajustes'))
+
+        # Piso de seguridad: el minimo no puede ser menor a 20 (regla del negocio)
+        if minimo < 20:
+            minimo = 20
+            flash('El margen mínimo no puede bajar de 20%. Lo dejé en 20%.', 'warning')
+        if markup < minimo:
+            flash(f'El markup general no puede ser menor al mínimo ({minimo:.0f}%). '
+                  'Ajustalo y guardá de nuevo.', 'error')
+            return redirect(url_for('admin.ajustes'))
+
+        aj.markup_general = markup
+        aj.markup_minimo = minimo
+        aj.desc_x5 = dx5
+        aj.desc_x10 = dx10
+        aj.minimo_compra = min_compra
+        aj.whatsapp = whatsapp
+        aj.nombre_negocio = negocio
+        db.session.commit()
+        flash('Ajustes guardados ✓ Los precios del catálogo ya reflejan los cambios.', 'success')
+        return redirect(url_for('admin.ajustes'))
+
+    return render_template('admin/ajustes.html', aj=aj)
 
 
 @admin_bp.route('/importar', methods=['GET', 'POST'])
@@ -86,7 +136,6 @@ def importar():
             flash('Formato no válido. Subí un archivo .xlsx o .csv', 'error')
             return redirect(url_for('admin.importar'))
 
-        # Guardamos el archivo en una ubicacion temporal para leerlo
         tmp_dir = tempfile.gettempdir()
         ruta = os.path.join(tmp_dir, nombre)
         archivo.save(ruta)

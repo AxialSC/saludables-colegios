@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ ajustes.nombre_negocio }} · Catálogo Mayorista Pilar</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tienda.css') }}">
+</head>
+<body>
+
+<header class="t-header">
+    <div class="t-header-top">
+        <div class="t-marca">{{ ajustes.nombre_negocio }}</div>
+        <div class="t-tagline">Catálogo mayorista · Pilar, Zona Norte</div>
+    </div>
+
+    <form method="GET" action="{{ url_for('cliente.catalogo') }}" class="t-search-wrap">
+        {% if rubro_sel %}<input type="hidden" name="rubro" value="{{ rubro_sel }}">{% endif %}
+        <input type="text" name="q" value="{{ q }}" class="t-search"
+               placeholder="Buscá por producto, marca o código (ej: baggio, alfajor, 89012)…">
+    </form>
+
+    <div class="t-chips">
+        <a href="{{ url_for('cliente.catalogo', q=q) }}"
+           class="t-chip {% if not rubro_sel %}activo{% endif %}">Todo</a>
+        {% for real, disp in rubros %}
+        <a href="{{ url_for('cliente.catalogo', rubro=real, q=q) }}"
+           class="t-chip {% if real == rubro_sel %}activo{% endif %}">{{ disp }}</a>
+        {% endfor %}
+    </div>
+</header>
+
+<div class="t-aviso">
+    🛒 Pedido mínimo <b>{{ ajustes.minimo_compra|pesos }}</b> · Precios finales con IVA incluido
+</div>
+
+{% if items %}
+<div class="t-toolbar">
+    <span class="t-count">{{ paginacion.total }} producto(s){% if q or rubro_sel %} encontrados{% endif %}</span>
+    <div class="t-views">
+        <button class="t-view-btn activo" id="btn-grilla" onclick="setVista('grilla')">▦ Grilla</button>
+        <button class="t-view-btn" id="btn-lista" onclick="setVista('lista')">☰ Lista</button>
+    </div>
+</div>
+
+<div class="t-grid" id="grid">
+    {% for it in items %}
+    {% set p = it.p %}{% set pr = it.precios %}
+    <div class="t-card">
+        <div class="t-thumb">{{ rubro_display(p.rubro)[0]|upper }}</div>
+        <div class="t-body">
+            <span class="t-rubro">{{ rubro_display(p.rubro) }}</span>
+            <div class="t-nombre">{{ p.nombre }}</div>
+            <span class="t-codigo">Cód. {{ p.codigo }}</span>
+            <div class="t-precio-box">
+                <div class="t-precio">{{ pr.x1|pesos }} <small>c/u</small></div>
+                <div class="t-escala">
+                    <span>5u: <b>{{ pr.x5|pesos }}</b></span>
+                    <span>10u: <b>{{ pr.x10|pesos }}</b></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if paginacion.pages > 1 %}
+<div class="t-pag">
+    {% if paginacion.has_prev %}
+    <a href="{{ url_for('cliente.catalogo', page=paginacion.prev_num, q=q, rubro=rubro_sel) }}">← Anterior</a>
+    {% endif %}
+    <span>Página {{ paginacion.page }} de {{ paginacion.pages }}</span>
+    {% if paginacion.has_next %}
+    <a href="{{ url_for('cliente.catalogo', page=paginacion.next_num, q=q, rubro=rubro_sel) }}">Siguiente →</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="t-empty">
+    <h2>No encontramos productos</h2>
+    <p>Probá con otra palabra o tocá “Todo” para ver el catálogo completo.</p>
+</div>
+{% endif %}
+
+<footer class="t-footer">
+    <div class="ft-marca">{{ ajustes.nombre_negocio }}</div>
+    <p style="font-size:0.8rem; margin-top:6px;">Distribución de saludables para colegios y kioscos de Pilar</p>
+    <a class="wa" href="https://wa.me/{{ ajustes.whatsapp }}" target="_blank">Consultas por WhatsApp →</a>
+    <div class="ft-foot">AXIAL SECURITY · v{{ app_version }}</div>
+</footer>
+
+<script>
+    function setVista(modo) {
+        var grid = document.getElementById('grid');
+        var bg = document.getElementById('btn-grilla');
+        var bl = document.getElementById('btn-lista');
+        if (modo === 'lista') {
+            grid.classList.add('lista');
+            bl.classList.add('activo'); bg.classList.remove('activo');
+        } else {
+            grid.classList.remove('lista');
+            bg.classList.add('activo'); bl.classList.remove('activo');
+        }
+    }
+</script>
+
+</body>
+</html>

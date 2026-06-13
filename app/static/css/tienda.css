@@ -1,0 +1,155 @@
+/* =====================================================================
+   TIENDA PUBLICA · Saludables (catalogo de clientes)
+   Fresco, limpio, mobile-first. Marca con verde + bronce para precios.
+   ===================================================================== */
+:root {
+    --t-bg:        #FAFAF7;
+    --t-card:      #FFFFFF;
+    --t-text:      #1F1F1D;
+    --t-soft:      #8A8A82;
+    --t-line:      #ECE9E1;
+    --t-verde:     #2F6F4E;
+    --t-verde-d:   #245A3F;
+    --t-verde-soft:#E9F2EC;
+    --t-bronce:    #8B6F47;
+    --t-precio:    #6B5638;
+    --t-radius:    14px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: var(--t-bg);
+    color: var(--t-text);
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+
+/* ---------- Header ---------- */
+.t-header {
+    position: sticky; top: 0; z-index: 40;
+    background: var(--t-card);
+    border-bottom: 1px solid var(--t-line);
+}
+.t-header-top {
+    border-top: 3px solid var(--t-verde);
+    padding: 16px 18px 12px;
+    max-width: 1180px; margin: 0 auto;
+}
+.t-marca {
+    font-weight: 300; letter-spacing: 0.28em; text-transform: uppercase;
+    font-size: 1.35rem; color: var(--t-verde-d);
+}
+.t-tagline { font-size: 0.7rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--t-soft); margin-top: 3px; }
+
+/* Buscador */
+.t-search-wrap { max-width: 1180px; margin: 0 auto; padding: 0 18px 14px; }
+.t-search {
+    width: 100%; padding: 14px 16px;
+    border: 1px solid var(--t-line); border-radius: var(--t-radius);
+    font-size: 1rem; background: var(--t-bg); outline: none;
+}
+.t-search:focus { border-color: var(--t-verde); background: #fff; }
+
+/* Chips de rubro */
+.t-chips {
+    display: flex; gap: 8px; overflow-x: auto; padding: 0 18px 14px;
+    max-width: 1180px; margin: 0 auto; -webkit-overflow-scrolling: touch;
+}
+.t-chips::-webkit-scrollbar { display: none; }
+.t-chip {
+    flex-shrink: 0; font-size: 0.78rem; font-weight: 700;
+    padding: 8px 14px; border-radius: 999px;
+    background: #f0ede5; color: #5a564d; white-space: nowrap;
+    border: 1px solid transparent;
+}
+.t-chip:hover { background: #e6e2d8; }
+.t-chip.activo { background: var(--t-verde); color: #fff; }
+
+/* ---------- Toolbar ---------- */
+.t-toolbar {
+    max-width: 1180px; margin: 18px auto 0; padding: 0 18px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.t-count { font-size: 0.8rem; color: var(--t-soft); }
+.t-views { display: flex; gap: 6px; }
+.t-view-btn {
+    border: 1px solid var(--t-line); background: #fff; border-radius: 9px;
+    padding: 7px 11px; font-size: 0.75rem; font-weight: 700; color: var(--t-soft); cursor: pointer;
+}
+.t-view-btn.activo { background: var(--t-text); color: #fff; border-color: var(--t-text); }
+
+/* ---------- Grid de productos ---------- */
+.t-grid {
+    max-width: 1180px; margin: 14px auto 0; padding: 0 18px;
+    display: grid; gap: 14px;
+    grid-template-columns: repeat(2, 1fr);
+}
+@media (min-width: 640px)  { .t-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 980px)  { .t-grid { grid-template-columns: repeat(4, 1fr); } }
+
+.t-card {
+    background: var(--t-card); border: 1px solid var(--t-line);
+    border-radius: var(--t-radius); overflow: hidden;
+    display: flex; flex-direction: column;
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+.t-card:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,0,0,.07); }
+
+.t-thumb {
+    height: 110px; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--t-verde-soft), #f3efe6);
+    color: var(--t-verde-d); font-size: 2rem; font-weight: 300; letter-spacing: .05em;
+}
+.t-body { padding: 12px; display: flex; flex-direction: column; gap: 8px; flex-grow: 1; }
+.t-rubro { font-size: 0.6rem; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--t-verde-d); background: var(--t-verde-soft); align-self: flex-start;
+    padding: 3px 8px; border-radius: 6px; }
+.t-codigo { font-size: 0.62rem; color: var(--t-soft); font-family: 'Courier New', monospace; }
+.t-nombre { font-size: 0.82rem; font-weight: 600; line-height: 1.3; flex-grow: 1; }
+
+.t-precio-box { border-top: 1px solid var(--t-line); padding-top: 9px; margin-top: 4px; }
+.t-precio { font-size: 1.18rem; font-weight: 800; color: var(--t-precio); }
+.t-precio small { font-size: 0.6rem; font-weight: 600; color: var(--t-soft); letter-spacing: .04em; }
+.t-escala { display: flex; gap: 10px; margin-top: 5px; font-size: 0.66rem; color: var(--t-verde-d); }
+.t-escala b { font-weight: 800; }
+
+/* ---------- Vista LISTA ---------- */
+.t-grid.lista { grid-template-columns: 1fr; }
+.t-grid.lista .t-card { flex-direction: row; align-items: center; }
+.t-grid.lista .t-thumb { height: auto; width: 64px; align-self: stretch; font-size: 1.3rem; flex-shrink: 0; }
+.t-grid.lista .t-body { flex-direction: row; align-items: center; gap: 14px; flex-wrap: wrap; }
+.t-grid.lista .t-nombre { flex: 1 1 200px; }
+.t-grid.lista .t-precio-box { border-top: none; padding-top: 0; margin-top: 0; text-align: right; }
+.t-grid.lista .t-escala { justify-content: flex-end; }
+
+/* ---------- Vacio ---------- */
+.t-empty { max-width: 520px; margin: 50px auto; text-align: center; padding: 0 18px; color: var(--t-soft); }
+.t-empty h2 { color: var(--t-text); font-weight: 500; margin-bottom: 8px; }
+
+/* ---------- Paginacion ---------- */
+.t-pag { max-width: 1180px; margin: 26px auto; padding: 0 18px;
+    display: flex; align-items: center; justify-content: center; gap: 16px; }
+.t-pag a { font-size: 0.85rem; font-weight: 700; padding: 9px 16px;
+    border: 1px solid var(--t-line); border-radius: var(--t-radius); background: #fff; }
+.t-pag a:hover { background: var(--t-verde); color: #fff; border-color: var(--t-verde); }
+.t-pag span { font-size: 0.8rem; color: var(--t-soft); }
+
+/* ---------- Aviso mínimo ---------- */
+.t-aviso {
+    max-width: 1180px; margin: 16px auto 0; padding: 11px 18px;
+    background: var(--t-verde-soft); color: var(--t-verde-d);
+    font-size: 0.8rem; text-align: center; border-radius: var(--t-radius);
+    margin-left: 18px; margin-right: 18px;
+}
+
+/* ---------- Footer ---------- */
+.t-footer {
+    margin-top: 40px; background: #1A1A1A; color: #cfcabf;
+    padding: 30px 18px; text-align: center;
+}
+.t-footer .ft-marca { letter-spacing: .26em; text-transform: uppercase; color: #f4f1ec; font-size: 1rem; }
+.t-footer a.wa { display: inline-block; margin-top: 10px; color: #8fd0a8; font-weight: 700; }
+.t-footer .ft-foot { font-size: 0.65rem; color: #777; margin-top: 16px; letter-spacing: .08em; }

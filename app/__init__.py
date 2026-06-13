@@ -39,6 +39,15 @@ def create_app(config_name=None):
     # --- Filtros Jinja (fechas Argentina) ---
     registrar_filtros_jinja(app)
 
+    @app.template_filter('pesos')
+    def _pesos(valor):
+        try:
+            v = float(valor)
+        except (TypeError, ValueError):
+            return valor
+        s = f'{v:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+        return '$' + s
+
     # --- Variables disponibles en TODOS los templates (footer con version, etc) ---
     @app.context_processor
     def inject_app_data():
@@ -52,13 +61,10 @@ def create_app(config_name=None):
     # --- Blueprints ---
     from .auth import auth_bp
     from .admin import admin_bp
+    from .cliente import cliente_bp
+    app.register_blueprint(cliente_bp)   # tienda publica en la raiz '/'
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
-
-    # Raiz -> redirige al panel (o al login)
-    @app.route('/')
-    def index():
-        return redirect(url_for('admin.dashboard'))
 
     # --- Manejo de errores ---
     @app.errorhandler(403)

@@ -15,10 +15,13 @@
                class="{% if request.endpoint == 'admin.dashboard' %}activo{% endif %}">Dashboard</a>
             <a href="{{ url_for('admin.catalogo') }}"
                class="{% if request.endpoint == 'admin.catalogo' %}activo{% endif %}">Catálogo</a>
+            <a href="{{ url_for('admin.ajustes') }}"
+               class="{% if request.endpoint == 'admin.ajustes' %}activo{% endif %}">Ajustes y precios</a>
             {% if current_user.es_super_admin %}
             <a href="{{ url_for('admin.importar') }}"
                class="{% if request.endpoint == 'admin.importar' %}activo{% endif %}">Importar planilla</a>
             {% endif %}
+            <a href="{{ url_for('cliente.catalogo') }}" target="_blank">Ver tienda ↗</a>
             <a href="#" class="disabled">Clientes <span class="badge-soon">v0.6</span></a>
             <a href="#" class="disabled">Pedidos <span class="badge-soon">v0.6</span></a>
             <a href="#" class="disabled">Reportes <span class="badge-soon">v0.7</span></a>
