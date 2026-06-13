@@ -60,3 +60,17 @@ def precios(producto, ajustes):
         'x10': precio_final(producto, ajustes, 'x10'),
         'margen': margen_efectivo(producto, ajustes),
     }
+
+
+def escala_por_cantidad(cantidad):
+    """1-4 -> x1 | 5-9 -> x5 | 10+ -> x10"""
+    if cantidad >= 10:
+        return 'x10'
+    if cantidad >= 5:
+        return 'x5'
+    return 'x1'
+
+
+def precio_por_cantidad(producto, ajustes, cantidad):
+    """Precio unitario final segun la cantidad pedida de ese producto."""
+    return precio_final(producto, ajustes, escala_por_cantidad(cantidad))

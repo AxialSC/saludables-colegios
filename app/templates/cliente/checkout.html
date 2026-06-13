@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finalizar pedido · {{ ajustes.nombre_negocio }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tienda.css') }}">
+</head>
+<body>
+
+<header class="t-header">
+    <div class="t-header-top">
+        <a href="{{ url_for('cliente.catalogo') }}" class="t-volver">← Seguir comprando</a>
+        <div class="t-marca" style="margin-top:6px;">{{ ajustes.nombre_negocio }}</div>
+        <div class="t-tagline">Finalizá tu pedido</div>
+    </div>
+</header>
+
+<div class="co-wrap">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="co-flashes">
+          {% for category, message in messages %}<li>{{ message }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Resumen del carrito (lo arma el JS desde sessionStorage) -->
+    <div class="co-card">
+        <h3>Tu pedido</h3>
+        <div id="co-resumen"></div>
+        <div class="co-total-row">
+            <span>Total</span><span id="co-total">$0,00</span>
+        </div>
+    </div>
+
+    <!-- Datos del cliente -->
+    <div class="co-card">
+        <h3>Tus datos</h3>
+        <p class="co-ayuda">Juliana usa estos datos para coordinar la entrega y el pago.</p>
+
+        <form method="POST" action="{{ url_for('cliente.checkout') }}" id="co-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="carrito_json" id="carrito_json" value="{}">
+
+            <div class="co-row">
+                <div class="co-field">
+                    <label>Nombre *</label>
+                    <input name="nombre" required value="{{ datos.nombre if datos else '' }}">
+                </div>
+                <div class="co-field">
+                    <label>Apellido *</label>
+                    <input name="apellido" required value="{{ datos.apellido if datos else '' }}">
+                </div>
+            </div>
+
+            <div class="co-row">
+                <div class="co-field">
+                    <label>CUIT * <small>(11 dígitos, sin guiones)</small></label>
+                    <input name="cuit" required inputmode="numeric" maxlength="13"
+                           placeholder="20123456786" value="{{ datos.cuit if datos else '' }}">
+                </div>
+                <div class="co-field">
+                    <label>WhatsApp *</label>
+                    <input name="whatsapp" required inputmode="tel"
+                           placeholder="11 5555 5555" value="{{ datos.whatsapp if datos else '' }}">
+                </div>
+            </div>
+
+            <div class="co-field">
+                <label>Email <small>(opcional)</small></label>
+                <input name="email" type="email" value="{{ datos.email if datos else '' }}">
+            </div>
+
+            <div class="co-field">
+                <label>Dirección de entrega *</label>
+                <input name="direccion" required value="{{ datos.direccion if datos else '' }}">
+            </div>
+
+            <div class="co-field">
+                <label>Zona / Barrio / Colegio *</label>
+                <input name="zona" required placeholder="Ej: Tortugas, Northlands, Estancias…"
+                       value="{{ datos.zona if datos else '' }}">
+            </div>
+
+            <div class="co-field">
+                <label>Observaciones <small>(horario de contacto, referencias…)</small></label>
+                <textarea name="observaciones" rows="2">{{ datos.observaciones if datos else '' }}</textarea>
+            </div>
+
+            <button type="submit" class="co-submit" id="co-submit">Enviar pedido</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    const KEY = 'carrito_saludables_v1';
+    function leer() { try { return JSON.parse(sessionStorage.getItem(KEY)) || {}; } catch (e) { return {}; } }
+    function fmt(v) { return '$' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    function precioUnit(it) { const q = it.qty; if (q >= 10) return it.p10; if (q >= 5) return it.p5; return it.p1; }
+
+    const carrito = leer();
+    const cods = Object.keys(carrito);
+    const cont = document.getElementById('co-resumen');
+
+    if (cods.length === 0) {
+        cont.innerHTML = '<p class="co-vacio">Tu carrito está vacío. <a href="/">Volvé a la tienda</a>.</p>';
+        document.getElementById('co-form').style.display = 'none';
+        document.querySelector('.co-total-row').style.display = 'none';
+    } else {
+        let total = 0;
+        cont.innerHTML = cods.map(function (cod) {
+            const it = carrito[cod];
+            const pu = precioUnit(it);
+            const sub = pu * it.qty;
+            total += sub;
+            return '<div class="co-item"><span>' + it.qty + '× ' + it.nombre +
+                   '</span><span>' + fmt(sub) + '</span></div>';
+        }).join('');
+        document.getElementById('co-total').textContent = fmt(total);
+
+        // Mapa simple {codigo: cantidad} para el backend
+        const simple = {};
+        cods.forEach(function (c) { simple[c] = carrito[c].qty; });
+        document.getElementById('carrito_json').value = JSON.stringify(simple);
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pedido {{ pedido.numero }} · {{ ajustes.nombre_negocio }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tienda.css') }}">
+</head>
+<body>
+
+<header class="t-header">
+    <div class="t-header-top">
+        <div class="t-marca">{{ ajustes.nombre_negocio }}</div>
+        <div class="t-tagline">Catálogo mayorista · Pilar</div>
+    </div>
+</header>
+
+<div class="co-wrap">
+
+    <div class="co-card co-ok">
+        <div class="co-check">✓</div>
+        <h2>¡Gracias {{ pedido.nombre }}!</h2>
+        <p>Tu pedido quedó registrado con el número</p>
+        <div class="co-numero">{{ pedido.numero }}</div>
+        <p class="co-ayuda" style="margin-top:10px;">
+            Tocá el botón de abajo para avisarle a Juliana por WhatsApp. Ella verifica el stock
+            y se contacta con vos para coordinar la entrega y el pago.
+        </p>
+
+        <a class="co-wa" target="_blank"
+           href="https://wa.me/{{ ajustes.whatsapp }}?text={{ wa_msg | urlencode }}">
+           Avisar a Juliana por WhatsApp
+        </a>
+        <a class="co-pdf" href="{{ url_for('cliente.pedido_pdf', token=pedido.token) }}" target="_blank">
+           Descargar PDF del pedido
+        </a>
+    </div>
+
+    <div class="co-card">
+        <h3>Resumen</h3>
+        {% for it in pedido.items %}
+        <div class="co-item">
+            <span>{{ it.cantidad }}× {{ it.nombre }}</span>
+            <span>{{ it.subtotal|pesos }}</span>
+        </div>
+        {% endfor %}
+        <div class="co-total-row"><span>Total</span><span>{{ pedido.total|pesos }}</span></div>
+        <p class="co-nota">
+            Todos los pedidos se verifican según stock para mantener la calidad y las buenas
+            prácticas de venta. Este comprobante es un pedido, no una factura.
+        </p>
+    </div>
+
+    <a href="{{ url_for('cliente.catalogo') }}" class="co-volver-link">← Volver a la tienda</a>
+</div>
+
+<script>
+    // El pedido ya se registró: limpiamos el carrito del navegador
+    try { sessionStorage.removeItem('carrito_saludables_v1'); } catch (e) {}
+</script>
+
+</body>
+</html>

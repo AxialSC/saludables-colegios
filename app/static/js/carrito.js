@@ -88,8 +88,7 @@
   window.intentarPedido = function () {
     const { total } = totales();
     if (total < MIN) return;
-    // El cierre real (datos + WhatsApp + PDF) llega en la v0.5
-    toast('El cierre del pedido se habilita en la próxima versión');
+    window.location.href = '/checkout';
   };
 
   // --- Toast ---

@@ -134,3 +134,89 @@ def get_ajustes():
         db.session.add(a)
         db.session.commit()
     return a
+
+
+import secrets
+
+
+class EstadoPedido:
+    PENDIENTE = 'PENDIENTE'    # recien hecho, falta que Juliana lo confirme
+    CONFIRMADO = 'CONFIRMADO'  # Juliana verifico stock y lo acordo
+    ENTREGADO = 'ENTREGADO'    # entregado y cobrado
+    ANULADO = 'ANULADO'
+
+    ETIQUETAS = {
+        PENDIENTE: 'Pendiente',
+        CONFIRMADO: 'Confirmado',
+        ENTREGADO: 'Entregado',
+        ANULADO: 'Anulado',
+    }
+
+
+class Pedido(db.Model):
+    """
+    Pedido hecho por un cliente desde la web. Los precios quedan CONGELADOS
+    en los items (snapshot), para que valgan lo que valian al momento de la compra.
+    """
+    __tablename__ = 'pedidos'
+
+    id = db.Column(db.Integer, primary_key=True)
+    numero = db.Column(db.String(20), unique=True, nullable=False, index=True)  # WEB-00001
+    # token publico no adivinable para la pagina de confirmacion / PDF
+    token = db.Column(db.String(32), unique=True, nullable=False, index=True,
+                      default=lambda: secrets.token_hex(8))
+    origen = db.Column(db.String(15), nullable=False, default='WEB')  # WEB / CUMPLE / COLEGIO
+    estado = db.Column(db.String(15), nullable=False, default=EstadoPedido.PENDIENTE)
+
+    # Datos del cliente
+    nombre = db.Column(db.String(80), nullable=False)
+    apellido = db.Column(db.String(80), nullable=False)
+    cuit = db.Column(db.String(13), nullable=False)
+    whatsapp = db.Column(db.String(30), nullable=False)
+    email = db.Column(db.String(120), nullable=True)
+    direccion = db.Column(db.String(200), nullable=False)
+    zona = db.Column(db.String(120), nullable=False)         # barrio/colegio (para metricas)
+    observaciones = db.Column(db.Text, nullable=True)
+
+    total = db.Column(db.Numeric(12, 2), nullable=False)
+
+    # Para la contabilidad de Juliana (se completa en v0.6)
+    facturado = db.Column(db.Boolean, nullable=True, default=None)
+
+    creado = db.Column(db.DateTime, default=_ahora, index=True)
+
+    items = db.relationship('ItemPedido', backref='pedido',
+                            cascade='all, delete-orphan', lazy='selectin')
+
+    @property
+    def cliente_completo(self):
+        return f'{self.nombre} {self.apellido}'.strip()
+
+    @property
+    def estado_etiqueta(self):
+        return EstadoPedido.ETIQUETAS.get(self.estado, self.estado)
+
+    @property
+    def cantidad_items(self):
+        return sum(i.cantidad for i in self.items)
+
+
+class ItemPedido(db.Model):
+    __tablename__ = 'items_pedido'
+
+    id = db.Column(db.Integer, primary_key=True)
+    pedido_id = db.Column(db.Integer, db.ForeignKey('pedidos.id'), nullable=False)
+    # Snapshot: guardamos codigo y nombre por si el producto cambia despues
+    codigo = db.Column(db.String(40), nullable=False)
+    nombre = db.Column(db.String(255), nullable=False)
+    cantidad = db.Column(db.Integer, nullable=False)
+    precio_unitario = db.Column(db.Numeric(12, 2), nullable=False)  # ya con escalon aplicado
+    subtotal = db.Column(db.Numeric(12, 2), nullable=False)
+
+
+def generar_numero_pedido(origen='WEB'):
+    """Numero correlativo por origen: WEB-00001, CUMPLE-00001, COLEGIO-00001."""
+    prefijos = {'WEB': 'WEB', 'CUMPLE': 'CUMPLE', 'COLEGIO': 'COLEGIO'}
+    pref = prefijos.get(origen, 'WEB')
+    n = Pedido.query.filter_by(origen=origen).count() + 1
+    return f'{pref}-{n:05d}'
