@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Ingreso · {{ app_nombre }}{% endblock %}
+
+{% block body %}
+<div class="login-wrap">
+
+    <!-- Lado carbon -->
+    <div class="login-side">
+        <div class="brand-top">
+            <div class="marca">{{ app_nombre }}</div>
+            <div class="sub">{{ app_subtitulo }} · AXIAL SECURITY</div>
+        </div>
+
+        <div class="login-features">
+            <div class="feature">
+                <span class="dot"></span>
+                <div>
+                    <h4>Catálogo profesional</h4>
+                    <p>Más de 1.600 artículos con buscador por marca, peso y código.</p>
+                </div>
+            </div>
+            <div class="feature">
+                <span class="dot"></span>
+                <div>
+                    <h4>Precios y márgenes bajo control</h4>
+                    <p>Los costos nunca salen del servidor. Markup protegido con piso del 20%.</p>
+                </div>
+            </div>
+            <div class="feature">
+                <span class="dot"></span>
+                <div>
+                    <h4>Ventas y clientes</h4>
+                    <p>Pedidos por WhatsApp, PDF y registro de clientes en un solo lugar.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="foot">AXIAL SECURITY · DESARROLLO A MEDIDA</div>
+        <div class="estrella">✦</div>
+    </div>
+
+    <!-- Lado crema (form) -->
+    <div class="login-form-side">
+        <div class="login-box">
+            <div class="tit-mini">Acceso al sistema</div>
+            <h2>Bienvenido</h2>
+            <p class="ayuda">Ingresá tus credenciales para continuar.</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                <ul class="flashes">
+                  {% for category, message in messages %}
+                    <li class="flash {{ category }}">{{ message }}</li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('auth.login') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="campo">
+                    <label for="usuario">Usuario</label>
+                    <input type="text" id="usuario" name="usuario" autofocus required>
+                </div>
+                <div class="campo">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-carbon btn-block">Ingresar al portal</button>
+            </form>
+
+            <p class="pie">¿Olvidaste tu contraseña? Contactá a tu administrador.</p>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
