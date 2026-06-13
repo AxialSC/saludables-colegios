@@ -16,15 +16,20 @@
 
     <form method="GET" action="{{ url_for('cliente.catalogo') }}" class="t-search-wrap">
         {% if rubro_sel %}<input type="hidden" name="rubro" value="{{ rubro_sel }}">{% endif %}
-        <input type="text" name="q" value="{{ q }}" class="t-search"
-               placeholder="Buscá por producto, marca o código (ej: baggio, alfajor, 89012)…">
+        <div class="t-search-row">
+            <input type="text" name="q" value="{{ q }}" class="t-search"
+                   placeholder="Buscá por producto, marca o código (ej: baggio, alfajor, 89012)…">
+            {% if q %}
+            <a class="t-search-clear" href="{{ url_for('cliente.catalogo', rubro=rubro_sel) }}" title="Limpiar búsqueda">✕</a>
+            {% endif %}
+        </div>
     </form>
 
     <div class="t-chips">
-        <a href="{{ url_for('cliente.catalogo', q=q) }}"
-           class="t-chip {% if not rubro_sel %}activo{% endif %}">Todo</a>
+        <a href="{{ url_for('cliente.catalogo') }}"
+           class="t-chip {% if not rubro_sel and not q %}activo{% endif %}">Todo</a>
         {% for real, disp in rubros %}
-        <a href="{{ url_for('cliente.catalogo', rubro=real, q=q) }}"
+        <a href="{{ url_for('cliente.catalogo', rubro=real) }}"
            class="t-chip {% if real == rubro_sel %}activo{% endif %}">{{ disp }}</a>
         {% endfor %}
     </div>
@@ -59,6 +64,11 @@
                     <span>10u: <b>{{ pr.x10|pesos }}</b></span>
                 </div>
             </div>
+            <button class="t-add"
+                    data-codigo="{{ p.codigo }}"
+                    data-nombre="{{ p.nombre }}"
+                    data-p1="{{ pr.x1 }}" data-p5="{{ pr.x5 }}" data-p10="{{ pr.x10 }}"
+                    onclick="agregarAlCarrito(this)">+ Agregar</button>
         </div>
     </div>
     {% endfor %}
@@ -80,6 +90,7 @@
 <div class="t-empty">
     <h2>No encontramos productos</h2>
     <p>Probá con otra palabra o tocá “Todo” para ver el catálogo completo.</p>
+    <a href="{{ url_for('cliente.catalogo') }}" class="t-empty-btn">Ver todo el catálogo</a>
 </div>
 {% endif %}
 
@@ -90,7 +101,38 @@
     <div class="ft-foot">AXIAL SECURITY · v{{ app_version }}</div>
 </footer>
 
+<!-- Boton flotante del carrito -->
+<button class="cart-fab" onclick="abrirCarrito()">
+    🛒 <span id="cart-fab-total">$0,00</span>
+    <span class="cart-badge" id="cart-badge" style="display:none;">0</span>
+</button>
+
+<!-- Modal del carrito -->
+<div class="cart-modal" id="cart-modal">
+    <div class="cart-box">
+        <div class="cart-head">
+            <h3>Tu pedido</h3>
+            <button class="cart-close" onclick="cerrarCarrito()">✕</button>
+        </div>
+        <div class="cart-items" id="cart-items"></div>
+        <div class="cart-foot">
+            <div class="cart-total-row">
+                <span>Total</span>
+                <span id="cart-total">$0,00</span>
+            </div>
+            <div class="cart-estado" id="cart-estado"></div>
+            <button class="cart-pedir" id="cart-pedir" onclick="intentarPedido()" disabled>
+                Pedido minimo
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script>
+    window.SALU = { minimo: {{ ajustes.minimo_compra|float }} };
+
     function setVista(modo) {
         var grid = document.getElementById('grid');
         var bg = document.getElementById('btn-grilla');
@@ -104,6 +146,7 @@
         }
     }
 </script>
+<script src="{{ url_for('static', filename='js/carrito.js') }}"></script>
 
 </body>
 </html>
