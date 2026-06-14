@@ -7,7 +7,7 @@ import os
 import tempfile
 
 from flask import (Blueprint, render_template, redirect, url_for,
-                   request, flash, abort, Response)
+                   request, flash, abort, Response, current_app)
 from flask_login import login_required, current_user
 from sqlalchemy import select, or_, func
 from werkzeug.utils import secure_filename
@@ -228,6 +228,69 @@ def catalogo():
     return render_template('admin/catalogo.html',
                            filas=filas, paginacion=paginacion, rubros=rubros,
                            q=q, rubro_sel=rubro, total=total, ajustes=ajustes)
+
+
+# ======================= FOTOS =======================
+
+EXTENSIONES_IMG = ('.jpg', '.jpeg', '.png', '.webp')
+
+
+def _carpeta_fotos():
+    carpeta = os.path.join(current_app.static_folder, 'img', 'productos')
+    os.makedirs(carpeta, exist_ok=True)
+    return carpeta
+
+
+@admin_bp.route('/fotos', methods=['GET', 'POST'])
+@admin_requerido
+def fotos():
+    carpeta = _carpeta_fotos()
+
+    if request.method == 'POST':
+        from PIL import Image
+
+        archivos = request.files.getlist('fotos')
+        asignadas = 0
+        sin_producto = []
+        invalidas = 0
+
+        for f in archivos:
+            if not f or not f.filename:
+                continue
+            nombre = secure_filename(f.filename)
+            base, ext = os.path.splitext(nombre)
+            if ext.lower() not in EXTENSIONES_IMG:
+                invalidas += 1
+                continue
+            codigo = base.strip()
+            producto = Producto.query.filter_by(codigo=codigo).first()
+            if producto is None:
+                sin_producto.append(codigo)
+                continue
+            try:
+                img = Image.open(f.stream).convert('RGB')
+                img.thumbnail((600, 600))  # achicar para que pese poco
+                destino = os.path.join(carpeta, f'{codigo}.jpg')
+                img.save(destino, 'JPEG', quality=82)
+                producto.imagen = f'{codigo}.jpg'
+                asignadas += 1
+            except Exception:
+                invalidas += 1
+
+        db.session.commit()
+
+        partes = [f'{asignadas} foto(s) asignada(s)']
+        if sin_producto:
+            ej = ', '.join(sin_producto[:8])
+            partes.append(f'{len(sin_producto)} sin producto (código no encontrado: {ej})')
+        if invalidas:
+            partes.append(f'{invalidas} inválida(s)')
+        flash(' · '.join(partes), 'success' if asignadas else 'warning')
+        return redirect(url_for('admin.fotos'))
+
+    con_foto = Producto.query.filter(Producto.imagen.isnot(None)).count()
+    total = Producto.query.count()
+    return render_template('admin/fotos.html', con_foto=con_foto, total=total)
 
 
 # ======================= AJUSTES =======================

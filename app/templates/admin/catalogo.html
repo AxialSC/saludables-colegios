@@ -54,6 +54,7 @@
                 <td class="mono">{{ p.codigo }}</td>
                 <td>
                     {{ p.nombre }}
+                    {% if p.imagen %}<span title="Tiene foto">📷</span>{% endif %}
                     {% if not p.en_ultima_lista %}<span class="tag-fuera">no en última lista</span>{% endif %}
                 </td>
                 <td><span class="tag-rubro">{{ p.rubro }}</span></td>

@@ -52,7 +52,7 @@
     {% for it in items %}
     {% set p = it.p %}{% set pr = it.precios %}
     <div class="t-card">
-        <div class="t-thumb">{{ rubro_display(p.rubro)[0]|upper }}</div>
+        <div class="t-thumb">{% if p.imagen %}<img src="{{ url_for('static', filename='img/productos/' + p.imagen) }}" alt="{{ p.nombre }}" loading="lazy">{% else %}{{ rubro_display(p.rubro)[0]|upper }}{% endif %}</div>
         <div class="t-body">
             <span class="t-rubro">{{ rubro_display(p.rubro) }}</span>
             <div class="t-nombre">{{ p.nombre }}</div>

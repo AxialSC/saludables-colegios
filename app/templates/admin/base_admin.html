@@ -23,6 +23,8 @@
             <a href="{{ url_for('admin.importar') }}"
                class="{% if request.endpoint == 'admin.importar' %}activo{% endif %}">Importar planilla</a>
             {% endif %}
+            <a href="{{ url_for('admin.fotos') }}"
+               class="{% if request.endpoint == 'admin.fotos' %}activo{% endif %}">Fotos</a>
             <a href="{{ url_for('cliente.catalogo') }}" target="_blank">Ver tienda ↗</a>
             <a href="#" class="disabled">Clientes <span class="badge-soon">v0.6</span></a>
             <a href="#" class="disabled">Pedidos <span class="badge-soon">v0.6</span></a>

@@ -1,0 +1,45 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Fotos · {{ app_nombre }}{% endblock %}
+{% block seccion %}Administración{% endblock %}
+{% block titulo %}Fotos de productos{% endblock %}
+
+{% block contenido %}
+
+<div class="panel" style="max-width: 680px;">
+    <h3>Cargar fotos</h3>
+    <p style="margin-bottom: 16px;">
+        Subí las imágenes y el sistema las asigna solas a cada producto.
+        <b>Cada archivo tiene que llamarse con el código del producto</b> (ej: la foto del
+        producto código 89012 va como <code>89012.jpg</code>). Podés subir muchas de una vez.
+        Se aceptan .jpg, .png y .webp; se achican solas para que pesen poco.
+    </p>
+
+    <div class="foto-progreso">
+        <div class="foto-bar"><div class="foto-fill" style="width: {{ (con_foto / total * 100) if total else 0 }}%;"></div></div>
+        <span><b>{{ con_foto }}</b> de <b>{{ total }}</b> productos con foto</span>
+    </div>
+
+    <form method="POST" action="{{ url_for('admin.fotos') }}" enctype="multipart/form-data" style="margin-top:18px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="campo">
+            <label for="fotos">Seleccioná las imágenes (podés elegir varias)</label>
+            <input type="file" id="fotos" name="fotos" accept=".jpg,.jpeg,.png,.webp" multiple required>
+        </div>
+        <button type="submit" class="btn btn-bronce btn-block">Subir y asignar</button>
+    </form>
+
+    <p style="font-size: 0.75rem; color: var(--text-soft); margin-top: 16px;">
+        Tip: si una foto no encuentra su producto, fijate que el nombre del archivo sea
+        exactamente el código (sin espacios ni texto de más). Si subís una foto de un código
+        que ya tenía, la reemplaza.
+    </p>
+</div>
+
+<style>
+.foto-progreso { display:flex; align-items:center; gap:12px; font-size:0.82rem; color:var(--text-soft); }
+.foto-bar { flex:1; height:10px; background:#ece8e0; border-radius:999px; overflow:hidden; }
+.foto-fill { height:100%; background:var(--bronce); border-radius:999px; transition:width .3s ease; }
+code { background:#f0ece4; padding:1px 6px; border-radius:5px; font-size:0.85em; }
+</style>
+
+{% endblock %}
