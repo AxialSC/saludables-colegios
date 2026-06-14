@@ -2,6 +2,7 @@
 app/admin.py — Blueprint del panel administrativo (El Arquitecto).
 v0.1 Dashboard · v0.2 Catalogo + Importar · v0.3 Ajustes
 v0.6 -> Panel de PEDIDOS (CRM de ventas de Juliana)
+v0.9 -> Historial de modificaciones con código (prolijo)
 """
 import os
 import tempfile
@@ -276,20 +277,20 @@ def pedido_editar(pid):
                   'error')
             return redirect(url_for('admin.pedido_editar', pid=pid))
 
-        # Armar el historial (comparar viejo vs nuevo)
+        # Armar el historial (comparar viejo vs nuevo) — con código y orden estable
         viejos = {it.codigo: (it.cantidad, it.nombre) for it in pedido.items}
         nuevos_q = {it['codigo']: (it['cantidad'], it['nombre']) for it in items_calc}
         cambios = []
-        for cod in set(viejos) | set(nuevos_q):
+        for cod in sorted(set(viejos) | set(nuevos_q)):
             vq = viejos.get(cod, (0, None))[0]
             nq = nuevos_q.get(cod, (0, None))[0]
             nombre = (viejos.get(cod) or nuevos_q.get(cod))[1]
             if vq == 0 and nq > 0:
-                cambios.append(f'agregó {nq}× {nombre}')
+                cambios.append(f'agregó {nq}× [{cod}] {nombre}')
             elif nq == 0 and vq > 0:
-                cambios.append(f'quitó {vq}× {nombre}')
+                cambios.append(f'quitó {vq}× [{cod}] {nombre}')
             elif vq != nq:
-                cambios.append(f'{nombre}: de {vq} a {nq} u.')
+                cambios.append(f'[{cod}] {nombre}: de {vq} a {nq} u.')
 
         if not cambios:
             flash('No hiciste ningún cambio.', 'warning')

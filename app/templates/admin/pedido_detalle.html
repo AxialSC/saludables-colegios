@@ -64,7 +64,16 @@
                     <span>{{ m.creado|ar_datetime }} · {{ m.hecho_por }}</span>
                     <span class="modif-totales">{{ m.total_anterior|pesos }} → <b>{{ m.total_nuevo|pesos }}</b></span>
                 </div>
-                <div class="modif-desc">{{ m.descripcion }}</div>
+                <ul class="modif-lista">
+                    {% for linea in m.descripcion.split('; ') %}
+                    {% set alta = linea.startswith('agregó') %}
+                    {% set baja = linea.startswith('quitó') %}
+                    <li class="modif-linea {% if alta %}m-alta{% elif baja %}m-baja{% else %}m-cambio{% endif %}">
+                        <span class="m-mark">{% if alta %}+{% elif baja %}−{% else %}↕{% endif %}</span>
+                        <span class="m-txt">{{ linea }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
             </div>
             {% endfor %}
         </div>
@@ -201,10 +210,22 @@
     border-bottom:1px solid #f0ece4; font-size:0.78rem; }
 .x-mini { border:none; background:none; color:#c62828; cursor:pointer; font-size:0.75rem; }
 .panel-peligro { border-color:#f0d0d0; }
-.modif-item { padding:9px 0; border-bottom:1px solid #f0ece4; }
-.modif-cab { display:flex; justify-content:space-between; gap:10px; font-size:0.72rem; color:var(--text-soft); }
+
+/* ===== Historial de modificaciones (v0.9 — prolijo) ===== */
+.modif-item { padding:12px 0; border-bottom:1px solid #f0ece4; }
+.modif-item:last-child { border-bottom:none; }
+.modif-cab { display:flex; justify-content:space-between; gap:10px; font-size:0.72rem;
+    color:var(--text-soft); margin-bottom:7px; }
 .modif-totales b { color:#6b5638; }
-.modif-desc { font-size:0.82rem; margin-top:3px; }
+.modif-lista { list-style:none; margin:0; padding:0; }
+.modif-linea { display:flex; align-items:flex-start; gap:9px; padding:6px 10px;
+    font-size:0.82rem; border-radius:7px; margin-bottom:4px; }
+.modif-linea .m-mark { font-weight:800; width:14px; flex-shrink:0; text-align:center; line-height:1.4; }
+.modif-linea .m-txt { flex:1; min-width:0; }
+.m-alta   { background:#f1f8f1; } .m-alta   .m-mark { color:#2e7d32; }
+.m-baja   { background:#fdf1f1; } .m-baja   .m-mark { color:#c62828; }
+.m-cambio { background:#faf6ef; } .m-cambio .m-mark { color:#8b6f47; }
+
 .filtro-input { padding:10px 12px; border:1px solid var(--divider); border-radius:var(--radius);
     font-size:0.9rem; background:#fff; outline:none; }
 </style>
