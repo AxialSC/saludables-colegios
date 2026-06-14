@@ -64,7 +64,40 @@ def import_planilla_cmd(ruta):
                f'| total: {res["total"]} | fuera de lista: {res["fuera_de_lista"]}')
 
 
+@click.command('migrar-v06')
+@with_appcontext
+def migrar_v06():
+    """
+    Migracion v0.6: agrega columnas nuevas a 'pedidos' (sin perder datos) y
+    crea la tabla 'cobros'. Es idempotente: se puede correr varias veces sin riesgo.
+    """
+    from sqlalchemy import text
+
+    nuevas = {
+        'ip_origen': 'VARCHAR(45)',
+        'dispositivo': 'VARCHAR(20)',
+        'facturado_en': 'DATETIME',
+        'anulado_por': 'VARCHAR(80)',
+        'anulado_en': 'DATETIME',
+        'anulado_motivo': 'VARCHAR(200)',
+    }
+    existentes = [fila[1] for fila in db.session.execute(text("PRAGMA table_info(pedidos)"))]
+    agregadas = 0
+    for col, tipo in nuevas.items():
+        if col not in existentes:
+            db.session.execute(text(f'ALTER TABLE pedidos ADD COLUMN {col} {tipo}'))
+            click.echo(f'   + columna pedidos.{col}')
+            agregadas += 1
+    db.session.commit()
+
+    # Crea las tablas que falten (ej: cobros). No toca las existentes.
+    db.create_all()
+
+    click.echo(f'OK -> migración v0.6 aplicada ({agregadas} columnas nuevas + tabla cobros).')
+
+
 def registrar_comandos(app):
     app.cli.add_command(init_db)
     app.cli.add_command(seed_data)
     app.cli.add_command(import_planilla_cmd)
+    app.cli.add_command(migrar_v06)

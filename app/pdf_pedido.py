@@ -141,7 +141,13 @@ def generar_pdf_pedido(pedido, ajustes):
                'a confirmación; <b>no es una factura</b>. Juliana se va a contactar para '
                'coordinar la entrega y el pago.')
     elems.append(Paragraph(leyenda, chico))
-    elems.append(Spacer(1, 6 * mm))
+    elems.append(Spacer(1, 4 * mm))
+    origen_txt = ''
+    if pedido.dispositivo or pedido.ip_origen:
+        origen_txt = (f'Pedido realizado desde {pedido.dispositivo or "—"} · '
+                      f'IP {pedido.ip_origen or "—"}')
+        elems.append(Paragraph(origen_txt, chico))
+    elems.append(Spacer(1, 2 * mm))
     elems.append(Paragraph('AXIAL SECURITY · Desarrollo a medida', chico))
 
     doc.build(elems)

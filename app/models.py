@@ -180,13 +180,25 @@ class Pedido(db.Model):
 
     total = db.Column(db.Numeric(12, 2), nullable=False)
 
-    # Para la contabilidad de Juliana (se completa en v0.6)
+    # Para la contabilidad de Juliana (se completa en el panel)
     facturado = db.Column(db.Boolean, nullable=True, default=None)
+    facturado_en = db.Column(db.DateTime, nullable=True)
+
+    # Datos de origen (seguridad / validacion)
+    ip_origen = db.Column(db.String(45), nullable=True)
+    dispositivo = db.Column(db.String(20), nullable=True)   # Celular / Computadora
+
+    # Anulacion (no se borra nunca; queda auditado)
+    anulado_por = db.Column(db.String(80), nullable=True)
+    anulado_en = db.Column(db.DateTime, nullable=True)
+    anulado_motivo = db.Column(db.String(200), nullable=True)
 
     creado = db.Column(db.DateTime, default=_ahora, index=True)
 
     items = db.relationship('ItemPedido', backref='pedido',
                             cascade='all, delete-orphan', lazy='selectin')
+    cobros = db.relationship('Cobro', backref='pedido',
+                             cascade='all, delete-orphan', lazy='selectin')
 
     @property
     def cliente_completo(self):
@@ -200,6 +212,22 @@ class Pedido(db.Model):
     def cantidad_items(self):
         return sum(i.cantidad for i in self.items)
 
+    @property
+    def total_cobrado(self):
+        return sum(float(c.monto) for c in self.cobros)
+
+    @property
+    def saldo(self):
+        return round(float(self.total) - self.total_cobrado, 2)
+
+    @property
+    def esta_cobrado(self):
+        return self.total_cobrado >= float(self.total) - 0.01
+
+    @property
+    def esta_anulado(self):
+        return self.estado == EstadoPedido.ANULADO
+
 
 class ItemPedido(db.Model):
     __tablename__ = 'items_pedido'
@@ -212,6 +240,38 @@ class ItemPedido(db.Model):
     cantidad = db.Column(db.Integer, nullable=False)
     precio_unitario = db.Column(db.Numeric(12, 2), nullable=False)  # ya con escalon aplicado
     subtotal = db.Column(db.Numeric(12, 2), nullable=False)
+
+
+class FormaPago:
+    EFECTIVO = 'EFECTIVO'
+    TRANSFERENCIA = 'TRANSFERENCIA'
+    MERCADOPAGO = 'MERCADOPAGO'
+    OTRO = 'OTRO'
+
+    TODAS = (EFECTIVO, TRANSFERENCIA, MERCADOPAGO, OTRO)
+    ETIQUETAS = {
+        EFECTIVO: 'Efectivo',
+        TRANSFERENCIA: 'Transferencia',
+        MERCADOPAGO: 'MercadoPago',
+        OTRO: 'Otro',
+    }
+
+
+class Cobro(db.Model):
+    """Registro de un cobro de un pedido (puede haber varios: seña + saldo)."""
+    __tablename__ = 'cobros'
+
+    id = db.Column(db.Integer, primary_key=True)
+    pedido_id = db.Column(db.Integer, db.ForeignKey('pedidos.id'), nullable=False)
+    forma_pago = db.Column(db.String(20), nullable=False, default=FormaPago.EFECTIVO)
+    monto = db.Column(db.Numeric(12, 2), nullable=False)
+    nota = db.Column(db.String(200), nullable=True)
+    registrado_por = db.Column(db.String(80), nullable=False)
+    creado = db.Column(db.DateTime, default=_ahora)
+
+    @property
+    def forma_etiqueta(self):
+        return FormaPago.ETIQUETAS.get(self.forma_pago, self.forma_pago)
 
 
 def generar_numero_pedido(origen='WEB'):

@@ -1,28 +1,34 @@
 """
 app/admin.py — Blueprint del panel administrativo (El Arquitecto).
-v0.1.0 -> Dashboard
-v0.2.0 -> Catalogo + Importar planilla (solo super admin)
-v0.3.0 -> Ajustes (markup/descuentos) + precio de venta visible en el catalogo
+v0.1 Dashboard · v0.2 Catalogo + Importar · v0.3 Ajustes
+v0.6 -> Panel de PEDIDOS (CRM de ventas de Juliana)
 """
 import os
 import tempfile
 
 from flask import (Blueprint, render_template, redirect, url_for,
-                   request, flash)
+                   request, flash, abort, Response)
 from flask_login import login_required, current_user
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, func
 from werkzeug.utils import secure_filename
 
 from .extensions import db
-from .models import Producto, get_ajustes
+from .models import (Producto, Pedido, Cobro, get_ajustes,
+                     EstadoPedido, FormaPago)
 from .services import aplicar_importacion
 from .utils.decorators import admin_requerido, super_admin_requerido
 from .utils.import_planilla import leer_planilla
+from .utils.timezone import ahora_argentina
+from .pdf_pedido import generar_pdf_pedido
 from . import pricing
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
 EXTENSIONES_OK = ('.xlsx', '.xlsm', '.csv')
+
+
+def _ahora():
+    return ahora_argentina().replace(tzinfo=None)
 
 
 @admin_bp.before_request
@@ -35,14 +41,159 @@ def _forzar_cambio_password():
 @admin_bp.route('/')
 @admin_requerido
 def dashboard():
+    inicio_mes = ahora_argentina().replace(day=1, hour=0, minute=0, second=0,
+                                           microsecond=0, tzinfo=None)
+    ventas_mes = db.session.execute(
+        select(func.coalesce(func.sum(Pedido.total), 0))
+        .where(Pedido.creado >= inicio_mes)
+        .where(Pedido.estado != EstadoPedido.ANULADO)
+    ).scalar() or 0
+
+    clientes = db.session.execute(
+        select(func.count(func.distinct(Pedido.cuit)))
+    ).scalar() or 0
+
     stats = {
         'productos': Producto.query.filter_by(activo=True).count(),
-        'clientes': 0,
-        'pedidos_pendientes': 0,
-        'ventas_mes': 0,
+        'clientes': clientes,
+        'pedidos_pendientes': Pedido.query.filter_by(estado=EstadoPedido.PENDIENTE).count(),
+        'ventas_mes': float(ventas_mes),
     }
     return render_template('admin/dashboard.html', stats=stats)
 
+
+# ======================= PEDIDOS (CRM) =======================
+
+@admin_bp.route('/pedidos')
+@admin_requerido
+def pedidos():
+    page = request.args.get('page', 1, type=int)
+    q = (request.args.get('q') or '').strip()
+    estado = (request.args.get('estado') or '').strip()
+
+    stmt = select(Pedido)
+    if estado:
+        stmt = stmt.where(Pedido.estado == estado)
+    if q:
+        like = f'%{q}%'
+        stmt = stmt.where(or_(Pedido.numero.ilike(like),
+                              Pedido.nombre.ilike(like),
+                              Pedido.apellido.ilike(like),
+                              Pedido.cuit.ilike(like)))
+    stmt = stmt.order_by(Pedido.creado.desc())
+
+    paginacion = db.paginate(stmt, page=page, per_page=25, error_out=False)
+    total = Pedido.query.count()
+
+    return render_template('admin/pedidos.html', paginacion=paginacion,
+                           q=q, estado_sel=estado, total=total,
+                           estados=EstadoPedido.ETIQUETAS)
+
+
+@admin_bp.route('/pedidos/<int:pid>')
+@admin_requerido
+def pedido_detalle(pid):
+    pedido = Pedido.query.get_or_404(pid)
+    return render_template('admin/pedido_detalle.html', pedido=pedido,
+                           estados=EstadoPedido.ETIQUETAS,
+                           formas=FormaPago.ETIQUETAS)
+
+
+@admin_bp.route('/pedidos/<int:pid>/estado', methods=['POST'])
+@admin_requerido
+def pedido_estado(pid):
+    pedido = Pedido.query.get_or_404(pid)
+    if pedido.esta_anulado:
+        flash('El pedido está anulado, no se puede cambiar de estado.', 'error')
+        return redirect(url_for('admin.pedido_detalle', pid=pid))
+
+    nuevo = (request.form.get('estado') or '').strip()
+    if nuevo not in (EstadoPedido.PENDIENTE, EstadoPedido.CONFIRMADO, EstadoPedido.ENTREGADO):
+        flash('Estado inválido.', 'error')
+        return redirect(url_for('admin.pedido_detalle', pid=pid))
+
+    pedido.estado = nuevo
+    db.session.commit()
+    flash(f'Pedido marcado como {EstadoPedido.ETIQUETAS[nuevo]}.', 'success')
+    return redirect(url_for('admin.pedido_detalle', pid=pid))
+
+
+@admin_bp.route('/pedidos/<int:pid>/facturado', methods=['POST'])
+@admin_requerido
+def pedido_facturado(pid):
+    pedido = Pedido.query.get_or_404(pid)
+    valor = request.form.get('facturado')
+    pedido.facturado = (valor == 'si')
+    pedido.facturado_en = _ahora()
+    db.session.commit()
+    flash('Estado de facturación actualizado.', 'success')
+    return redirect(url_for('admin.pedido_detalle', pid=pid))
+
+
+@admin_bp.route('/pedidos/<int:pid>/cobro', methods=['POST'])
+@admin_requerido
+def pedido_cobro(pid):
+    pedido = Pedido.query.get_or_404(pid)
+    if pedido.esta_anulado:
+        flash('El pedido está anulado.', 'error')
+        return redirect(url_for('admin.pedido_detalle', pid=pid))
+
+    forma = (request.form.get('forma_pago') or '').strip()
+    if forma not in FormaPago.TODAS:
+        flash('Forma de pago inválida.', 'error')
+        return redirect(url_for('admin.pedido_detalle', pid=pid))
+    try:
+        monto = float(request.form.get('monto') or 0)
+    except ValueError:
+        monto = 0
+    if monto <= 0:
+        flash('El monto del cobro debe ser mayor a cero.', 'error')
+        return redirect(url_for('admin.pedido_detalle', pid=pid))
+
+    cobro = Cobro(pedido_id=pedido.id, forma_pago=forma, monto=round(monto, 2),
+                  nota=(request.form.get('nota') or '').strip() or None,
+                  registrado_por=current_user.nombre)
+    db.session.add(cobro)
+    db.session.commit()
+    flash('Cobro registrado.', 'success')
+    return redirect(url_for('admin.pedido_detalle', pid=pid))
+
+
+@admin_bp.route('/pedidos/<int:pid>/cobro/<int:cid>/borrar', methods=['POST'])
+@admin_requerido
+def pedido_cobro_borrar(pid, cid):
+    cobro = Cobro.query.filter_by(id=cid, pedido_id=pid).first_or_404()
+    db.session.delete(cobro)
+    db.session.commit()
+    flash('Cobro eliminado.', 'success')
+    return redirect(url_for('admin.pedido_detalle', pid=pid))
+
+
+@admin_bp.route('/pedidos/<int:pid>/anular', methods=['POST'])
+@super_admin_requerido
+def pedido_anular(pid):
+    pedido = Pedido.query.get_or_404(pid)
+    pedido.estado = EstadoPedido.ANULADO
+    pedido.anulado_por = current_user.nombre
+    pedido.anulado_en = _ahora()
+    pedido.anulado_motivo = (request.form.get('motivo') or '').strip() or None
+    db.session.commit()
+    flash(f'Pedido {pedido.numero} anulado.', 'warning')
+    return redirect(url_for('admin.pedido_detalle', pid=pid))
+
+
+@admin_bp.route('/pedidos/<int:pid>/pdf')
+@admin_requerido
+def pedido_pdf_admin(pid):
+    pedido = Pedido.query.get_or_404(pid)
+    ajustes = get_ajustes()
+    pdf = generar_pdf_pedido(pedido, ajustes)
+    return Response(pdf, mimetype='application/pdf', headers={
+        'Content-Disposition': f'inline; filename="Pedido_{pedido.numero}.pdf"'
+    })
+
+
+# ======================= CATALOGO =======================
 
 @admin_bp.route('/catalogo')
 @admin_requerido
@@ -63,7 +214,6 @@ def catalogo():
     paginacion = db.paginate(stmt, page=page, per_page=50, error_out=False)
 
     ajustes = get_ajustes()
-    # Calculamos el precio de venta (x1) de cada producto para que Juliana lo vea
     filas = []
     for p in paginacion.items:
         filas.append({'p': p, 'venta': pricing.precio_final(p, ajustes, 'x1'),
@@ -79,6 +229,8 @@ def catalogo():
                            filas=filas, paginacion=paginacion, rubros=rubros,
                            q=q, rubro_sel=rubro, total=total, ajustes=ajustes)
 
+
+# ======================= AJUSTES =======================
 
 @admin_bp.route('/ajustes', methods=['GET', 'POST'])
 @admin_requerido
@@ -98,7 +250,6 @@ def ajustes():
             flash('Revisá los valores: tienen que ser números.', 'error')
             return redirect(url_for('admin.ajustes'))
 
-        # Piso de seguridad: el minimo no puede ser menor a 20 (regla del negocio)
         if minimo < 20:
             minimo = 20
             flash('El margen mínimo no puede bajar de 20%. Lo dejé en 20%.', 'warning')
@@ -120,6 +271,8 @@ def ajustes():
 
     return render_template('admin/ajustes.html', aj=aj)
 
+
+# ======================= IMPORTAR =======================
 
 @admin_bp.route('/importar', methods=['GET', 'POST'])
 @super_admin_requerido

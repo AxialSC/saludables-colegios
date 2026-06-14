@@ -140,10 +140,18 @@ def checkout():
 
         # 4) Crear el pedido (atomico)
         try:
+            # Datos de origen (IP real detras del proxy de PythonAnywhere + dispositivo)
+            xff = request.headers.get('X-Forwarded-For', '')
+            ip = xff.split(',')[0].strip() if xff else (request.remote_addr or '')
+            ua = (request.headers.get('User-Agent') or '').lower()
+            disp = 'Celular' if any(k in ua for k in ('mobi', 'android', 'iphone', 'ipad')) else 'Computadora'
+
             pedido = Pedido(
                 numero=generar_numero_pedido('WEB'),
                 origen='WEB',
                 total=total,
+                ip_origen=ip,
+                dispositivo=disp,
                 **datos,
             )
             db.session.add(pedido)

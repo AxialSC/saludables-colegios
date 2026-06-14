@@ -1,0 +1,190 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Pedido {{ pedido.numero }} · {{ app_nombre }}{% endblock %}
+{% block seccion %}Pedidos{% endblock %}
+{% block titulo %}Pedido {{ pedido.numero }}{% endblock %}
+
+{% block contenido %}
+
+<a href="{{ url_for('admin.pedidos') }}" style="font-size:0.82rem; color:var(--bronce); font-weight:700;">← Volver a pedidos</a>
+
+{% if pedido.esta_anulado %}
+<div class="aviso-anulado">
+    ⛔ Pedido ANULADO por {{ pedido.anulado_por }} el {{ pedido.anulado_en|ar_datetime }}
+    {% if pedido.anulado_motivo %}· Motivo: {{ pedido.anulado_motivo }}{% endif %}
+</div>
+{% endif %}
+
+<div class="det-grid">
+
+    <!-- Columna izquierda: datos + items -->
+    <div>
+        <div class="panel">
+            <h3>Datos del cliente</h3>
+            <div class="dato"><span>Cliente</span><b>{{ pedido.cliente_completo }}</b></div>
+            <div class="dato"><span>CUIT</span><b>{{ pedido.cuit }}</b></div>
+            <div class="dato"><span>WhatsApp</span><b>{{ pedido.whatsapp }}</b>
+                <a href="https://wa.me/{{ pedido.whatsapp|replace(' ','')|replace('-','') }}" target="_blank" class="wa-mini">abrir</a></div>
+            {% if pedido.email %}<div class="dato"><span>Email</span><b>{{ pedido.email }}</b></div>{% endif %}
+            <div class="dato"><span>Dirección</span><b>{{ pedido.direccion }}</b></div>
+            <div class="dato"><span>Zona / Colegio</span><b>{{ pedido.zona }}</b></div>
+            {% if pedido.observaciones %}<div class="dato"><span>Observaciones</span><b>{{ pedido.observaciones }}</b></div>{% endif %}
+            <div class="dato"><span>Origen</span><b>{{ pedido.dispositivo or '—' }} · IP {{ pedido.ip_origen or '—' }}</b></div>
+            <div class="dato"><span>Fecha</span><b>{{ pedido.creado|ar_datetime }} hs</b></div>
+        </div>
+
+        <div class="panel" style="padding:0; overflow:hidden; margin-top:16px;">
+            <table class="tabla">
+                <thead><tr><th>Código</th><th>Producto</th><th style="text-align:center;">Cant.</th><th style="text-align:right;">P.Unit</th><th style="text-align:right;">Subtotal</th></tr></thead>
+                <tbody>
+                    {% for it in pedido.items %}
+                    <tr>
+                        <td class="mono">{{ it.codigo }}</td>
+                        <td>{{ it.nombre }}</td>
+                        <td style="text-align:center;">{{ it.cantidad }}</td>
+                        <td style="text-align:right;">{{ it.precio_unitario|pesos }}</td>
+                        <td style="text-align:right;" class="venta-final">{{ it.subtotal|pesos }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="total-pedido">Total del pedido: <b>{{ pedido.total|pesos }}</b></div>
+
+        <a href="{{ url_for('admin.pedido_pdf_admin', pid=pedido.id) }}" target="_blank" class="btn btn-carbon" style="margin-top:14px; display:inline-block;">Descargar PDF</a>
+    </div>
+
+    <!-- Columna derecha: acciones -->
+    <div>
+        <!-- Estado -->
+        <div class="panel">
+            <h3>Estado del pedido</h3>
+            <p style="margin-bottom:12px;">Actual: <span class="estado est-{{ pedido.estado|lower }}">{{ pedido.estado_etiqueta }}</span></p>
+            {% if not pedido.esta_anulado %}
+            <form method="POST" action="{{ url_for('admin.pedido_estado', pid=pedido.id) }}" class="acc-row">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <select name="estado" class="filtro-input" style="flex:1;">
+                    <option value="PENDIENTE" {% if pedido.estado=='PENDIENTE' %}selected{% endif %}>Pendiente</option>
+                    <option value="CONFIRMADO" {% if pedido.estado=='CONFIRMADO' %}selected{% endif %}>Confirmado</option>
+                    <option value="ENTREGADO" {% if pedido.estado=='ENTREGADO' %}selected{% endif %}>Entregado</option>
+                </select>
+                <button class="btn btn-bronce">Guardar</button>
+            </form>
+            {% endif %}
+        </div>
+
+        <!-- Facturacion -->
+        <div class="panel" style="margin-top:16px;">
+            <h3>Facturación</h3>
+            <p style="margin-bottom:12px;">
+                {% if pedido.facturado is none %}<span class="pill gris">Sin definir</span>
+                {% elif pedido.facturado %}<span class="pill verde">Facturado</span>
+                {% else %}<span class="pill naranja">Sin factura</span>{% endif %}
+            </p>
+            <form method="POST" action="{{ url_for('admin.pedido_facturado', pid=pedido.id) }}" class="acc-row">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button name="facturado" value="si" class="btn btn-carbon" style="flex:1;">Con factura</button>
+                <button name="facturado" value="no" class="btn btn-carbon" style="flex:1; background:var(--warning);">Sin factura</button>
+            </form>
+        </div>
+
+        <!-- Cobros -->
+        <div class="panel" style="margin-top:16px;">
+            <h3>Cobros</h3>
+            <div class="cobro-resumen">
+                <div><span>Total</span><b>{{ pedido.total|pesos }}</b></div>
+                <div><span>Cobrado</span><b style="color:#2e7d32;">{{ pedido.total_cobrado|pesos }}</b></div>
+                <div><span>Saldo</span><b style="color:{% if pedido.saldo > 0 %}#c62828{% else %}#2e7d32{% endif %};">{{ pedido.saldo|pesos }}</b></div>
+            </div>
+
+            {% if pedido.cobros %}
+            <div class="cobros-lista">
+                {% for c in pedido.cobros %}
+                <div class="cobro-item">
+                    <span>{{ c.forma_etiqueta }} · {{ c.creado|ar_fecha }}{% if c.nota %} · {{ c.nota }}{% endif %}</span>
+                    <span style="display:flex; gap:8px; align-items:center;">
+                        <b>{{ c.monto|pesos }}</b>
+                        <form method="POST" action="{{ url_for('admin.pedido_cobro_borrar', pid=pedido.id, cid=c.id) }}" onsubmit="return confirm('¿Borrar este cobro?')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="x-mini">✕</button>
+                        </form>
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if not pedido.esta_anulado and not pedido.esta_cobrado %}
+            <form method="POST" action="{{ url_for('admin.pedido_cobro', pid=pedido.id) }}" style="margin-top:12px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="acc-row" style="margin-bottom:8px;">
+                    <select name="forma_pago" class="filtro-input" style="flex:1;">
+                        {% for cod, et in formas.items() %}<option value="{{ cod }}">{{ et }}</option>{% endfor %}
+                    </select>
+                    <input type="number" name="monto" step="0.01" min="0" placeholder="Monto"
+                           value="{{ '%.2f'|format(pedido.saldo) }}" class="filtro-input" style="width:120px;">
+                </div>
+                <input type="text" name="nota" placeholder="Nota (opcional)" class="filtro-input" style="width:100%; margin-bottom:8px;">
+                <button class="btn btn-bronce btn-block">Registrar cobro</button>
+            </form>
+            {% endif %}
+        </div>
+
+        <!-- Anular (solo super admin) -->
+        {% if current_user.es_super_admin and not pedido.esta_anulado %}
+        <div class="panel panel-peligro" style="margin-top:16px;">
+            <h3>Zona de riesgo</h3>
+            <p style="font-size:0.8rem; color:var(--text-soft); margin-bottom:10px;">
+                Anular no borra el pedido: queda registrado con tu nombre y la fecha.
+            </p>
+            <form method="POST" action="{{ url_for('admin.pedido_anular', pid=pedido.id) }}" onsubmit="return confirm('¿Anular el pedido {{ pedido.numero }}?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="text" name="motivo" placeholder="Motivo (opcional)" class="filtro-input" style="width:100%; margin-bottom:8px;">
+                <button class="btn btn-block" style="background:var(--danger); color:#fff;">Anular pedido</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.aviso-anulado { background:#fdeaea; color:#c62828; border:1px solid #f3cccc; padding:12px 16px;
+    border-radius:var(--radius); margin:14px 0; font-size:0.85rem; font-weight:600; }
+.det-grid { display:grid; grid-template-columns:1.4fr 1fr; gap:18px; margin-top:14px; }
+@media (max-width:860px){ .det-grid { grid-template-columns:1fr; } }
+.dato { display:flex; justify-content:space-between; gap:12px; padding:7px 0;
+    border-bottom:1px solid #f0ece4; font-size:0.85rem; }
+.dato span { color:var(--text-soft); }
+.dato b { text-align:right; }
+.wa-mini { font-size:0.7rem; color:#2e7d32; font-weight:700; margin-left:6px; }
+.tabla { width:100%; border-collapse:collapse; font-size:0.82rem; }
+.tabla thead th { background:#faf8f4; text-align:left; padding:11px 14px; font-size:0.64rem;
+    letter-spacing:0.08em; text-transform:uppercase; color:var(--text-soft); }
+.tabla tbody td { padding:10px 14px; border-bottom:1px solid #f0ece4; }
+.mono { font-family:'Courier New',monospace; color:var(--text-soft); }
+.venta-final { font-weight:800; color:#6b5638; white-space:nowrap; }
+.total-pedido { text-align:right; font-size:1rem; margin-top:12px; }
+.total-pedido b { color:#6b5638; font-size:1.2rem; }
+.acc-row { display:flex; gap:8px; }
+.estado { font-size:0.62rem; letter-spacing:0.04em; text-transform:uppercase; font-weight:700; padding:4px 9px; border-radius:6px; }
+.est-pendiente { background:#fff4e5; color:#9a6200; }
+.est-confirmado { background:#e7f0fb; color:#1b5fb0; }
+.est-entregado { background:#eef6ee; color:#2e7d32; }
+.est-anulado { background:#fdeaea; color:#c62828; }
+.pill { font-size:0.65rem; font-weight:700; padding:3px 10px; border-radius:999px; }
+.pill.verde { background:#eef6ee; color:#2e7d32; }
+.pill.naranja { background:#fff4e5; color:#9a6200; }
+.pill.gris { background:#eee; color:#888; }
+.cobro-resumen { display:flex; justify-content:space-between; gap:10px; margin-bottom:12px;
+    background:#faf8f4; padding:12px; border-radius:var(--radius); }
+.cobro-resumen div { text-align:center; font-size:0.7rem; color:var(--text-soft); }
+.cobro-resumen b { display:block; font-size:0.95rem; color:var(--text); margin-top:3px; }
+.cobros-lista { border-top:1px solid #f0ece4; }
+.cobro-item { display:flex; justify-content:space-between; align-items:center; padding:8px 0;
+    border-bottom:1px solid #f0ece4; font-size:0.78rem; }
+.x-mini { border:none; background:none; color:#c62828; cursor:pointer; font-size:0.75rem; }
+.panel-peligro { border-color:#f0d0d0; }
+.filtro-input { padding:10px 12px; border:1px solid var(--divider); border-radius:var(--radius);
+    font-size:0.9rem; background:#fff; outline:none; }
+</style>
+
+{% endblock %}

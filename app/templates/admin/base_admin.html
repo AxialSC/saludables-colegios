@@ -13,6 +13,8 @@
         <nav class="nav">
             <a href="{{ url_for('admin.dashboard') }}"
                class="{% if request.endpoint == 'admin.dashboard' %}activo{% endif %}">Dashboard</a>
+            <a href="{{ url_for('admin.pedidos') }}"
+               class="{% if 'pedido' in request.endpoint %}activo{% endif %}">Pedidos</a>
             <a href="{{ url_for('admin.catalogo') }}"
                class="{% if request.endpoint == 'admin.catalogo' %}activo{% endif %}">Catálogo</a>
             <a href="{{ url_for('admin.ajustes') }}"
