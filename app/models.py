@@ -193,12 +193,18 @@ class Pedido(db.Model):
     anulado_en = db.Column(db.DateTime, nullable=True)
     anulado_motivo = db.Column(db.String(200), nullable=True)
 
+    # Ultima modificacion (cuando Juliana edita el pedido)
+    modificado_en = db.Column(db.DateTime, nullable=True)
+
     creado = db.Column(db.DateTime, default=_ahora, index=True)
 
     items = db.relationship('ItemPedido', backref='pedido',
                             cascade='all, delete-orphan', lazy='selectin')
     cobros = db.relationship('Cobro', backref='pedido',
                              cascade='all, delete-orphan', lazy='selectin')
+    modificaciones = db.relationship('ModificacionPedido', backref='pedido',
+                                     cascade='all, delete-orphan', lazy='selectin',
+                                     order_by='ModificacionPedido.creado.desc()')
 
     @property
     def cliente_completo(self):
@@ -272,6 +278,19 @@ class Cobro(db.Model):
     @property
     def forma_etiqueta(self):
         return FormaPago.ETIQUETAS.get(self.forma_pago, self.forma_pago)
+
+
+class ModificacionPedido(db.Model):
+    """Historial de ediciones de un pedido (que se quitó/agregó/cambió y por quién)."""
+    __tablename__ = 'modificaciones_pedido'
+
+    id = db.Column(db.Integer, primary_key=True)
+    pedido_id = db.Column(db.Integer, db.ForeignKey('pedidos.id'), nullable=False)
+    descripcion = db.Column(db.Text, nullable=False)
+    total_anterior = db.Column(db.Numeric(12, 2), nullable=False)
+    total_nuevo = db.Column(db.Numeric(12, 2), nullable=False)
+    hecho_por = db.Column(db.String(80), nullable=False)
+    creado = db.Column(db.DateTime, default=_ahora)
 
 
 def generar_numero_pedido(origen='WEB'):

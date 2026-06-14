@@ -53,9 +53,13 @@ def generar_pdf_pedido(pedido, ajustes):
 
     # Datos del pedido
     fecha = a_argentina(pedido.creado).strftime('%d/%m/%Y %H:%M') if pedido.creado else '—'
+    nro_extra = ''
+    if pedido.modificado_en:
+        nro_extra = (f'<br/><font size="7" color="#8B6F47">Pedido modificado el '
+                     f'{a_argentina(pedido.modificado_en).strftime("%d/%m/%Y %H:%M")} hs</font>')
     cab = [
         [Paragraph('<b>COMPROBANTE DE PEDIDO</b>', titulo),
-         Paragraph(f'<b>N° {pedido.numero}</b><br/>{fecha} hs', normal)],
+         Paragraph(f'<b>N° {pedido.numero}</b><br/>{fecha} hs{nro_extra}', normal)],
     ]
     t_cab = Table(cab, colWidths=[100 * mm, 70 * mm])
     t_cab.setStyle(TableStyle([

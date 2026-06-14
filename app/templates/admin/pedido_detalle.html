@@ -51,6 +51,24 @@
         <div class="total-pedido">Total del pedido: <b>{{ pedido.total|pesos }}</b></div>
 
         <a href="{{ url_for('admin.pedido_pdf_admin', pid=pedido.id) }}" target="_blank" class="btn btn-carbon" style="margin-top:14px; display:inline-block;">Descargar PDF</a>
+        {% if not pedido.esta_anulado %}
+        <a href="{{ url_for('admin.pedido_editar', pid=pedido.id) }}" class="btn btn-bronce" style="margin-top:14px; margin-left:6px; display:inline-block;">Editar pedido</a>
+        {% endif %}
+
+        {% if pedido.modificaciones %}
+        <div class="panel" style="margin-top:16px;">
+            <h3>Historial de modificaciones</h3>
+            {% for m in pedido.modificaciones %}
+            <div class="modif-item">
+                <div class="modif-cab">
+                    <span>{{ m.creado|ar_datetime }} · {{ m.hecho_por }}</span>
+                    <span class="modif-totales">{{ m.total_anterior|pesos }} → <b>{{ m.total_nuevo|pesos }}</b></span>
+                </div>
+                <div class="modif-desc">{{ m.descripcion }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
 
     <!-- Columna derecha: acciones -->
@@ -183,6 +201,10 @@
     border-bottom:1px solid #f0ece4; font-size:0.78rem; }
 .x-mini { border:none; background:none; color:#c62828; cursor:pointer; font-size:0.75rem; }
 .panel-peligro { border-color:#f0d0d0; }
+.modif-item { padding:9px 0; border-bottom:1px solid #f0ece4; }
+.modif-cab { display:flex; justify-content:space-between; gap:10px; font-size:0.72rem; color:var(--text-soft); }
+.modif-totales b { color:#6b5638; }
+.modif-desc { font-size:0.82rem; margin-top:3px; }
 .filtro-input { padding:10px 12px; border:1px solid var(--divider); border-radius:var(--radius);
     font-size:0.9rem; background:#fff; outline:none; }
 </style>

@@ -96,8 +96,30 @@ def migrar_v06():
     click.echo(f'OK -> migración v0.6 aplicada ({agregadas} columnas nuevas + tabla cobros).')
 
 
+@click.command('migrar-v08')
+@with_appcontext
+def migrar_v08():
+    """
+    Migracion v0.8: agrega columna 'modificado_en' a pedidos y crea la tabla
+    'modificaciones_pedido'. Idempotente y sin perder datos.
+    """
+    from sqlalchemy import text
+
+    existentes = [fila[1] for fila in db.session.execute(text("PRAGMA table_info(pedidos)"))]
+    agregadas = 0
+    if 'modificado_en' not in existentes:
+        db.session.execute(text('ALTER TABLE pedidos ADD COLUMN modificado_en DATETIME'))
+        click.echo('   + columna pedidos.modificado_en')
+        agregadas += 1
+    db.session.commit()
+
+    db.create_all()  # crea modificaciones_pedido si falta
+    click.echo(f'OK -> migración v0.8 aplicada ({agregadas} columna + tabla modificaciones).')
+
+
 def registrar_comandos(app):
     app.cli.add_command(init_db)
     app.cli.add_command(seed_data)
     app.cli.add_command(import_planilla_cmd)
     app.cli.add_command(migrar_v06)
+    app.cli.add_command(migrar_v08)

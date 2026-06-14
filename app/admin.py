@@ -7,14 +7,14 @@ import os
 import tempfile
 
 from flask import (Blueprint, render_template, redirect, url_for,
-                   request, flash, abort, Response, current_app)
+                   request, flash, abort, Response, current_app, jsonify)
 from flask_login import login_required, current_user
 from sqlalchemy import select, or_, func
 from werkzeug.utils import secure_filename
 
 from .extensions import db
-from .models import (Producto, Pedido, Cobro, get_ajustes,
-                     EstadoPedido, FormaPago)
+from .models import (Producto, Pedido, Cobro, ModificacionPedido, ItemPedido,
+                     get_ajustes, EstadoPedido, FormaPago)
 from .services import aplicar_importacion
 from .utils.decorators import admin_requerido, super_admin_requerido
 from .utils.import_planilla import leer_planilla
@@ -29,6 +29,11 @@ EXTENSIONES_OK = ('.xlsx', '.xlsm', '.csv')
 
 def _ahora():
     return ahora_argentina().replace(tzinfo=None)
+
+
+def _pesos(v):
+    s = f'{float(v):,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+    return '$' + s
 
 
 @admin_bp.before_request
@@ -191,6 +196,150 @@ def pedido_pdf_admin(pid):
     return Response(pdf, mimetype='application/pdf', headers={
         'Content-Disposition': f'inline; filename="Pedido_{pedido.numero}.pdf"'
     })
+
+
+@admin_bp.route('/productos/buscar')
+@admin_requerido
+def productos_buscar():
+    """Buscador JSON para agregar productos al editar un pedido."""
+    q = (request.args.get('q') or '').strip()
+    if len(q) < 2:
+        return jsonify([])
+    ajustes = get_ajustes()
+    like = f'%{q}%'
+    prods = Producto.query.filter(Producto.activo.is_(True)).filter(
+        or_(Producto.nombre.ilike(like), Producto.codigo.ilike(like))
+    ).order_by(Producto.nombre).limit(15).all()
+    res = []
+    for p in prods:
+        pr = pricing.precios(p, ajustes)
+        res.append({'codigo': p.codigo, 'nombre': p.nombre,
+                    'p1': pr['x1'], 'p5': pr['x5'], 'p10': pr['x10']})
+    return jsonify(res)
+
+
+@admin_bp.route('/pedidos/<int:pid>/editar', methods=['GET', 'POST'])
+@admin_requerido
+def pedido_editar(pid):
+    pedido = Pedido.query.get_or_404(pid)
+    ajustes = get_ajustes()
+
+    if pedido.esta_anulado:
+        flash('Un pedido anulado no se puede editar.', 'error')
+        return redirect(url_for('admin.pedido_detalle', pid=pid))
+
+    if request.method == 'POST':
+        import json
+        try:
+            nuevos = json.loads(request.form.get('carrito_json') or '{}')
+        except (ValueError, TypeError):
+            nuevos = {}
+
+        # Precios congelados de los items actuales (por si algun codigo ya no esta en catalogo)
+        originales = {it.codigo: it for it in pedido.items}
+
+        items_calc = []
+        total = 0.0
+        for cod, qty in nuevos.items():
+            try:
+                qty = int(qty)
+            except (TypeError, ValueError):
+                continue
+            if qty < 1:
+                continue
+            p = Producto.query.filter_by(codigo=str(cod), activo=True).first()
+            if p is not None:
+                pu = pricing.precio_por_cantidad(p, ajustes, qty)
+                nombre = p.nombre
+            elif str(cod) in originales:
+                pu = float(originales[str(cod)].precio_unitario)
+                nombre = originales[str(cod)].nombre
+            else:
+                continue
+            sub = round(pu * qty, 2)
+            items_calc.append({'codigo': str(cod), 'nombre': nombre,
+                               'cantidad': qty, 'precio_unitario': pu, 'subtotal': sub})
+            total += sub
+        total = round(total, 2)
+
+        # Validaciones
+        if not items_calc:
+            flash('El pedido no puede quedar vacío.', 'error')
+            return redirect(url_for('admin.pedido_editar', pid=pid))
+        if total < float(ajustes.minimo_compra):
+            flash(f'El nuevo total ({_pesos(total)}) no llega al mínimo de '
+                  f'{_pesos(ajustes.minimo_compra)}. No se guardó el cambio.', 'error')
+            return redirect(url_for('admin.pedido_editar', pid=pid))
+        if pedido.total_cobrado > total + 0.01:
+            flash(f'El nuevo total ({_pesos(total)}) es menor a lo ya cobrado '
+                  f'({_pesos(pedido.total_cobrado)}). Ajustá los cobros antes de bajar el monto.',
+                  'error')
+            return redirect(url_for('admin.pedido_editar', pid=pid))
+
+        # Armar el historial (comparar viejo vs nuevo)
+        viejos = {it.codigo: (it.cantidad, it.nombre) for it in pedido.items}
+        nuevos_q = {it['codigo']: (it['cantidad'], it['nombre']) for it in items_calc}
+        cambios = []
+        for cod in set(viejos) | set(nuevos_q):
+            vq = viejos.get(cod, (0, None))[0]
+            nq = nuevos_q.get(cod, (0, None))[0]
+            nombre = (viejos.get(cod) or nuevos_q.get(cod))[1]
+            if vq == 0 and nq > 0:
+                cambios.append(f'agregó {nq}× {nombre}')
+            elif nq == 0 and vq > 0:
+                cambios.append(f'quitó {vq}× {nombre}')
+            elif vq != nq:
+                cambios.append(f'{nombre}: de {vq} a {nq} u.')
+
+        if not cambios:
+            flash('No hiciste ningún cambio.', 'warning')
+            return redirect(url_for('admin.pedido_editar', pid=pid))
+
+        try:
+            total_anterior = float(pedido.total)
+            # Reemplazar items
+            for it in list(pedido.items):
+                db.session.delete(it)
+            db.session.flush()
+            for it in items_calc:
+                db.session.add(ItemPedido(pedido_id=pedido.id, codigo=it['codigo'],
+                                          nombre=it['nombre'], cantidad=it['cantidad'],
+                                          precio_unitario=it['precio_unitario'],
+                                          subtotal=it['subtotal']))
+            pedido.total = total
+            pedido.modificado_en = _ahora()
+            db.session.add(ModificacionPedido(
+                pedido_id=pedido.id,
+                descripcion='; '.join(cambios),
+                total_anterior=total_anterior,
+                total_nuevo=total,
+                hecho_por=current_user.nombre,
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            flash('Hubo un problema al guardar la edición. Probá de nuevo.', 'error')
+            return redirect(url_for('admin.pedido_editar', pid=pid))
+
+        flash('Pedido actualizado ✓', 'success')
+        return redirect(url_for('admin.pedido_detalle', pid=pid))
+
+    # GET -> armar los items actuales con sus precios para la pantalla de edicion
+    items_data = []
+    for it in pedido.items:
+        p = Producto.query.filter_by(codigo=it.codigo, activo=True).first()
+        if p is not None:
+            pr = pricing.precios(p, ajustes)
+            items_data.append({'codigo': it.codigo, 'nombre': it.nombre,
+                               'p1': pr['x1'], 'p5': pr['x5'], 'p10': pr['x10'],
+                               'qty': it.cantidad})
+        else:
+            pu = float(it.precio_unitario)
+            items_data.append({'codigo': it.codigo, 'nombre': it.nombre,
+                               'p1': pu, 'p5': pu, 'p10': pu, 'qty': it.cantidad})
+
+    return render_template('admin/pedido_editar.html', pedido=pedido,
+                           ajustes=ajustes, items_data=items_data)
 
 
 # ======================= CATALOGO =======================

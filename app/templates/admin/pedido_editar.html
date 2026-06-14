@@ -1,0 +1,145 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Editar {{ pedido.numero }} · {{ app_nombre }}{% endblock %}
+{% block seccion %}Pedidos{% endblock %}
+{% block titulo %}Editar pedido {{ pedido.numero }}{% endblock %}
+
+{% block contenido %}
+
+<a href="{{ url_for('admin.pedido_detalle', pid=pedido.id) }}" style="font-size:0.82rem; color:var(--bronce); font-weight:700;">← Cancelar y volver</a>
+
+<div class="ed-grid">
+    <!-- Items actuales -->
+    <div class="panel">
+        <h3>Productos del pedido</h3>
+        <p style="font-size:0.8rem; color:var(--text-soft); margin-bottom:12px;">
+            Cambiá cantidades, quitá o agregá productos. El precio se recalcula con el escalón
+            (1-4 / 5-9 / 10+). El pedido no puede quedar por debajo de {{ ajustes.minimo_compra|pesos }}.
+        </p>
+        <div id="ed-items"></div>
+    </div>
+
+    <!-- Buscar para agregar -->
+    <div class="panel">
+        <h3>Agregar producto</h3>
+        <input type="text" id="ed-buscar" class="filtro-input" style="width:100%;"
+               placeholder="Buscá por nombre o código (ej: melliza, 89012)…" autocomplete="off">
+        <div id="ed-resultados" class="ed-resultados"></div>
+
+        <div class="ed-total-box">
+            <div class="ed-total-row"><span>Total</span><span id="ed-total">$0,00</span></div>
+            <div id="ed-estado" class="ed-estado"></div>
+        </div>
+
+        <form method="POST" action="{{ url_for('admin.pedido_editar', pid=pedido.id) }}" id="ed-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="carrito_json" id="ed-carrito-json">
+            <button type="submit" class="btn btn-bronce btn-block" id="ed-guardar">Guardar cambios</button>
+        </form>
+    </div>
+</div>
+
+<style>
+.ed-grid { display:grid; grid-template-columns:1.3fr 1fr; gap:18px; margin-top:14px; }
+@media (max-width:860px){ .ed-grid { grid-template-columns:1fr; } }
+.filtro-input { padding:10px 12px; border:1px solid var(--divider); border-radius:var(--radius); font-size:0.9rem; background:#fff; outline:none; }
+.ed-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid #f0ece4; }
+.ed-item .ei-nom { flex:1; font-size:0.84rem; font-weight:600; min-width:0; }
+.ed-item .ei-pu { font-size:0.7rem; color:var(--text-soft); }
+.ed-item .ei-sub { font-weight:800; color:#6b5638; font-size:0.85rem; white-space:nowrap; min-width:90px; text-align:right; }
+.ei-ctrl { display:flex; align-items:center; gap:5px; }
+.ei-ctrl button { width:28px; height:28px; border:1px solid var(--divider); background:#fff; border-radius:8px; font-weight:700; cursor:pointer; font-size:1rem; }
+.ei-ctrl button:hover { background:#faf8f4; }
+.ei-ctrl span { min-width:22px; text-align:center; font-weight:700; }
+.ei-quitar { color:#c62828; border:none!important; background:none!important; }
+.ed-resultados { margin-top:8px; }
+.ed-res-item { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:9px 10px; border:1px solid #f0ece4; border-radius:8px; margin-bottom:6px; font-size:0.82rem; }
+.ed-res-item button { border:none; background:var(--bronce); color:#fff; font-weight:700; padding:6px 12px; border-radius:8px; cursor:pointer; font-size:0.75rem; }
+.ed-total-box { margin-top:18px; padding-top:14px; border-top:1px solid var(--divider); }
+.ed-total-row { display:flex; justify-content:space-between; font-weight:800; font-size:1.05rem; }
+.ed-total-row span:last-child { color:#6b5638; }
+.ed-estado { font-size:0.8rem; text-align:center; margin:10px 0; }
+.ed-estado.falta { color:#b06a00; }
+.ed-estado.ok { color:#2e7d32; font-weight:700; }
+.btn-block:disabled { background:#c8c8c0; cursor:not-allowed; }
+</style>
+
+<script>
+    const MIN = {{ ajustes.minimo_compra|float }};
+    // Estado inicial = items actuales del pedido
+    let items = {};
+    {{ items_data|tojson }}.forEach(function(it){ items[it.codigo] = it; });
+
+    function fmt(v){ return '$' + Number(v).toLocaleString('es-AR',{minimumFractionDigits:2, maximumFractionDigits:2}); }
+    function precioUnit(it){ const q=it.qty; if(q>=10) return it.p10; if(q>=5) return it.p5; return it.p1; }
+
+    function render(){
+        const cont = document.getElementById('ed-items');
+        const cods = Object.keys(items);
+        if(cods.length===0){ cont.innerHTML = '<p style="color:#c62828; font-size:0.85rem;">El pedido quedó vacío. Agregá al menos un producto.</p>'; }
+        else {
+            cont.innerHTML = cods.map(function(cod){
+                const it = items[cod]; const pu = precioUnit(it);
+                return '<div class="ed-item">'+
+                    '<div class="ei-nom">'+it.nombre+'<div class="ei-pu">'+fmt(pu)+' c/u</div></div>'+
+                    '<div class="ei-ctrl"><button type="button" onclick="cambiar(\''+cod+'\',-1)">−</button>'+
+                    '<span>'+it.qty+'</span>'+
+                    '<button type="button" onclick="cambiar(\''+cod+'\',1)">+</button>'+
+                    '<button type="button" class="ei-quitar" onclick="quitar(\''+cod+'\')">✕</button></div>'+
+                    '<div class="ei-sub">'+fmt(pu*it.qty)+'</div></div>';
+            }).join('');
+        }
+        // total
+        let total = 0;
+        cods.forEach(function(c){ const it=items[c]; total += precioUnit(it)*it.qty; });
+        document.getElementById('ed-total').textContent = fmt(total);
+
+        const estado = document.getElementById('ed-estado');
+        const btn = document.getElementById('ed-guardar');
+        if(cods.length===0){ estado.textContent='Agregá productos'; estado.className='ed-estado falta'; btn.disabled=true; }
+        else if(total < MIN){ estado.innerHTML='Faltan <b>'+fmt(MIN-total)+'</b> para el mínimo'; estado.className='ed-estado falta'; btn.disabled=true; }
+        else { estado.textContent='Listo para guardar'; estado.className='ed-estado ok'; btn.disabled=false; }
+    }
+
+    window.cambiar = function(cod, d){ if(!items[cod]) return; items[cod].qty += d; if(items[cod].qty<=0) delete items[cod]; render(); };
+    window.quitar = function(cod){ delete items[cod]; render(); };
+
+    function agregar(p){
+        if(items[p.codigo]) items[p.codigo].qty += 1;
+        else items[p.codigo] = {codigo:p.codigo, nombre:p.nombre, p1:p.p1, p5:p.p5, p10:p.p10, qty:1};
+        render();
+    }
+
+    // Buscador con debounce
+    let t=null;
+    document.getElementById('ed-buscar').addEventListener('input', function(e){
+        const q = e.target.value.trim();
+        clearTimeout(t);
+        const cont = document.getElementById('ed-resultados');
+        if(q.length<2){ cont.innerHTML=''; return; }
+        t = setTimeout(function(){
+            fetch('{{ url_for("admin.productos_buscar") }}?q='+encodeURIComponent(q))
+              .then(r=>r.json())
+              .then(function(data){
+                  if(data.length===0){ cont.innerHTML='<p style="font-size:0.8rem; color:#999;">Sin resultados</p>'; return; }
+                  cont.innerHTML = data.map(function(p){
+                      return '<div class="ed-res-item"><span>'+p.nombre+' <span style="color:#999;">('+fmt(p.p1)+')</span></span>'+
+                             '<button type="button" data-p=\''+JSON.stringify(p).replace(/'/g,"&#39;")+'\'>+ Agregar</button></div>';
+                  }).join('');
+                  cont.querySelectorAll('button[data-p]').forEach(function(b){
+                      b.addEventListener('click', function(){ agregar(JSON.parse(b.getAttribute('data-p'))); });
+                  });
+              });
+        }, 250);
+    });
+
+    // Al enviar, serializo {codigo: cantidad}
+    document.getElementById('ed-form').addEventListener('submit', function(){
+        const simple = {};
+        Object.keys(items).forEach(function(c){ simple[c] = items[c].qty; });
+        document.getElementById('ed-carrito-json').value = JSON.stringify(simple);
+    });
+
+    render();
+</script>
+
+{% endblock %}
