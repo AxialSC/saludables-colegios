@@ -22,6 +22,15 @@
     .t-search-clear { border: none; cursor: pointer; padding: 0; }
     #resultados { transition: opacity .12s ease; }
     #resultados.cargando { opacity: .45; }
+    /* v0.10 · Solapas (Saludables / con-sin alcohol) */
+    .t-solapas { max-width: 1180px; margin: 14px auto 0; padding: 0 18px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .t-solapa {
+        font-size: 0.8rem; font-weight: 800; padding: 9px 16px; border-radius: 10px;
+        background: #fff; border: 1px solid var(--t-line); color: var(--t-text); transition: all .15s ease;
+    }
+    .t-solapa:hover { border-color: var(--t-verde); }
+    .t-solapa.activa { background: var(--t-verde); color: #fff; border-color: var(--t-verde); }
+    .t-solapa.solapa-alco.activa { background: var(--t-bronce); border-color: var(--t-bronce); }
     /* v0.9.3 · Footer profesional */
     .ft { background: #1A1A1A; color: #cfcabf; margin-top: 44px; }
     .ft-inner { max-width: 1180px; margin: 0 auto; padding: 38px 18px 28px; }
@@ -44,6 +53,11 @@
 </head>
 <body>
 
+{# Valores reutilizables para no repetir en cada link #}
+{% set o = orden if orden != 'relevancia' else none %}
+{% set s = 1 if saludable else none %}
+{% set a = alcohol or none %}
+
 <header class="t-header">
     <div class="t-header-top">
         <div class="t-marca">{{ ajustes.nombre_negocio }}</div>
@@ -53,6 +67,8 @@
     <form method="GET" action="{{ url_for('cliente.catalogo') }}" class="t-search-wrap" id="t-search-form">
         <input type="hidden" name="rubro" value="{{ rubro_sel }}">
         <input type="hidden" name="orden" value="{{ orden }}" id="t-orden-hidden">
+        {% if saludable %}<input type="hidden" name="saludable" value="1">{% endif %}
+        {% if alcohol %}<input type="hidden" name="alcohol" value="{{ alcohol }}">{% endif %}
         <div class="t-search-row">
             <input type="text" name="q" value="{{ q }}" class="t-search" id="t-search-input" autocomplete="off"
                    placeholder="Buscá por producto, marca o código (ej: baggio, alfajor, 89012)…">
@@ -62,21 +78,30 @@
     </form>
 
     <div class="t-chips">
-        <a href="{{ url_for('cliente.catalogo') }}"
-           class="t-chip {% if not rubro_sel and not q %}activo{% endif %}">Todo</a>
+        <a href="{{ url_for('cliente.catalogo', orden=o, saludable=s, alcohol=a) }}"
+           class="t-chip {% if not rubro_sel %}activo{% endif %}">Todo</a>
         {% for real, disp in rubros %}
-        <a href="{{ url_for('cliente.catalogo', rubro=real, orden=orden) }}"
+        <a href="{{ url_for('cliente.catalogo', rubro=real, orden=o, saludable=s, alcohol=a) }}"
            class="t-chip {% if real == rubro_sel %}activo{% endif %}">{{ disp }}</a>
         {% endfor %}
     </div>
 </header>
+
+<div class="t-solapas">
+    <a href="{{ url_for('cliente.catalogo', q=q or none, rubro=rubro_sel or none, orden=o, alcohol=a, saludable=(none if saludable else 1)) }}"
+       class="t-solapa solapa-salud {% if saludable %}activa{% endif %}">🌿 Saludables</a>
+    <a href="{{ url_for('cliente.catalogo', q=q or none, rubro=rubro_sel or none, orden=o, saludable=s, alcohol=(none if alcohol == 'sin' else 'sin')) }}"
+       class="t-solapa solapa-alco {% if alcohol == 'sin' %}activa{% endif %}">Sin alcohol</a>
+    <a href="{{ url_for('cliente.catalogo', q=q or none, rubro=rubro_sel or none, orden=o, saludable=s, alcohol=(none if alcohol == 'con' else 'con')) }}"
+       class="t-solapa solapa-alco {% if alcohol == 'con' %}activa{% endif %}">🍷 Con alcohol</a>
+</div>
 
 <div class="t-aviso">
     🛒 Pedido mínimo <b>{{ ajustes.minimo_compra|pesos }}</b> · Precios finales con IVA incluido
 </div>
 
 <div class="t-toolbar">
-    <span class="t-count" id="t-count">{{ paginacion.total }} producto(s){% if q or rubro_sel %} encontrados{% endif %}</span>
+    <span class="t-count" id="t-count">{{ paginacion.total }} producto(s){% if q or rubro_sel or saludable or alcohol %} encontrados{% endif %}</span>
     <div class="t-tools">
         <select id="orden-select" class="t-orden" aria-label="Ordenar productos">
             {% for clave, etiqueta in ordenes.items() %}
@@ -163,7 +188,11 @@
 
 <script>
     window.SALU = { minimo: {{ ajustes.minimo_compra|float }} };
-    window.CAT  = { rubro: {{ rubro_sel|tojson }} };
+    window.CAT  = {
+        rubro: {{ rubro_sel|tojson }},
+        saludable: {{ 1 if saludable else 0 }},
+        alcohol: {{ alcohol|tojson }}
+    };
 
     var vista = 'grilla';
     var RES   = document.getElementById('resultados');
@@ -197,6 +226,8 @@
         var q = INPUT.value.trim();
         if (q) params.set('q', q);
         if (window.CAT.rubro) params.set('rubro', window.CAT.rubro);
+        if (window.CAT.saludable) params.set('saludable', '1');
+        if (window.CAT.alcohol) params.set('alcohol', window.CAT.alcohol);
         var orden = SEL.value;
         if (orden && orden !== 'relevancia') params.set('orden', orden);
         params.set('ajax', '1');

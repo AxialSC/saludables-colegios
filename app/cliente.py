@@ -5,8 +5,8 @@ v0.4 -> (carrito en el front)
 v0.5 -> checkout: datos del cliente (CUIT validado), guarda el pedido,
         pagina de confirmacion con WhatsApp + PDF.
 v0.9.1 -> orden del catalogo (recomendados / nombre / precio / mas vendidos)
-v0.9.2 -> buscador EN VIVO: con ?ajax=1 devuelve solo el fragmento de la grilla
-          (mismo template _grid.html que usa la pagina, sin duplicar diseno)
+v0.9.2 -> buscador EN VIVO (?ajax=1 devuelve solo el fragmento _grid.html)
+v0.10.0 -> filtros Saludables y Con/Sin alcohol (segun marcado del panel)
 """
 import json
 
@@ -51,6 +51,11 @@ def catalogo():
     orden = (request.args.get('orden') or 'relevancia').strip()
     if orden not in ORDENES:
         orden = 'relevancia'
+    # Filtros de solapas (v0.10)
+    saludable = request.args.get('saludable') == '1'
+    alcohol = (request.args.get('alcohol') or '').strip().lower()
+    if alcohol not in ('con', 'sin'):
+        alcohol = ''
 
     ajustes = get_ajustes()
 
@@ -62,6 +67,12 @@ def catalogo():
         stmt = stmt.where(or_(Producto.nombre.ilike(like),
                               Producto.codigo.ilike(like),
                               Producto.rubro.ilike(like)))
+    if saludable:
+        stmt = stmt.where(Producto.es_saludable.is_(True))
+    if alcohol == 'con':
+        stmt = stmt.where(Producto.es_alcoholica.is_(True))
+    elif alcohol == 'sin':
+        stmt = stmt.where(Producto.es_alcoholica.is_(False))
 
     # --- Orden ---
     # Nota: para "precio" ordenamos por costo_neto. Con el markup general da el
@@ -94,7 +105,8 @@ def catalogo():
 
     # Contexto que necesita el fragmento de la grilla
     ctx_grid = dict(items=items, paginacion=paginacion, q=q, rubro_sel=rubro,
-                    orden=orden, rubro_display=_rubro_display)
+                    orden=orden, saludable=saludable, alcohol=alcohol,
+                    rubro_display=_rubro_display)
 
     # Buscador EN VIVO: pedido AJAX -> devolvemos SOLO el fragmento de la grilla.
     if request.args.get('ajax'):
