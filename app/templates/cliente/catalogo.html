@@ -22,6 +22,24 @@
     .t-search-clear { border: none; cursor: pointer; padding: 0; }
     #resultados { transition: opacity .12s ease; }
     #resultados.cargando { opacity: .45; }
+    /* v0.9.3 · Footer profesional */
+    .ft { background: #1A1A1A; color: #cfcabf; margin-top: 44px; }
+    .ft-inner { max-width: 1180px; margin: 0 auto; padding: 38px 18px 28px; }
+    .ft-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+    @media (max-width: 720px) { .ft-cols { grid-template-columns: 1fr; gap: 22px; } }
+    .ft-marca { letter-spacing: .24em; text-transform: uppercase; color: #f4f1ec; font-size: 1.05rem; margin-bottom: 12px; }
+    .ft-col h4 { color: #f4f1ec; font-size: 0.78rem; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 13px; font-weight: 600; }
+    .ft-col p { font-size: 0.82rem; line-height: 1.6; color: #a8a49b; margin-bottom: 12px; }
+    .ft-col ul { list-style: none; margin: 0; padding: 0; }
+    .ft-col li { font-size: 0.82rem; line-height: 1.5; color: #a8a49b; padding: 4px 0; }
+    .ft-wa { display: inline-block; color: #8fd0a8; font-weight: 700; font-size: 0.85rem; }
+    .ft-wa:hover { color: #a9e0bf; }
+    .ft-legal { display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+        margin-top: 26px; padding-top: 22px; border-top: 1px solid #2e2e2e; }
+    .ft-datafiscal img { height: 58px; width: auto; display: block; border: 0; border-radius: 4px; }
+    .ft-legal-txt { display: flex; flex-direction: column; gap: 4px; font-size: 0.72rem; color: #8b8b8b; }
+    .ft-firma { color: #6f6f6f; letter-spacing: .06em; }
+    @media (max-width: 520px) { .ft-legal { justify-content: center; text-align: center; } .ft-legal-txt { align-items: center; } }
     </style>
 </head>
 <body>
@@ -76,11 +94,42 @@
     {% include 'cliente/_grid.html' %}
 </div>
 
-<footer class="t-footer">
-    <div class="ft-marca">{{ ajustes.nombre_negocio }}</div>
-    <p style="font-size:0.8rem; margin-top:6px;">Distribución de saludables para colegios y kioscos de Pilar</p>
-    <a class="wa" href="https://wa.me/{{ ajustes.whatsapp }}" target="_blank">Consultas por WhatsApp →</a>
-    <div class="ft-foot">AXIAL SECURITY · v{{ app_version }}</div>
+<footer class="ft">
+    <div class="ft-inner">
+        <div class="ft-cols">
+            <div class="ft-col">
+                <div class="ft-marca">{{ ajustes.nombre_negocio }}</div>
+                <p>Distribución de productos saludables para colegios y kioscos de Pilar y Zona Norte.</p>
+                <a class="ft-wa" href="https://wa.me/{{ ajustes.whatsapp }}" target="_blank" rel="noopener">Escribinos por WhatsApp →</a>
+            </div>
+            <div class="ft-col">
+                <h4>Cómo comprar</h4>
+                <ul>
+                    <li>Elegí tus productos del catálogo</li>
+                    <li>Sumalos al carrito (mínimo {{ ajustes.minimo_compra|pesos }})</li>
+                    <li>Confirmás y coordinás la entrega con Juliana por WhatsApp</li>
+                </ul>
+            </div>
+            <div class="ft-col">
+                <h4>Información</h4>
+                <ul>
+                    <li>Precios finales con IVA incluido</li>
+                    <li>Venta mayorista · Pilar, Zona Norte</li>
+                    <li>Pedidos online las 24 hs</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="ft-legal">
+            <a class="ft-datafiscal" href="https://qr.afip.gob.ar/?qr=fXWoM4iQphl4cyDnjhAJLA,," target="_F960AFIPInfo" rel="noopener">
+                <img src="https://www.afip.gob.ar/images/f960/DATAWEB.jpg" alt="Data Fiscal - AFIP">
+            </a>
+            <div class="ft-legal-txt">
+                <span>© 2026 {{ ajustes.nombre_negocio }} · Todos los derechos reservados.</span>
+                <span class="ft-firma">Desarrollado por AXIAL SECURITY · v{{ app_version }}</span>
+            </div>
+        </div>
+    </div>
 </footer>
 
 <!-- Boton flotante del carrito -->
