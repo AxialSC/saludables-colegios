@@ -14,6 +14,7 @@
         <p style="font-size:0.8rem; color:var(--text-soft); margin-bottom:12px;">
             Cambiá cantidades, quitá o agregá productos. El precio se recalcula con el escalón
             (1-4 / 5-9 / 10+). El pedido no puede quedar por debajo de {{ ajustes.minimo_compra|pesos }}.
+            <span style="color:#2e7d32; font-weight:700;">Lo que agregás queda resaltado en verde.</span>
         </p>
         <div id="ed-items"></div>
     </div>
@@ -63,6 +64,11 @@
 .ed-estado.falta { color:#b06a00; }
 .ed-estado.ok { color:#2e7d32; font-weight:700; }
 .btn-block:disabled { background:#c8c8c0; cursor:not-allowed; }
+
+/* v0.9 · Producto agregado durante la edición → resaltado para ubicarlo fácil */
+.ed-item.ed-nuevo { background:#f1f8f1; border-left:3px solid #2e7d32; padding-left:9px; border-radius:7px; border-bottom-color:#dcebdc; }
+.ei-tag-nuevo { display:inline-block; font-size:0.58rem; font-weight:800; color:#2e7d32; background:#e3f1e3;
+    padding:2px 8px; border-radius:999px; margin-left:8px; letter-spacing:0.05em; text-transform:uppercase; vertical-align:middle; }
 </style>
 
 <script>
@@ -70,6 +76,8 @@
     // Estado inicial = items actuales del pedido
     let items = {};
     {{ items_data|tojson }}.forEach(function(it){ items[it.codigo] = it; });
+    // Códigos que ya estaban en el pedido al abrir (para resaltar solo lo agregado nuevo)
+    const ORIGINALES = new Set(Object.keys(items));
 
     function fmt(v){ return '$' + Number(v).toLocaleString('es-AR',{minimumFractionDigits:2, maximumFractionDigits:2}); }
     function precioUnit(it){ const q=it.qty; if(q>=10) return it.p10; if(q>=5) return it.p5; return it.p1; }
@@ -82,8 +90,10 @@
         else {
             cont.innerHTML = cods.map(function(cod){
                 const it = items[cod]; const pu = precioUnit(it);
-                return '<div class="ed-item">'+
-                    '<div class="ei-nom"><span class="ei-cod">'+esc(it.codigo)+'</span>'+esc(it.nombre)+'<div class="ei-pu">'+fmt(pu)+' c/u</div></div>'+
+                const esNuevo = !ORIGINALES.has(cod);
+                const tag = esNuevo ? '<span class="ei-tag-nuevo">✚ agregado</span>' : '';
+                return '<div class="ed-item'+(esNuevo?' ed-nuevo':'')+'">'+
+                    '<div class="ei-nom"><span class="ei-cod">'+esc(it.codigo)+'</span>'+esc(it.nombre)+tag+'<div class="ei-pu">'+fmt(pu)+' c/u</div></div>'+
                     '<div class="ei-ctrl"><button type="button" onclick="cambiar(\''+cod+'\',-1)">−</button>'+
                     '<span>'+it.qty+'</span>'+
                     '<button type="button" onclick="cambiar(\''+cod+'\',1)">+</button>'+
