@@ -5,6 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ ajustes.nombre_negocio }} · Catálogo Mayorista Pilar</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/tienda.css') }}">
+    <style>
+    /* v0.9.1 · Selector de orden */
+    .t-tools { display: flex; align-items: center; gap: 10px; }
+    .t-orden {
+        border: 1px solid var(--t-line); background: #fff; border-radius: 9px;
+        padding: 7px 10px; font-size: 0.75rem; font-weight: 700; color: var(--t-text);
+        cursor: pointer; outline: none;
+    }
+    .t-orden:focus { border-color: var(--t-verde); }
+    @media (max-width: 520px) {
+        .t-toolbar { flex-wrap: wrap; gap: 10px; }
+        .t-tools { width: 100%; justify-content: space-between; }
+    }
+    </style>
 </head>
 <body>
 
@@ -16,11 +30,12 @@
 
     <form method="GET" action="{{ url_for('cliente.catalogo') }}" class="t-search-wrap">
         {% if rubro_sel %}<input type="hidden" name="rubro" value="{{ rubro_sel }}">{% endif %}
+        {% if orden and orden != 'relevancia' %}<input type="hidden" name="orden" value="{{ orden }}">{% endif %}
         <div class="t-search-row">
             <input type="text" name="q" value="{{ q }}" class="t-search"
                    placeholder="Buscá por producto, marca o código (ej: baggio, alfajor, 89012)…">
             {% if q %}
-            <a class="t-search-clear" href="{{ url_for('cliente.catalogo', rubro=rubro_sel) }}" title="Limpiar búsqueda">✕</a>
+            <a class="t-search-clear" href="{{ url_for('cliente.catalogo', rubro=rubro_sel, orden=orden) }}" title="Limpiar búsqueda">✕</a>
             {% endif %}
         </div>
     </form>
@@ -29,7 +44,7 @@
         <a href="{{ url_for('cliente.catalogo') }}"
            class="t-chip {% if not rubro_sel and not q %}activo{% endif %}">Todo</a>
         {% for real, disp in rubros %}
-        <a href="{{ url_for('cliente.catalogo', rubro=real) }}"
+        <a href="{{ url_for('cliente.catalogo', rubro=real, orden=orden) }}"
            class="t-chip {% if real == rubro_sel %}activo{% endif %}">{{ disp }}</a>
         {% endfor %}
     </div>
@@ -42,9 +57,20 @@
 {% if items %}
 <div class="t-toolbar">
     <span class="t-count">{{ paginacion.total }} producto(s){% if q or rubro_sel %} encontrados{% endif %}</span>
-    <div class="t-views">
-        <button class="t-view-btn activo" id="btn-grilla" onclick="setVista('grilla')">▦ Grilla</button>
-        <button class="t-view-btn" id="btn-lista" onclick="setVista('lista')">☰ Lista</button>
+    <div class="t-tools">
+        <form method="GET" action="{{ url_for('cliente.catalogo') }}" class="t-orden-form">
+            {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+            {% if rubro_sel %}<input type="hidden" name="rubro" value="{{ rubro_sel }}">{% endif %}
+            <select name="orden" class="t-orden" onchange="this.form.submit()" aria-label="Ordenar productos">
+                {% for clave, etiqueta in ordenes.items() %}
+                <option value="{{ clave }}" {% if orden == clave %}selected{% endif %}>{{ etiqueta }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        <div class="t-views">
+            <button class="t-view-btn activo" id="btn-grilla" onclick="setVista('grilla')">▦ Grilla</button>
+            <button class="t-view-btn" id="btn-lista" onclick="setVista('lista')">☰ Lista</button>
+        </div>
     </div>
 </div>
 
@@ -77,11 +103,11 @@
 {% if paginacion.pages > 1 %}
 <div class="t-pag">
     {% if paginacion.has_prev %}
-    <a href="{{ url_for('cliente.catalogo', page=paginacion.prev_num, q=q, rubro=rubro_sel) }}">← Anterior</a>
+    <a href="{{ url_for('cliente.catalogo', page=paginacion.prev_num, q=q, rubro=rubro_sel, orden=orden) }}">← Anterior</a>
     {% endif %}
     <span>Página {{ paginacion.page }} de {{ paginacion.pages }}</span>
     {% if paginacion.has_next %}
-    <a href="{{ url_for('cliente.catalogo', page=paginacion.next_num, q=q, rubro=rubro_sel) }}">Siguiente →</a>
+    <a href="{{ url_for('cliente.catalogo', page=paginacion.next_num, q=q, rubro=rubro_sel, orden=orden) }}">Siguiente →</a>
     {% endif %}
 </div>
 {% endif %}

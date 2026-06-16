@@ -4,16 +4,17 @@ v0.3 -> catalogo con precios
 v0.4 -> (carrito en el front)
 v0.5 -> checkout: datos del cliente (CUIT validado), guarda el pedido,
         pagina de confirmacion con WhatsApp + PDF.
+v0.9.1 -> orden del catalogo (recomendados / nombre / precio / mas vendidos)
 """
 import json
 
 from flask import (Blueprint, render_template, request, redirect, url_for,
                    abort, Response, flash)
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, func
 
 from .extensions import db
 from .models import (Producto, Pedido, ItemPedido, get_ajustes,
-                     generar_numero_pedido)
+                     generar_numero_pedido, EstadoPedido)
 from .utils.validaciones import validar_cuit, limpiar_cuit
 from . import pricing
 from .pdf_pedido import generar_pdf_pedido
@@ -21,6 +22,15 @@ from .pdf_pedido import generar_pdf_pedido
 cliente_bp = Blueprint('cliente', __name__)
 
 POR_PAGINA = 24
+
+# Opciones de orden que ofrece la tienda (clave -> etiqueta visible)
+ORDENES = {
+    'relevancia':  'Recomendados',
+    'nombre':      'Nombre A–Z',
+    'precio_asc':  'Precio: menor a mayor',
+    'precio_desc': 'Precio: mayor a menor',
+    'vendidos':    'Más vendidos',
+}
 
 
 def _rubro_display(rubro):
@@ -36,6 +46,9 @@ def catalogo():
     page = request.args.get('page', 1, type=int)
     q = (request.args.get('q') or '').strip()
     rubro = (request.args.get('rubro') or '').strip()
+    orden = (request.args.get('orden') or 'relevancia').strip()
+    if orden not in ORDENES:
+        orden = 'relevancia'
 
     ajustes = get_ajustes()
 
@@ -47,7 +60,34 @@ def catalogo():
         stmt = stmt.where(or_(Producto.nombre.ilike(like),
                               Producto.codigo.ilike(like),
                               Producto.rubro.ilike(like)))
-    stmt = stmt.order_by(Producto.rubro, Producto.nombre)
+
+    # --- Orden ---
+    # Nota: para "precio" ordenamos por costo_neto. Con el markup general da el
+    # mismo orden que el precio final (precio = costo / (1 - margen) * IVA).
+    # Si un producto tiene margen individual muy distinto, podria variar un puesto;
+    # es una aproximacion razonable que mantiene la paginacion en la base.
+    if orden == 'nombre':
+        stmt = stmt.order_by(Producto.nombre)
+    elif orden == 'precio_asc':
+        stmt = stmt.order_by(Producto.costo_neto.asc(), Producto.nombre)
+    elif orden == 'precio_desc':
+        stmt = stmt.order_by(Producto.costo_neto.desc(), Producto.nombre)
+    elif orden == 'vendidos':
+        # Suma de unidades vendidas por codigo (pedidos no anulados). Los datos ya existen.
+        ventas_sub = (
+            select(ItemPedido.codigo,
+                   func.sum(ItemPedido.cantidad).label('vendidas'))
+            .join(Pedido, Pedido.id == ItemPedido.pedido_id)
+            .where(Pedido.estado != EstadoPedido.ANULADO)
+            .group_by(ItemPedido.codigo)
+            .subquery()
+        )
+        stmt = (stmt.outerjoin(ventas_sub, ventas_sub.c.codigo == Producto.codigo)
+                    .order_by(func.coalesce(ventas_sub.c.vendidas, 0).desc(),
+                              Producto.nombre))
+    else:  # relevancia (default)
+        orden = 'relevancia'
+        stmt = stmt.order_by(Producto.rubro, Producto.nombre)
 
     paginacion = db.paginate(stmt, page=page, per_page=POR_PAGINA, error_out=False)
 
@@ -61,7 +101,8 @@ def catalogo():
 
     return render_template('cliente/catalogo.html',
                            items=items, paginacion=paginacion,
-                           rubros=rubros, q=q, rubro_sel=rubro,
+                           rubros=rubros, q=q, rubro_sel=rubro, orden=orden,
+                           ordenes=ORDENES,
                            ajustes=ajustes, rubro_display=_rubro_display)
 
 
