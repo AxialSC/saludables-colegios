@@ -18,6 +18,10 @@
         .t-toolbar { flex-wrap: wrap; gap: 10px; }
         .t-tools { width: 100%; justify-content: space-between; }
     }
+    /* v0.9.2 · Buscador en vivo */
+    .t-search-clear { border: none; cursor: pointer; padding: 0; }
+    #resultados { transition: opacity .12s ease; }
+    #resultados.cargando { opacity: .45; }
     </style>
 </head>
 <body>
@@ -28,15 +32,14 @@
         <div class="t-tagline">Catálogo mayorista · Pilar, Zona Norte</div>
     </div>
 
-    <form method="GET" action="{{ url_for('cliente.catalogo') }}" class="t-search-wrap">
-        {% if rubro_sel %}<input type="hidden" name="rubro" value="{{ rubro_sel }}">{% endif %}
-        {% if orden and orden != 'relevancia' %}<input type="hidden" name="orden" value="{{ orden }}">{% endif %}
+    <form method="GET" action="{{ url_for('cliente.catalogo') }}" class="t-search-wrap" id="t-search-form">
+        <input type="hidden" name="rubro" value="{{ rubro_sel }}">
+        <input type="hidden" name="orden" value="{{ orden }}" id="t-orden-hidden">
         <div class="t-search-row">
-            <input type="text" name="q" value="{{ q }}" class="t-search"
+            <input type="text" name="q" value="{{ q }}" class="t-search" id="t-search-input" autocomplete="off"
                    placeholder="Buscá por producto, marca o código (ej: baggio, alfajor, 89012)…">
-            {% if q %}
-            <a class="t-search-clear" href="{{ url_for('cliente.catalogo', rubro=rubro_sel, orden=orden) }}" title="Limpiar búsqueda">✕</a>
-            {% endif %}
+            <button type="button" class="t-search-clear" id="t-search-clear" title="Limpiar búsqueda"
+                    style="{% if not q %}display:none;{% endif %}">✕</button>
         </div>
     </form>
 
@@ -54,71 +57,24 @@
     🛒 Pedido mínimo <b>{{ ajustes.minimo_compra|pesos }}</b> · Precios finales con IVA incluido
 </div>
 
-{% if items %}
 <div class="t-toolbar">
-    <span class="t-count">{{ paginacion.total }} producto(s){% if q or rubro_sel %} encontrados{% endif %}</span>
+    <span class="t-count" id="t-count">{{ paginacion.total }} producto(s){% if q or rubro_sel %} encontrados{% endif %}</span>
     <div class="t-tools">
-        <form method="GET" action="{{ url_for('cliente.catalogo') }}" class="t-orden-form">
-            {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
-            {% if rubro_sel %}<input type="hidden" name="rubro" value="{{ rubro_sel }}">{% endif %}
-            <select name="orden" class="t-orden" onchange="this.form.submit()" aria-label="Ordenar productos">
-                {% for clave, etiqueta in ordenes.items() %}
-                <option value="{{ clave }}" {% if orden == clave %}selected{% endif %}>{{ etiqueta }}</option>
-                {% endfor %}
-            </select>
-        </form>
+        <select id="orden-select" class="t-orden" aria-label="Ordenar productos">
+            {% for clave, etiqueta in ordenes.items() %}
+            <option value="{{ clave }}" {% if orden == clave %}selected{% endif %}>{{ etiqueta }}</option>
+            {% endfor %}
+        </select>
         <div class="t-views">
-            <button class="t-view-btn activo" id="btn-grilla" onclick="setVista('grilla')">▦ Grilla</button>
-            <button class="t-view-btn" id="btn-lista" onclick="setVista('lista')">☰ Lista</button>
+            <button type="button" class="t-view-btn activo" id="btn-grilla" onclick="setVista('grilla')">▦ Grilla</button>
+            <button type="button" class="t-view-btn" id="btn-lista" onclick="setVista('lista')">☰ Lista</button>
         </div>
     </div>
 </div>
 
-<div class="t-grid" id="grid">
-    {% for it in items %}
-    {% set p = it.p %}{% set pr = it.precios %}
-    <div class="t-card">
-        <div class="t-thumb{% if p.imagen %} has-img{% endif %}">{% if p.imagen %}<img src="{{ url_for('static', filename='img/productos/' + p.imagen) }}" alt="{{ p.nombre }}" loading="lazy">{% else %}{{ rubro_display(p.rubro)[0]|upper }}{% endif %}</div>
-        <div class="t-body">
-            <span class="t-rubro">{{ rubro_display(p.rubro) }}</span>
-            <div class="t-nombre">{{ p.nombre }}</div>
-            <span class="t-codigo">Cód. {{ p.codigo }}</span>
-            <div class="t-precio-box">
-                <div class="t-precio">{{ pr.x1|pesos }} <small>c/u</small></div>
-                <div class="t-escala">
-                    <span>5u: <b>{{ pr.x5|pesos }}</b></span>
-                    <span>10u: <b>{{ pr.x10|pesos }}</b></span>
-                </div>
-            </div>
-            <button class="t-add"
-                    data-codigo="{{ p.codigo }}"
-                    data-nombre="{{ p.nombre }}"
-                    data-p1="{{ pr.x1 }}" data-p5="{{ pr.x5 }}" data-p10="{{ pr.x10 }}"
-                    onclick="agregarAlCarrito(this)">+ Agregar</button>
-        </div>
-    </div>
-    {% endfor %}
+<div id="resultados">
+    {% include 'cliente/_grid.html' %}
 </div>
-
-{% if paginacion.pages > 1 %}
-<div class="t-pag">
-    {% if paginacion.has_prev %}
-    <a href="{{ url_for('cliente.catalogo', page=paginacion.prev_num, q=q, rubro=rubro_sel, orden=orden) }}">← Anterior</a>
-    {% endif %}
-    <span>Página {{ paginacion.page }} de {{ paginacion.pages }}</span>
-    {% if paginacion.has_next %}
-    <a href="{{ url_for('cliente.catalogo', page=paginacion.next_num, q=q, rubro=rubro_sel, orden=orden) }}">Siguiente →</a>
-    {% endif %}
-</div>
-{% endif %}
-
-{% else %}
-<div class="t-empty">
-    <h2>No encontramos productos</h2>
-    <p>Probá con otra palabra o tocá “Todo” para ver el catálogo completo.</p>
-    <a href="{{ url_for('cliente.catalogo') }}" class="t-empty-btn">Ver todo el catálogo</a>
-</div>
-{% endif %}
 
 <footer class="t-footer">
     <div class="ft-marca">{{ ajustes.nombre_negocio }}</div>
@@ -158,19 +114,73 @@
 
 <script>
     window.SALU = { minimo: {{ ajustes.minimo_compra|float }} };
+    window.CAT  = { rubro: {{ rubro_sel|tojson }} };
 
-    function setVista(modo) {
+    var vista = 'grilla';
+    var RES   = document.getElementById('resultados');
+    var INPUT = document.getElementById('t-search-input');
+    var SEL   = document.getElementById('orden-select');
+    var CLEAR = document.getElementById('t-search-clear');
+    var ORDEN_HIDDEN = document.getElementById('t-orden-hidden');
+    var tmr = null, reqId = 0;
+
+    function aplicarVista() {
         var grid = document.getElementById('grid');
-        var bg = document.getElementById('btn-grilla');
-        var bl = document.getElementById('btn-lista');
-        if (modo === 'lista') {
-            grid.classList.add('lista');
-            bl.classList.add('activo'); bg.classList.remove('activo');
-        } else {
-            grid.classList.remove('lista');
-            bg.classList.add('activo'); bl.classList.remove('activo');
-        }
+        if (grid) { if (vista === 'lista') grid.classList.add('lista'); else grid.classList.remove('lista'); }
     }
+    function setVista(modo) {
+        vista = modo;
+        var bg = document.getElementById('btn-grilla'), bl = document.getElementById('btn-lista');
+        if (modo === 'lista') { bl.classList.add('activo'); bg.classList.remove('activo'); }
+        else { bg.classList.add('activo'); bl.classList.remove('activo'); }
+        aplicarVista();
+    }
+    function actualizarContador() {
+        var meta = document.getElementById('grid-meta');
+        if (!meta) return;
+        var total = meta.getAttribute('data-total');
+        var buscando = meta.getAttribute('data-buscando') === '1';
+        document.getElementById('t-count').textContent = total + ' producto(s)' + (buscando ? ' encontrados' : '');
+    }
+    function actualizar() {
+        var myId = ++reqId;
+        var params = new URLSearchParams();
+        var q = INPUT.value.trim();
+        if (q) params.set('q', q);
+        if (window.CAT.rubro) params.set('rubro', window.CAT.rubro);
+        var orden = SEL.value;
+        if (orden && orden !== 'relevancia') params.set('orden', orden);
+        params.set('ajax', '1');
+        RES.classList.add('cargando');
+        fetch('{{ url_for("cliente.catalogo") }}?' + params.toString())
+            .then(function (r) { return r.text(); })
+            .then(function (html) {
+                if (myId !== reqId) return;   // descarto respuestas viejas
+                RES.innerHTML = html;
+                aplicarVista();
+                actualizarContador();
+                RES.classList.remove('cargando');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            })
+            .catch(function () { RES.classList.remove('cargando'); });
+    }
+
+    INPUT.addEventListener('input', function () {
+        CLEAR.style.display = INPUT.value ? '' : 'none';
+        clearTimeout(tmr);
+        tmr = setTimeout(actualizar, 250);
+    });
+    document.getElementById('t-search-form').addEventListener('submit', function (e) {
+        e.preventDefault(); clearTimeout(tmr); actualizar();
+    });
+    SEL.addEventListener('change', function () {
+        if (ORDEN_HIDDEN) ORDEN_HIDDEN.value = SEL.value;
+        actualizar();
+    });
+    CLEAR.addEventListener('click', function () {
+        INPUT.value = ''; CLEAR.style.display = 'none';
+        clearTimeout(tmr); actualizar(); INPUT.focus();
+    });
 </script>
 <script src="{{ url_for('static', filename='js/carrito.js') }}"></script>
 

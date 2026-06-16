@@ -5,6 +5,8 @@ v0.4 -> (carrito en el front)
 v0.5 -> checkout: datos del cliente (CUIT validado), guarda el pedido,
         pagina de confirmacion con WhatsApp + PDF.
 v0.9.1 -> orden del catalogo (recomendados / nombre / precio / mas vendidos)
+v0.9.2 -> buscador EN VIVO: con ?ajax=1 devuelve solo el fragmento de la grilla
+          (mismo template _grid.html que usa la pagina, sin duplicar diseno)
 """
 import json
 
@@ -64,8 +66,6 @@ def catalogo():
     # --- Orden ---
     # Nota: para "precio" ordenamos por costo_neto. Con el markup general da el
     # mismo orden que el precio final (precio = costo / (1 - margen) * IVA).
-    # Si un producto tiene margen individual muy distinto, podria variar un puesto;
-    # es una aproximacion razonable que mantiene la paginacion en la base.
     if orden == 'nombre':
         stmt = stmt.order_by(Producto.nombre)
     elif orden == 'precio_asc':
@@ -73,7 +73,6 @@ def catalogo():
     elif orden == 'precio_desc':
         stmt = stmt.order_by(Producto.costo_neto.desc(), Producto.nombre)
     elif orden == 'vendidos':
-        # Suma de unidades vendidas por codigo (pedidos no anulados). Los datos ya existen.
         ventas_sub = (
             select(ItemPedido.codigo,
                    func.sum(ItemPedido.cantidad).label('vendidas'))
@@ -93,6 +92,14 @@ def catalogo():
 
     items = [{'p': p, 'precios': pricing.precios(p, ajustes)} for p in paginacion.items]
 
+    # Contexto que necesita el fragmento de la grilla
+    ctx_grid = dict(items=items, paginacion=paginacion, q=q, rubro_sel=rubro,
+                    orden=orden, rubro_display=_rubro_display)
+
+    # Buscador EN VIVO: pedido AJAX -> devolvemos SOLO el fragmento de la grilla.
+    if request.args.get('ajax'):
+        return render_template('cliente/_grid.html', **ctx_grid)
+
     rubros_raw = db.session.execute(
         select(Producto.rubro).where(Producto.activo.is_(True))
         .distinct().order_by(Producto.rubro)
@@ -100,10 +107,8 @@ def catalogo():
     rubros = [(r, _rubro_display(r)) for r in rubros_raw]
 
     return render_template('cliente/catalogo.html',
-                           items=items, paginacion=paginacion,
-                           rubros=rubros, q=q, rubro_sel=rubro, orden=orden,
-                           ordenes=ORDENES,
-                           ajustes=ajustes, rubro_display=_rubro_display)
+                           rubros=rubros, ordenes=ORDENES, ajustes=ajustes,
+                           **ctx_grid)
 
 
 def _recalcular_carrito(carrito_dict, ajustes):

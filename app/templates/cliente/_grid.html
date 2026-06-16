@@ -1,0 +1,51 @@
+{# Fragmento de la grilla de productos.
+   Se usa incrustado en catalogo.html Y como respuesta del buscador en vivo (?ajax=1).
+   No duplica diseno: las cards viven solo aca. #}
+<span id="grid-meta" data-total="{{ paginacion.total }}" data-buscando="{{ 1 if (q or rubro_sel) else 0 }}" hidden></span>
+
+{% if items %}
+<div class="t-grid" id="grid">
+    {% for it in items %}
+    {% set p = it.p %}{% set pr = it.precios %}
+    <div class="t-card">
+        <div class="t-thumb{% if p.imagen %} has-img{% endif %}">{% if p.imagen %}<img src="{{ url_for('static', filename='img/productos/' + p.imagen) }}" alt="{{ p.nombre }}" loading="lazy">{% else %}{{ rubro_display(p.rubro)[0]|upper }}{% endif %}</div>
+        <div class="t-body">
+            <span class="t-rubro">{{ rubro_display(p.rubro) }}</span>
+            <div class="t-nombre">{{ p.nombre }}</div>
+            <span class="t-codigo">Cód. {{ p.codigo }}</span>
+            <div class="t-precio-box">
+                <div class="t-precio">{{ pr.x1|pesos }} <small>c/u</small></div>
+                <div class="t-escala">
+                    <span>5u: <b>{{ pr.x5|pesos }}</b></span>
+                    <span>10u: <b>{{ pr.x10|pesos }}</b></span>
+                </div>
+            </div>
+            <button class="t-add"
+                    data-codigo="{{ p.codigo }}"
+                    data-nombre="{{ p.nombre }}"
+                    data-p1="{{ pr.x1 }}" data-p5="{{ pr.x5 }}" data-p10="{{ pr.x10 }}"
+                    onclick="agregarAlCarrito(this)">+ Agregar</button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if paginacion.pages > 1 %}
+<div class="t-pag">
+    {% if paginacion.has_prev %}
+    <a href="{{ url_for('cliente.catalogo', page=paginacion.prev_num, q=q, rubro=rubro_sel, orden=orden) }}">← Anterior</a>
+    {% endif %}
+    <span>Página {{ paginacion.page }} de {{ paginacion.pages }}</span>
+    {% if paginacion.has_next %}
+    <a href="{{ url_for('cliente.catalogo', page=paginacion.next_num, q=q, rubro=rubro_sel, orden=orden) }}">Siguiente →</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="t-empty">
+    <h2>No encontramos productos</h2>
+    <p>Probá con otra palabra o tocá “Todo” para ver el catálogo completo.</p>
+    <a href="{{ url_for('cliente.catalogo') }}" class="t-empty-btn">Ver todo el catálogo</a>
+</div>
+{% endif %}
