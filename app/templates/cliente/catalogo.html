@@ -88,11 +88,13 @@
 </header>
 
 <div class="t-solapas">
-    <a href="{{ url_for('cliente.catalogo', q=q or none, rubro=rubro_sel or none, orden=o, alcohol=a, saludable=(none if saludable else 1)) }}"
+    <a href="{{ url_for('cliente.catalogo', q=q or none, rubro=rubro_sel or none, orden=o) }}"
+       class="t-solapa {% if not saludable and not alcohol %}activa{% endif %}">Todo</a>
+    <a href="{{ url_for('cliente.catalogo', q=q or none, rubro=rubro_sel or none, orden=o, saludable=1) }}"
        class="t-solapa solapa-salud {% if saludable %}activa{% endif %}">🌿 Saludables</a>
-    <a href="{{ url_for('cliente.catalogo', q=q or none, rubro=rubro_sel or none, orden=o, saludable=s, alcohol=(none if alcohol == 'sin' else 'sin')) }}"
+    <a href="{{ url_for('cliente.catalogo', q=q or none, rubro=rubro_sel or none, orden=o, alcohol='sin') }}"
        class="t-solapa solapa-alco {% if alcohol == 'sin' %}activa{% endif %}">Sin alcohol</a>
-    <a href="{{ url_for('cliente.catalogo', q=q or none, rubro=rubro_sel or none, orden=o, saludable=s, alcohol=(none if alcohol == 'con' else 'con')) }}"
+    <a href="{{ url_for('cliente.catalogo', q=q or none, rubro=rubro_sel or none, orden=o, alcohol='con') }}"
        class="t-solapa solapa-alco {% if alcohol == 'con' %}activa{% endif %}">🍷 Con alcohol</a>
 </div>
 
