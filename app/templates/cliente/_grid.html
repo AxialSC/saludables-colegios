@@ -2,7 +2,7 @@
    Se usa incrustado en catalogo.html Y como respuesta del buscador en vivo (?ajax=1).
    No duplica diseno: las cards viven solo aca. #}
 <span id="grid-meta" data-total="{{ paginacion.total }}"
-      data-buscando="{{ 1 if (q or rubro_sel or saludable or alcohol) else 0 }}" hidden></span>
+      data-buscando="{{ 1 if (q or rubro_sel or cat) else 0 }}" hidden></span>
 
 {% if items %}
 <div class="t-grid" id="grid">
@@ -34,11 +34,11 @@
 {% if paginacion.pages > 1 %}
 <div class="t-pag">
     {% if paginacion.has_prev %}
-    <a href="{{ url_for('cliente.catalogo', page=paginacion.prev_num, q=q or none, rubro=rubro_sel or none, orden=(orden if orden != 'relevancia' else none), saludable=(1 if saludable else none), alcohol=alcohol or none) }}">← Anterior</a>
+    <a href="{{ url_for('cliente.catalogo', page=paginacion.prev_num, q=q or none, rubro=rubro_sel or none, orden=(orden if orden != 'relevancia' else none), cat=cat or none) }}">← Anterior</a>
     {% endif %}
     <span>Página {{ paginacion.page }} de {{ paginacion.pages }}</span>
     {% if paginacion.has_next %}
-    <a href="{{ url_for('cliente.catalogo', page=paginacion.next_num, q=q or none, rubro=rubro_sel or none, orden=(orden if orden != 'relevancia' else none), saludable=(1 if saludable else none), alcohol=alcohol or none) }}">Siguiente →</a>
+    <a href="{{ url_for('cliente.catalogo', page=paginacion.next_num, q=q or none, rubro=rubro_sel or none, orden=(orden if orden != 'relevancia' else none), cat=cat or none) }}">Siguiente →</a>
     {% endif %}
 </div>
 {% endif %}
@@ -46,7 +46,7 @@
 {% else %}
 <div class="t-empty">
     <h2>No encontramos productos</h2>
-    <p>Probá con otra palabra, cambiá de solapa o tocá “Todo” para ver el catálogo completo.</p>
+    <p>Probá con otra palabra, cambiá de solapa o tocá "Todo" para ver el catálogo completo.</p>
     <a href="{{ url_for('cliente.catalogo') }}" class="t-empty-btn">Ver todo el catálogo</a>
 </div>
 {% endif %}

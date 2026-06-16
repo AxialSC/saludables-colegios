@@ -68,6 +68,24 @@ class Usuario(UserMixin, db.Model):
 IVA = 0.21
 
 
+class CategoriaProducto:
+    """
+    Categoria unica del producto para las solapas de la tienda (v0.11).
+    Reemplaza el uso de los flags es_saludable / es_alcoholica.
+    """
+    NINGUNA = ''
+    COMIDA = 'COMIDA_SALUDABLE'
+    BEBIDA_SIN = 'BEBIDA_SIN'
+    BEBIDA_CON = 'BEBIDA_CON'
+
+    TODAS = (COMIDA, BEBIDA_SIN, BEBIDA_CON)
+    ETIQUETAS = {
+        COMIDA: '🥗 Comida saludable',
+        BEBIDA_SIN: '💧 Bebida sin alcohol',
+        BEBIDA_CON: '🍷 Bebida con alcohol',
+    }
+
+
 class Producto(db.Model):
     """
     Producto del catalogo. Se carga/actualiza desde la planilla del mayorista.
@@ -88,9 +106,12 @@ class Producto(db.Model):
     margen_individual = db.Column(db.Numeric(5, 2), nullable=True)      # v0.3 (markup x producto)
     destacado = db.Column(db.Boolean, nullable=False, default=False)    # v0.x (ofertas)
 
-    # v0.10 -> solapas de la tienda
+    # v0.10 -> solapas de la tienda (legacy: quedan pero ya no se usan en la logica)
     es_saludable = db.Column(db.Boolean, nullable=False, default=False)   # solapa "Saludables"
     es_alcoholica = db.Column(db.Boolean, nullable=False, default=False)  # bebidas con/sin alcohol
+
+    # v0.11 -> categoria unica (fuente de verdad para las solapas)
+    categoria = db.Column(db.String(20), nullable=False, default='', index=True)
 
     activo = db.Column(db.Boolean, nullable=False, default=True)
     # Marca si el producto vino en la ultima planilla importada
@@ -102,6 +123,10 @@ class Producto(db.Model):
     @property
     def costo_con_iva(self):
         return float(self.costo_neto) * (1 + IVA)
+
+    @property
+    def categoria_etiqueta(self):
+        return CategoriaProducto.ETIQUETAS.get(self.categoria, '—')
 
     def __repr__(self):
         return f'<Producto {self.codigo} {self.nombre[:25]}>'

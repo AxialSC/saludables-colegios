@@ -142,6 +142,41 @@ def migrar_v10():
     click.echo(f'OK -> migración v0.10 aplicada ({agregadas} columnas nuevas en productos).')
 
 
+@click.command('migrar-v11')
+@with_appcontext
+def migrar_v11():
+    """
+    Migracion v0.11: agrega 'categoria' a productos y la deriva de los tildes viejos.
+      - es_alcoholica = 1            -> BEBIDA_CON  (prioridad)
+      - es_saludable = 1 (no alcohol) -> COMIDA_SALUDABLE
+      - el resto queda sin categoria.
+    La conversion SOLO corre cuando se crea la columna (idempotente: correrla de
+    nuevo no pisa lo que Ivan/Juliana hayan re-categorizado a mano).
+    """
+    from sqlalchemy import text
+
+    existentes = [fila[1] for fila in db.session.execute(text("PRAGMA table_info(productos)"))]
+    if 'categoria' in existentes:
+        click.echo('La columna productos.categoria ya existe. No se hace nada (idempotente).')
+        return
+
+    db.session.execute(text(
+        "ALTER TABLE productos ADD COLUMN categoria VARCHAR(20) NOT NULL DEFAULT ''"))
+    click.echo('   + columna productos.categoria')
+
+    # Derivar de los tildes viejos (solo en esta primera corrida)
+    r1 = db.session.execute(text(
+        "UPDATE productos SET categoria='BEBIDA_CON' WHERE es_alcoholica=1"))
+    r2 = db.session.execute(text(
+        "UPDATE productos SET categoria='COMIDA_SALUDABLE' "
+        "WHERE es_saludable=1 AND (es_alcoholica=0 OR es_alcoholica IS NULL) AND categoria=''"))
+    db.session.commit()
+
+    click.echo(f'   ~ {r1.rowcount} producto(s) -> Bebida con alcohol')
+    click.echo(f'   ~ {r2.rowcount} producto(s) -> Comida saludable')
+    click.echo('OK -> migración v0.11 aplicada (categoria creada y derivada de los tildes).')
+
+
 def registrar_comandos(app):
     app.cli.add_command(init_db)
     app.cli.add_command(seed_data)
@@ -149,3 +184,4 @@ def registrar_comandos(app):
     app.cli.add_command(migrar_v06)
     app.cli.add_command(migrar_v08)
     app.cli.add_command(migrar_v10)
+    app.cli.add_command(migrar_v11)

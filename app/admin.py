@@ -15,7 +15,7 @@ from werkzeug.utils import secure_filename
 
 from .extensions import db
 from .models import (Producto, Pedido, Cobro, ModificacionPedido, ItemPedido,
-                     get_ajustes, EstadoPedido, FormaPago)
+                     get_ajustes, EstadoPedido, FormaPago, CategoriaProducto)
 from .services import aplicar_importacion
 from .utils.decorators import admin_requerido, super_admin_requerido
 from .utils.import_planilla import leer_planilla
@@ -351,6 +351,7 @@ def catalogo():
     page = request.args.get('page', 1, type=int)
     q = (request.args.get('q') or '').strip()
     rubro = (request.args.get('rubro') or '').strip()
+    cat = (request.args.get('cat') or '').strip()   # filtro por categoria (v0.11)
 
     stmt = select(Producto)
     if rubro:
@@ -359,6 +360,10 @@ def catalogo():
         like = f'%{q}%'
         stmt = stmt.where(or_(Producto.nombre.ilike(like),
                               Producto.codigo.ilike(like)))
+    if cat == 'sin_categoria':
+        stmt = stmt.where(or_(Producto.categoria == '', Producto.categoria.is_(None)))
+    elif cat in CategoriaProducto.TODAS:
+        stmt = stmt.where(Producto.categoria == cat)
     stmt = stmt.order_by(Producto.rubro, Producto.nombre)
 
     paginacion = db.paginate(stmt, page=page, per_page=50, error_out=False)
@@ -377,28 +382,25 @@ def catalogo():
 
     return render_template('admin/catalogo.html',
                            filas=filas, paginacion=paginacion, rubros=rubros,
-                           q=q, rubro_sel=rubro, total=total, ajustes=ajustes)
+                           q=q, rubro_sel=rubro, cat_sel=cat, total=total,
+                           ajustes=ajustes, categorias=CategoriaProducto.ETIQUETAS)
 
 
-@admin_bp.route('/catalogo/<int:pid>/toggle', methods=['POST'])
+@admin_bp.route('/catalogo/<int:pid>/categoria', methods=['POST'])
 @admin_requerido
-def catalogo_toggle(pid):
+def catalogo_categoria(pid):
     """
-    Marca/desmarca 'es_saludable' o 'es_alcoholica' de un producto (AJAX).
-    Lo usan tanto Ivan como Juliana desde la tabla del catalogo (v0.10).
+    Asigna la categoria unica de un producto (AJAX): comida saludable,
+    bebida sin/con alcohol, o sin categoria. Lo usan Ivan y Juliana (v0.11).
     """
     producto = Producto.query.get_or_404(pid)
-    campo = (request.form.get('campo') or '').strip()
-    if campo == 'saludable':
-        producto.es_saludable = not producto.es_saludable
-        nuevo = producto.es_saludable
-    elif campo == 'alcoholica':
-        producto.es_alcoholica = not producto.es_alcoholica
-        nuevo = producto.es_alcoholica
-    else:
-        return jsonify({'ok': False, 'error': 'campo inválido'}), 400
+    cat = (request.form.get('categoria') or '').strip()
+    if cat not in ('',) + CategoriaProducto.TODAS:
+        return jsonify({'ok': False, 'error': 'categoría inválida'}), 400
+    producto.categoria = cat
     db.session.commit()
-    return jsonify({'ok': True, 'campo': campo, 'valor': bool(nuevo)})
+    return jsonify({'ok': True, 'categoria': cat,
+                    'etiqueta': producto.categoria_etiqueta})
 
 
 # ======================= FOTOS =======================

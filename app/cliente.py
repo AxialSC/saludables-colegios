@@ -16,7 +16,7 @@ from sqlalchemy import select, or_, func
 
 from .extensions import db
 from .models import (Producto, Pedido, ItemPedido, get_ajustes,
-                     generar_numero_pedido, EstadoPedido)
+                     generar_numero_pedido, EstadoPedido, CategoriaProducto)
 from .utils.validaciones import validar_cuit, limpiar_cuit
 from . import pricing
 from .pdf_pedido import generar_pdf_pedido
@@ -51,11 +51,16 @@ def catalogo():
     orden = (request.args.get('orden') or 'relevancia').strip()
     if orden not in ORDENES:
         orden = 'relevancia'
-    # Filtros de solapas (v0.10)
-    saludable = request.args.get('saludable') == '1'
-    alcohol = (request.args.get('alcohol') or '').strip().lower()
-    if alcohol not in ('con', 'sin'):
-        alcohol = ''
+    # Filtro por categoria/solapa (v0.11): comida | sin | con
+    cat = (request.args.get('cat') or '').strip().lower()
+    _mapa_cat = {
+        'comida': CategoriaProducto.COMIDA,
+        'sin': CategoriaProducto.BEBIDA_SIN,
+        'con': CategoriaProducto.BEBIDA_CON,
+    }
+    cat_db = _mapa_cat.get(cat)
+    if cat_db is None:
+        cat = ''
 
     ajustes = get_ajustes()
 
@@ -67,12 +72,8 @@ def catalogo():
         stmt = stmt.where(or_(Producto.nombre.ilike(like),
                               Producto.codigo.ilike(like),
                               Producto.rubro.ilike(like)))
-    if saludable:
-        stmt = stmt.where(Producto.es_saludable.is_(True))
-    if alcohol == 'con':
-        stmt = stmt.where(Producto.es_alcoholica.is_(True))
-    elif alcohol == 'sin':
-        stmt = stmt.where(Producto.es_alcoholica.is_(False))
+    if cat_db:
+        stmt = stmt.where(Producto.categoria == cat_db)
 
     # --- Orden ---
     # Nota: para "precio" ordenamos por costo_neto. Con el markup general da el
@@ -105,8 +106,7 @@ def catalogo():
 
     # Contexto que necesita el fragmento de la grilla
     ctx_grid = dict(items=items, paginacion=paginacion, q=q, rubro_sel=rubro,
-                    orden=orden, saludable=saludable, alcohol=alcohol,
-                    rubro_display=_rubro_display)
+                    orden=orden, cat=cat, rubro_display=_rubro_display)
 
     # Buscador EN VIVO: pedido AJAX -> devolvemos SOLO el fragmento de la grilla.
     if request.args.get('ajax'):
