@@ -35,8 +35,14 @@
             </div>
         </div>
 
-        <div class="foot">AXIAL SECURITY · DESARROLLO A MEDIDA</div>
-        <div class="estrella">✦</div>
+        <div class="login-side-bottom">
+            <a class="foot-wa"
+               href="https://api.whatsapp.com/send/?phone=5491164148500&amp;text=Hola+Iv%C3%A1n%21+Vengo+desde+el+Portal+de+Saludables+y+necesito+hacer+una+consulta+t%C3%A9cnica.+Mi+nombre+es%3A+&amp;type=phone_number&amp;app_absent=0"
+               target="_blank" rel="noopener">
+                AXIAL SECURITY <span class="wa-star">✦</span> · 2026
+            </a>
+            <div class="lv-pill">v{{ app_version }} — {{ app_nombre|upper }}</div>
+        </div>
     </div>
 
     <!-- Lado crema (form) -->
@@ -74,4 +80,23 @@
     </div>
 
 </div>
+
+<style>
+/* v0.9 · Footer del login: link a WhatsApp del programador + pastilla de versión */
+.login-side-bottom { display: flex; flex-direction: column; gap: 14px; }
+.foot-wa {
+    align-self: flex-start;
+    font-size: 0.68rem; color: var(--text-soft);
+    letter-spacing: 0.12em; text-transform: uppercase;
+    transition: color 0.15s ease;
+}
+.foot-wa:hover { color: var(--bronce); }
+.foot-wa .wa-star { color: var(--bronce); margin: 0 2px; }
+.lv-pill {
+    align-self: flex-start;
+    font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--bronce); border: 1px solid var(--bronce);
+    padding: 7px 18px; border-radius: 999px; font-weight: 600;
+}
+</style>
 {% endblock %}
