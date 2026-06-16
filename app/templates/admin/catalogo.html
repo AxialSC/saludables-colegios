@@ -53,12 +53,13 @@
         <tbody>
             {% for fila in filas %}
             {% set p = fila.p %}
-            <tr {% if not p.en_ultima_lista %}class="fuera-lista"{% endif %}>
+            <tr class="{% if not p.en_ultima_lista %}fuera-lista {% endif %}{% if p.es_saludable and p.es_alcoholica %}contradice{% endif %}">
                 <td class="mono">{{ p.codigo }}</td>
                 <td>
                     {{ p.nombre }}
                     {% if p.imagen %}<span title="Tiene foto">📷</span>{% endif %}
                     {% if not p.en_ultima_lista %}<span class="tag-fuera">no en última lista</span>{% endif %}
+                    <span class="aviso-contra" title="Una bebida con alcohol no suele ir en la solapa Saludables. Revisalo.">⚠ Revisar: alcohol + saludable</span>
                 </td>
                 <td><span class="tag-rubro">{{ p.rubro }}</span></td>
                 <td style="text-align:right;">${{ '%.2f'|format(p.costo_neto|float) }}</td>
@@ -134,6 +135,14 @@ input.filtro-input { min-width:260px; flex:1; }
 .chk-salud { accent-color:#2e7d32; }
 .chk-alco  { accent-color:#8B6F47; }
 .chk-marca:disabled { opacity:0.4; cursor:wait; }
+
+/* Aviso: un producto no debería ser Saludable Y Con alcohol a la vez */
+.aviso-contra { display:none; font-size:0.6rem; background:#fdeaea; color:#c62828;
+    padding:2px 8px; border-radius:6px; margin-left:8px; font-weight:700; white-space:nowrap; }
+.tabla tbody tr.contradice { background:#fff5f5; }
+.tabla tbody tr.contradice:hover { background:#ffecec; }
+.tabla tbody tr.contradice .aviso-contra { display:inline-block; }
+
 .paginacion { display:flex; align-items:center; justify-content:center; gap:18px; margin-top:22px; }
 .pag-btn { font-size:0.82rem; font-weight:700; color:var(--carbon); padding:8px 14px;
     border:1px solid var(--divider); border-radius:var(--radius); background:#fff; }
@@ -143,6 +152,17 @@ input.filtro-input { min-width:260px; flex:1; }
 
 <script>
     var CSRF = "{{ csrf_token() }}";
+
+    // Marca/desmarca la fila en rojo si quedó Saludable Y Alcohol a la vez.
+    function revisarFila(chk) {
+        var tr = chk.closest('tr');
+        if (!tr) return;
+        var salud = tr.querySelector('.chk-salud');
+        var alco = tr.querySelector('.chk-alco');
+        if (salud && alco && salud.checked && alco.checked) tr.classList.add('contradice');
+        else tr.classList.remove('contradice');
+    }
+
     document.querySelectorAll('.chk-marca').forEach(function (chk) {
         chk.addEventListener('change', function () {
             var pid = chk.getAttribute('data-pid');
@@ -158,6 +178,7 @@ input.filtro-input { min-width:260px; flex:1; }
             .then(function (d) {
                 chk.disabled = false;
                 if (!d.ok) { chk.checked = anterior; alert('No se pudo guardar el cambio.'); }
+                else { revisarFila(chk); }
             })
             .catch(function () {
                 chk.disabled = false; chk.checked = anterior;
