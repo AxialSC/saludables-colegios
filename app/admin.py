@@ -380,6 +380,27 @@ def catalogo():
                            q=q, rubro_sel=rubro, total=total, ajustes=ajustes)
 
 
+@admin_bp.route('/catalogo/<int:pid>/toggle', methods=['POST'])
+@admin_requerido
+def catalogo_toggle(pid):
+    """
+    Marca/desmarca 'es_saludable' o 'es_alcoholica' de un producto (AJAX).
+    Lo usan tanto Ivan como Juliana desde la tabla del catalogo (v0.10).
+    """
+    producto = Producto.query.get_or_404(pid)
+    campo = (request.form.get('campo') or '').strip()
+    if campo == 'saludable':
+        producto.es_saludable = not producto.es_saludable
+        nuevo = producto.es_saludable
+    elif campo == 'alcoholica':
+        producto.es_alcoholica = not producto.es_alcoholica
+        nuevo = producto.es_alcoholica
+    else:
+        return jsonify({'ok': False, 'error': 'campo inválido'}), 400
+    db.session.commit()
+    return jsonify({'ok': True, 'campo': campo, 'valor': bool(nuevo)})
+
+
 # ======================= FOTOS =======================
 
 EXTENSIONES_IMG = ('.jpg', '.jpeg', '.png', '.webp')

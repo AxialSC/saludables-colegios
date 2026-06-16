@@ -3,6 +3,7 @@ app/models.py — Modelos SQLAlchemy.
 
 v0.1.0 -> Usuario + Rol (login)
 v0.2.0 -> Producto (catalogo importado desde la planilla del mayorista)
+v0.10.0 -> Producto: es_saludable + es_alcoholica (solapas Saludables / con-sin alcohol)
 """
 from flask_login import UserMixin
 
@@ -86,6 +87,10 @@ class Producto(db.Model):
     imagen = db.Column(db.String(255), nullable=True)                   # v0.5 (fotos)
     margen_individual = db.Column(db.Numeric(5, 2), nullable=True)      # v0.3 (markup x producto)
     destacado = db.Column(db.Boolean, nullable=False, default=False)    # v0.x (ofertas)
+
+    # v0.10 -> solapas de la tienda
+    es_saludable = db.Column(db.Boolean, nullable=False, default=False)   # solapa "Saludables"
+    es_alcoholica = db.Column(db.Boolean, nullable=False, default=False)  # bebidas con/sin alcohol
 
     activo = db.Column(db.Boolean, nullable=False, default=True)
     # Marca si el producto vino en la ultima planilla importada

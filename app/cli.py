@@ -117,9 +117,35 @@ def migrar_v08():
     click.echo(f'OK -> migración v0.8 aplicada ({agregadas} columna + tabla modificaciones).')
 
 
+@click.command('migrar-v10')
+@with_appcontext
+def migrar_v10():
+    """
+    Migracion v0.10: agrega columnas 'es_saludable' y 'es_alcoholica' a 'productos'.
+    Idempotente y sin perder datos. Las filas existentes quedan en 0 (no marcado).
+    """
+    from sqlalchemy import text
+
+    nuevas = {
+        'es_saludable': 'BOOLEAN NOT NULL DEFAULT 0',
+        'es_alcoholica': 'BOOLEAN NOT NULL DEFAULT 0',
+    }
+    existentes = [fila[1] for fila in db.session.execute(text("PRAGMA table_info(productos)"))]
+    agregadas = 0
+    for col, tipo in nuevas.items():
+        if col not in existentes:
+            db.session.execute(text(f'ALTER TABLE productos ADD COLUMN {col} {tipo}'))
+            click.echo(f'   + columna productos.{col}')
+            agregadas += 1
+    db.session.commit()
+
+    click.echo(f'OK -> migración v0.10 aplicada ({agregadas} columnas nuevas en productos).')
+
+
 def registrar_comandos(app):
     app.cli.add_command(init_db)
     app.cli.add_command(seed_data)
     app.cli.add_command(import_planilla_cmd)
     app.cli.add_command(migrar_v06)
     app.cli.add_command(migrar_v08)
+    app.cli.add_command(migrar_v10)
