@@ -1,9 +1,12 @@
 """
 app/models.py — Modelos SQLAlchemy.
 
-v0.1.0 -> Usuario + Rol (login)
-v0.2.0 -> Producto (catalogo importado desde la planilla del mayorista)
+v0.1.0  -> Usuario + Rol (login)
+v0.2.0  -> Producto (catalogo importado desde la planilla del mayorista)
 v0.10.0 -> Producto: es_saludable + es_alcoholica (solapas Saludables / con-sin alcohol)
+v0.11.0 -> Producto.categoria (categoria unica, fuente de verdad de las solapas)
+v0.12.0 -> Oferta (ofertas publicas por 7 dias) + Cotizacion / CotizacionItem
+           (Cumpleaños y Colegios: carritos que arma Juliana, con PDF + WhatsApp/mail).
 """
 from flask_login import UserMixin
 
@@ -321,6 +324,183 @@ class ModificacionPedido(db.Model):
     total_nuevo = db.Column(db.Numeric(12, 2), nullable=False)
     hecho_por = db.Column(db.String(80), nullable=False)
     creado = db.Column(db.DateTime, default=_ahora)
+
+
+# ============================================================================
+#  v0.12.0 — OFERTAS (publicas, por 7 dias)
+# ============================================================================
+
+class Oferta(db.Model):
+    """
+    Oferta publica de un producto (v0.12). Precio especial que Juliana publica por
+    un plazo (por defecto 7 dias) y que aparece en la solapa 'Ofertas' de la tienda.
+
+    Reglas:
+      - 'precio_oferta' es el precio FINAL con IVA. SIEMPRE se valida en backend
+        contra el piso del 10% de margen (blindado): jamas se publica por debajo.
+      - 'precio_lista_snapshot' guarda el precio normal al momento de publicar,
+        para poder mostrarlo tachado en la tienda.
+      - 'costo_neto_snapshot' guarda el costo del momento (auditoria / food cost).
+      - No hay tareas programadas en PythonAnywhere free: la oferta 'se vence sola'
+        porque las consultas de la tienda filtran por vence_en > ahora. Ademas
+        Juliana puede despublicarla a mano (activa = False).
+    """
+    __tablename__ = 'ofertas'
+
+    id = db.Column(db.Integer, primary_key=True)
+    producto_id = db.Column(db.Integer, db.ForeignKey('productos.id'),
+                            nullable=False, index=True)
+
+    precio_oferta = db.Column(db.Numeric(12, 2), nullable=False)            # final c/IVA
+    precio_lista_snapshot = db.Column(db.Numeric(12, 2), nullable=True)     # tachado
+    costo_neto_snapshot = db.Column(db.Numeric(12, 3), nullable=True)       # auditoria
+
+    publicada_en = db.Column(db.DateTime, default=_ahora, index=True)
+    vence_en = db.Column(db.DateTime, nullable=False, index=True)
+    activa = db.Column(db.Boolean, nullable=False, default=True)
+    creada_por = db.Column(db.String(80), nullable=True)
+
+    producto = db.relationship('Producto', lazy='joined')
+
+    @property
+    def vigente(self):
+        """True si esta activa y todavia no vencio."""
+        return bool(self.activa) and self.vence_en is not None and self.vence_en > _ahora()
+
+    @property
+    def dias_restantes(self):
+        """Dias que faltan para que venza (0 si ya vencio)."""
+        if self.vence_en is None:
+            return 0
+        delta = self.vence_en - _ahora()
+        if delta.total_seconds() <= 0:
+            return 0
+        # Redondeo hacia arriba para mostrar 'vence en X dias' amigable
+        dias = delta.days + (1 if delta.seconds > 0 else 0)
+        return max(1, dias)
+
+    @property
+    def descuento_pct(self):
+        """% de descuento respecto del precio de lista (para mostrar etiqueta)."""
+        if not self.precio_lista_snapshot or float(self.precio_lista_snapshot) <= 0:
+            return 0
+        lista = float(self.precio_lista_snapshot)
+        ofert = float(self.precio_oferta)
+        return int(round((lista - ofert) / lista * 100))
+
+
+# ============================================================================
+#  v0.12.0 — COTIZACIONES (Cumpleaños / Colegios) que arma Juliana en el panel
+# ============================================================================
+
+class TipoCotizacion:
+    CUMPLE = 'CUMPLE'     # Bolsa de cumpleaños (minimo de unidades, ver Ajustes/constante)
+    COLEGIO = 'COLEGIO'   # Pedido para un colegio (sin minimo de bolsas)
+
+    TODAS = (CUMPLE, COLEGIO)
+    ETIQUETAS = {
+        CUMPLE: '🎉 Cumpleaños',
+        COLEGIO: '🏫 Colegio',
+    }
+    PREFIJOS = {CUMPLE: 'CUMPLE', COLEGIO: 'COLEGIO'}
+
+
+class EstadoCotizacion:
+    BORRADOR = 'BORRADOR'   # Juliana la esta armando
+    ENVIADA = 'ENVIADA'     # ya genero PDF / la mando por WhatsApp o mail
+    CERRADA = 'CERRADA'     # el cliente acepto (se concreto la venta)
+    ANULADA = 'ANULADA'     # descartada (no se borra, queda auditada)
+
+    ETIQUETAS = {
+        BORRADOR: 'Borrador',
+        ENVIADA: 'Enviada',
+        CERRADA: 'Cerrada',
+        ANULADA: 'Anulada',
+    }
+
+
+class Cotizacion(db.Model):
+    """
+    Carrito personalizado que arma Juliana para un cliente (Cumpleaños o Colegio).
+    Es una herramienta del panel (no se compra online): Juliana elige productos,
+    el sistema suma el costo y aplica el piso del 10% blindado, y ella genera un
+    PDF para mandar por WhatsApp o mail.
+
+    'unidades':
+      - CUMPLE  -> cantidad de bolsas iguales (minimo 20). El total = (suma de los
+                   items de 1 bolsa) * unidades.
+      - COLEGIO -> 1 (la cantidad va en cada item).
+
+    Los items guardan snapshot (codigo, nombre, costo y precio) para que la
+    cotizacion valga lo que valia el dia que se armo, aunque la lista cambie.
+    """
+    __tablename__ = 'cotizaciones'
+
+    id = db.Column(db.Integer, primary_key=True)
+    tipo = db.Column(db.String(15), nullable=False, default=TipoCotizacion.CUMPLE, index=True)
+    numero = db.Column(db.String(20), unique=True, nullable=False, index=True)  # CUMPLE-00001
+    token = db.Column(db.String(32), unique=True, nullable=False, index=True,
+                      default=lambda: secrets.token_hex(8))
+
+    # Datos del cliente (todos opcionales: Juliana puede armar un presupuesto rapido)
+    nombre_cliente = db.Column(db.String(120), nullable=True)
+    whatsapp = db.Column(db.String(30), nullable=True)
+    email = db.Column(db.String(120), nullable=True)
+    nota = db.Column(db.Text, nullable=True)
+
+    unidades = db.Column(db.Integer, nullable=False, default=1)   # nº de bolsas (CUMPLE)
+
+    costo_total = db.Column(db.Numeric(12, 2), nullable=False, default=0)  # costo neto (food cost)
+    total = db.Column(db.Numeric(12, 2), nullable=False, default=0)        # precio final c/IVA
+
+    estado = db.Column(db.String(15), nullable=False, default=EstadoCotizacion.BORRADOR)
+
+    creada_por = db.Column(db.String(80), nullable=True)
+    creada_en = db.Column(db.DateTime, default=_ahora, index=True)
+    modificada_en = db.Column(db.DateTime, nullable=True)
+
+    items = db.relationship('CotizacionItem', backref='cotizacion',
+                            cascade='all, delete-orphan', lazy='selectin')
+
+    @property
+    def tipo_etiqueta(self):
+        return TipoCotizacion.ETIQUETAS.get(self.tipo, self.tipo)
+
+    @property
+    def estado_etiqueta(self):
+        return EstadoCotizacion.ETIQUETAS.get(self.estado, self.estado)
+
+    @property
+    def cantidad_items(self):
+        """Cantidad total de articulos en UNA bolsa / en el carrito."""
+        return sum(i.cantidad for i in self.items)
+
+    @property
+    def ganancia_estimada(self):
+        """Ganancia bruta estimada (precio final sin IVA - costo). Solo informativa."""
+        neto_venta = float(self.total) / (1 + IVA)
+        return round(neto_venta - float(self.costo_total), 2)
+
+
+class CotizacionItem(db.Model):
+    """Item (producto) dentro de una cotizacion. Snapshot de codigo/nombre/costo/precio."""
+    __tablename__ = 'cotizacion_items'
+
+    id = db.Column(db.Integer, primary_key=True)
+    cotizacion_id = db.Column(db.Integer, db.ForeignKey('cotizaciones.id'), nullable=False)
+    codigo = db.Column(db.String(40), nullable=False)
+    nombre = db.Column(db.String(255), nullable=False)
+    cantidad = db.Column(db.Integer, nullable=False, default=1)
+    costo_unitario = db.Column(db.Numeric(12, 3), nullable=False)   # neto, para food cost
+    precio_unitario = db.Column(db.Numeric(12, 2), nullable=False)  # final c/IVA (piso 10%)
+    subtotal = db.Column(db.Numeric(12, 2), nullable=False)         # precio_unitario * cantidad
+
+
+def generar_numero_cotizacion(tipo=TipoCotizacion.CUMPLE):
+    """Numero correlativo por tipo: CUMPLE-00001, COLEGIO-00001."""
+    pref = TipoCotizacion.PREFIJOS.get(tipo, 'COT')
+    n = Cotizacion.query.filter_by(tipo=tipo).count() + 1
+    return f'{pref}-{n:05d}'
 
 
 def generar_numero_pedido(origen='WEB'):

@@ -177,6 +177,35 @@ def migrar_v11():
     click.echo('OK -> migración v0.11 aplicada (categoria creada y derivada de los tildes).')
 
 
+@click.command('migrar-v12')
+@with_appcontext
+def migrar_v12():
+    """
+    Migracion v0.12: crea las tablas nuevas para Ofertas y Cotizaciones
+    (Cumpleaños / Colegios). NO toca ninguna tabla existente: db.create_all()
+    solo crea las tablas que faltan, nunca modifica ni borra las que ya estan.
+    Tablas nuevas: ofertas, cotizaciones, cotizacion_items.
+    Idempotente: correrla de nuevo no hace nada.
+    """
+    from sqlalchemy import inspect
+
+    insp = inspect(db.engine)
+    antes = set(insp.get_table_names())
+
+    db.create_all()  # solo agrega tablas faltantes
+
+    insp = inspect(db.engine)
+    despues = set(insp.get_table_names())
+    nuevas = sorted(despues - antes)
+
+    if nuevas:
+        for t in nuevas:
+            click.echo(f'   + tabla {t}')
+        click.echo(f'OK -> migración v0.12 aplicada ({len(nuevas)} tabla(s) nueva(s)).')
+    else:
+        click.echo('Las tablas de v0.12 ya existían. No se hizo nada (idempotente).')
+
+
 def registrar_comandos(app):
     app.cli.add_command(init_db)
     app.cli.add_command(seed_data)
@@ -185,3 +214,4 @@ def registrar_comandos(app):
     app.cli.add_command(migrar_v08)
     app.cli.add_command(migrar_v10)
     app.cli.add_command(migrar_v11)
+    app.cli.add_command(migrar_v12)
