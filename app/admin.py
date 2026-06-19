@@ -18,7 +18,8 @@ from werkzeug.utils import secure_filename
 from .extensions import db
 from .models import (Producto, Pedido, Cobro, ModificacionPedido, ItemPedido,
                      get_ajustes, EstadoPedido, FormaPago, CategoriaProducto,
-                     Oferta)
+                     Oferta, Cotizacion, CotizacionItem, TipoCotizacion,
+                     EstadoCotizacion, generar_numero_cotizacion)
 from .services import aplicar_importacion
 from .utils.decorators import admin_requerido, super_admin_requerido
 from .utils.import_planilla import leer_planilla
@@ -32,6 +33,9 @@ EXTENSIONES_OK = ('.xlsx', '.xlsm', '.csv')
 
 # Dias que dura una oferta publicada (v0.12)
 DIAS_OFERTA = 7
+
+# Minimo sugerido de bolsas para Cumpleaños (v0.12 C1). Aviso, no bloqueo.
+MIN_BOLSAS_CUMPLE = 20
 
 
 def _ahora():
@@ -582,6 +586,187 @@ def oferta_despublicar(oid):
     db.session.commit()
     flash('Oferta despublicada. Ya no se muestra en la tienda.', 'warning')
     return redirect(url_for('admin.ofertas'))
+
+
+# ======================= COTIZADOR (Cumpleaños / Colegios · v0.12 C1) =======================
+
+@admin_bp.route('/cotizador')
+@admin_requerido
+def cotizador():
+    """Lista de cotizaciones. Filtra por tipo (CUMPLE / COLEGIO) si viene ?tipo=."""
+    tipo = (request.args.get('tipo') or '').strip().upper()
+    if tipo not in TipoCotizacion.TODAS:
+        tipo = ''
+
+    stmt = Cotizacion.query
+    if tipo:
+        stmt = stmt.filter_by(tipo=tipo)
+    cotis = stmt.order_by(Cotizacion.creada_en.desc()).limit(100).all()
+
+    return render_template('admin/cotizador.html', cotis=cotis, tipo_sel=tipo,
+                           tipos=TipoCotizacion.ETIQUETAS)
+
+
+@admin_bp.route('/cotizador/nueva/<tipo>')
+@admin_requerido
+def cotizador_armar(tipo):
+    """Pantalla para armar una cotización nueva (CUMPLE o COLEGIO)."""
+    tipo = (tipo or '').strip().upper()
+    if tipo not in TipoCotizacion.TODAS:
+        abort(404)
+    ajustes = get_ajustes()
+
+    marcas = db.session.execute(
+        select(Producto.marca).where(Producto.activo.is_(True))
+        .where(Producto.marca.isnot(None)).where(Producto.marca != '')
+        .distinct().order_by(Producto.marca)
+    ).scalars().all()
+    rubros = db.session.execute(
+        select(Producto.rubro).where(Producto.activo.is_(True))
+        .where(Producto.rubro.isnot(None)).where(Producto.rubro != '')
+        .distinct().order_by(Producto.rubro)
+    ).scalars().all()
+
+    return render_template('admin/cotizador_armar.html', tipo=tipo,
+                           tipo_etiqueta=TipoCotizacion.ETIQUETAS[tipo],
+                           es_cumple=(tipo == TipoCotizacion.CUMPLE),
+                           marcas=marcas, rubros=rubros, ajustes=ajustes,
+                           min_bolsas=MIN_BOLSAS_CUMPLE)
+
+
+@admin_bp.route('/cotizador/guardar', methods=['POST'])
+@admin_requerido
+def cotizador_guardar():
+    """
+    Guarda una cotización nueva a partir del JSON de items.
+    BLINDAJE: cada precio se valida en backend contra el piso del 10%.
+    """
+    import json
+    tipo = (request.form.get('tipo') or '').strip().upper()
+    if tipo not in TipoCotizacion.TODAS:
+        flash('Tipo de cotización inválido.', 'error')
+        return redirect(url_for('admin.cotizador'))
+
+    try:
+        items_in = json.loads(request.form.get('items_json') or '[]')
+    except (ValueError, TypeError):
+        items_in = []
+
+    if not items_in:
+        flash('Agregá al menos un producto a la cotización.', 'error')
+        return redirect(url_for('admin.cotizador_armar', tipo=tipo))
+
+    # Datos del cliente (todos opcionales)
+    nombre_cliente = (request.form.get('nombre_cliente') or '').strip() or None
+    whatsapp = (request.form.get('whatsapp') or '').strip() or None
+    email = (request.form.get('email') or '').strip() or None
+    nota = (request.form.get('nota') or '').strip() or None
+
+    es_cumple = (tipo == TipoCotizacion.CUMPLE)
+
+    # Unidades (bolsas). Solo CUMPLE multiplica; COLEGIO siempre 1.
+    try:
+        unidades = int(request.form.get('unidades') or 1)
+    except (TypeError, ValueError):
+        unidades = 1
+    if unidades < 1:
+        unidades = 1
+    if not es_cumple:
+        unidades = 1
+
+    # Bolsa fisica (solo CUMPLE)
+    incluye_bolsa = (request.form.get('incluye_bolsa') == 'si') and es_cumple
+    try:
+        costo_bolsa = round(float(request.form.get('costo_bolsa') or 0), 2)
+    except (TypeError, ValueError):
+        costo_bolsa = 0.0
+    if not incluye_bolsa or costo_bolsa < 0:
+        costo_bolsa = 0.0
+
+    # Armar items con blindaje del piso 10%
+    items_calc = []
+    subtotal_bolsa = 0.0
+    costo_prod_bolsa = 0.0
+    for it in items_in:
+        pid = it.get('id')
+        if not str(pid).isdigit():
+            continue
+        p = Producto.query.filter_by(id=int(pid), activo=True).first()
+        if p is None:
+            continue
+        try:
+            cant = int(it.get('cantidad') or 1)
+        except (TypeError, ValueError):
+            cant = 1
+        if cant < 1:
+            cant = 1
+        piso = pricing.precio_oferta_minimo(p, 10)
+        try:
+            precio = round(float(it.get('precio') or piso), 2)
+        except (TypeError, ValueError):
+            precio = piso
+        if precio < piso:        # BLINDAJE 10%
+            precio = piso
+        sub = round(precio * cant, 2)
+        items_calc.append({
+            'codigo': p.codigo, 'nombre': p.nombre, 'cantidad': cant,
+            'costo_unitario': float(p.costo_neto),
+            'precio_unitario': precio, 'subtotal': sub,
+        })
+        subtotal_bolsa += sub
+        costo_prod_bolsa += float(p.costo_neto) * cant
+
+    if not items_calc:
+        flash('No se pudo armar la cotización (productos no encontrados).', 'error')
+        return redirect(url_for('admin.cotizador_armar', tipo=tipo))
+
+    subtotal_bolsa = round(subtotal_bolsa, 2)
+    total = round((subtotal_bolsa + costo_bolsa) * unidades, 2)
+    costo_total = round(costo_prod_bolsa * unidades, 2)
+
+    try:
+        coti = Cotizacion(
+            tipo=tipo,
+            numero=generar_numero_cotizacion(tipo),
+            nombre_cliente=nombre_cliente, whatsapp=whatsapp, email=email, nota=nota,
+            unidades=unidades, incluye_bolsa=incluye_bolsa, costo_bolsa=costo_bolsa,
+            costo_total=costo_total, total=total,
+            estado=EstadoCotizacion.BORRADOR, creada_por=current_user.nombre,
+        )
+        db.session.add(coti)
+        db.session.flush()
+        for it in items_calc:
+            db.session.add(CotizacionItem(cotizacion_id=coti.id, **it))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        flash('Hubo un problema al guardar la cotización. Probá de nuevo.', 'error')
+        return redirect(url_for('admin.cotizador_armar', tipo=tipo))
+
+    if es_cumple and unidades < MIN_BOLSAS_CUMPLE:
+        flash(f'Ojo: {unidades} bolsas está por debajo del mínimo sugerido '
+              f'({MIN_BOLSAS_CUMPLE}). Si el cliente no llega, contactá al super '
+              f'administrador para cerrar la venta.', 'warning')
+    flash(f'Cotización {coti.numero} creada ✓', 'success')
+    return redirect(url_for('admin.cotizador_detalle', cid=coti.id))
+
+
+@admin_bp.route('/cotizador/<int:cid>')
+@admin_requerido
+def cotizador_detalle(cid):
+    coti = Cotizacion.query.get_or_404(cid)
+    return render_template('admin/cotizador_detalle.html', coti=coti,
+                           ajustes=get_ajustes())
+
+
+@admin_bp.route('/cotizador/<int:cid>/anular', methods=['POST'])
+@admin_requerido
+def cotizador_anular(cid):
+    coti = Cotizacion.query.get_or_404(cid)
+    coti.estado = EstadoCotizacion.ANULADA
+    db.session.commit()
+    flash(f'Cotización {coti.numero} anulada.', 'warning')
+    return redirect(url_for('admin.cotizador'))
 
 
 # ======================= FOTOS =======================

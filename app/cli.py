@@ -206,6 +206,37 @@ def migrar_v12():
         click.echo('Las tablas de v0.12 ya existían. No se hizo nada (idempotente).')
 
 
+@click.command('migrar-v12b')
+@with_appcontext
+def migrar_v12b():
+    """
+    Migracion v0.12b: agrega columnas de 'bolsa' a la tabla cotizaciones
+    (incluye_bolsa, costo_bolsa). Idempotente y sin perder datos.
+    Necesaria para el Cotizador de Cumpleaños/Colegios (Paso C1).
+    """
+    from sqlalchemy import text
+
+    db.create_all()  # asegura que exista la tabla cotizaciones (creada en v0.12)
+
+    nuevas = {
+        'incluye_bolsa': 'BOOLEAN NOT NULL DEFAULT 0',
+        'costo_bolsa': 'NUMERIC(12,2) NOT NULL DEFAULT 0',
+    }
+    existentes = [fila[1] for fila in db.session.execute(text("PRAGMA table_info(cotizaciones)"))]
+    agregadas = 0
+    for col, tipo in nuevas.items():
+        if col not in existentes:
+            db.session.execute(text(f'ALTER TABLE cotizaciones ADD COLUMN {col} {tipo}'))
+            click.echo(f'   + columna cotizaciones.{col}')
+            agregadas += 1
+    db.session.commit()
+
+    if agregadas:
+        click.echo(f'OK -> migración v0.12b aplicada ({agregadas} columna(s) nueva(s)).')
+    else:
+        click.echo('Las columnas de bolsa ya existían. No se hizo nada (idempotente).')
+
+
 def registrar_comandos(app):
     app.cli.add_command(init_db)
     app.cli.add_command(seed_data)
@@ -215,3 +246,4 @@ def registrar_comandos(app):
     app.cli.add_command(migrar_v10)
     app.cli.add_command(migrar_v11)
     app.cli.add_command(migrar_v12)
+    app.cli.add_command(migrar_v12b)

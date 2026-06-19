@@ -1,0 +1,119 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}{{ coti.numero }} · {{ app_nombre }}{% endblock %}
+{% block seccion %}Ventas{% endblock %}
+{% block titulo %}{{ coti.tipo_etiqueta }} · {{ coti.numero }}{% endblock %}
+
+{% block contenido %}
+
+<a href="{{ url_for('admin.cotizador', tipo=coti.tipo) }}" class="cd-volver">← Volver al listado</a>
+
+<div class="panel cd-cab">
+    <div>
+        <div class="cd-numero">{{ coti.numero }}</div>
+        <div class="cd-fecha">{{ coti.creada_en|ar_datetime }} hs · por {{ coti.creada_por or '—' }}</div>
+    </div>
+    <span class="cot-estado est-{{ coti.estado|lower }}">{{ coti.estado_etiqueta }}</span>
+</div>
+
+{% if coti.nombre_cliente or coti.whatsapp or coti.email or coti.nota %}
+<div class="panel">
+    <h3 style="margin-bottom:10px;">Cliente</h3>
+    <div class="cd-datos">
+        {% if coti.nombre_cliente %}<div><b>Nombre:</b> {{ coti.nombre_cliente }}</div>{% endif %}
+        {% if coti.whatsapp %}<div><b>WhatsApp:</b> {{ coti.whatsapp }}</div>{% endif %}
+        {% if coti.email %}<div><b>Email:</b> {{ coti.email }}</div>{% endif %}
+        {% if coti.nota %}<div><b>Nota:</b> {{ coti.nota }}</div>{% endif %}
+    </div>
+</div>
+{% endif %}
+
+<div class="panel" style="padding:0; overflow:hidden;">
+    <table class="tabla">
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Producto</th>
+                <th style="text-align:center;">Cant.</th>
+                <th style="text-align:right;">P. Unit.</th>
+                <th style="text-align:right;">Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for it in coti.items %}
+            <tr>
+                <td class="mono">{{ it.codigo }}</td>
+                <td>{{ it.nombre }}</td>
+                <td style="text-align:center;">{{ it.cantidad }}</td>
+                <td style="text-align:right;">{{ it.precio_unitario|pesos }}</td>
+                <td style="text-align:right;" class="venta-final">{{ it.subtotal|pesos }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="panel cd-totales">
+    {% if coti.tipo == 'CUMPLE' %}
+    <div class="cd-tot-row"><span>Productos por bolsa</span><span>{{ coti.subtotal_productos|pesos }}</span></div>
+    {% if coti.incluye_bolsa and coti.costo_bolsa %}
+    <div class="cd-tot-row"><span>Bolsa (por unidad)</span><span>{{ coti.costo_bolsa|pesos }}</span></div>
+    {% else %}
+    <div class="cd-tot-row cd-soft"><span>Bolsa</span><span>La trae el cliente (sin costo)</span></div>
+    {% endif %}
+    <div class="cd-tot-row"><span>Cantidad de bolsas</span><span>× {{ coti.unidades }}</span></div>
+    {% endif %}
+    <div class="cd-tot-row cd-grande"><span>TOTAL</span><span>{{ coti.total|pesos }}</span></div>
+    <div class="cd-tot-row cd-soft"><span>Ganancia estimada</span><span>{{ coti.ganancia_estimada|pesos }}</span></div>
+</div>
+
+<!-- C2: PDF + envío (proximo paso) -->
+<div class="panel cd-envio">
+    <h3 style="margin-bottom:6px;">Enviar al cliente</h3>
+    <p class="cd-soft" style="font-size:0.8rem; margin-bottom:12px;">
+        El PDF para el cliente y los botones de WhatsApp / mail se activan en el próximo paso (C2).
+    </p>
+    <div class="cd-envio-btns">
+        <button class="btn btn-bronce" disabled>📄 Descargar PDF (próximo)</button>
+        <button class="btn btn-carbon" disabled>💬 WhatsApp (próximo)</button>
+    </div>
+</div>
+
+{% if coti.estado != 'ANULADA' %}
+<div class="panel">
+    <form method="POST" action="{{ url_for('admin.cotizador_anular', cid=coti.id) }}"
+          onsubmit="return confirm('¿Anular esta cotización? No se borra, queda registrada.');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn-anular">Anular cotización</button>
+    </form>
+</div>
+{% endif %}
+
+<style>
+.cd-volver { font-size:0.8rem; color:var(--bronce); font-weight:700; display:inline-block; margin-bottom:14px; }
+.cd-cab { display:flex; align-items:center; justify-content:space-between; }
+.cd-numero { font-size:1.3rem; font-weight:800; letter-spacing:0.04em; color:#6b5638; }
+.cd-fecha { font-size:0.76rem; color:var(--text-soft); margin-top:3px; }
+.cot-estado { font-size:0.66rem; font-weight:800; padding:4px 11px; border-radius:20px; text-transform:uppercase; }
+.est-borrador { background:#eef3ee; color:#3a6b46; }
+.est-enviada  { background:#e8f0fb; color:#2a5b9e; }
+.est-cerrada  { background:#2e7d32; color:#fff; }
+.est-anulada  { background:#fdeaea; color:#c62828; }
+.cd-datos { display:grid; grid-template-columns:repeat(2,1fr); gap:6px 18px; font-size:0.86rem; }
+@media (max-width:600px){ .cd-datos { grid-template-columns:1fr; } }
+.tabla { width:100%; border-collapse:collapse; font-size:0.85rem; }
+.tabla thead th { background:#faf8f4; text-align:left; padding:13px 16px; font-size:0.68rem;
+    letter-spacing:0.1em; text-transform:uppercase; color:var(--text-soft); border-bottom:1px solid var(--divider); }
+.tabla tbody td { padding:12px 16px; border-bottom:1px solid #f0ece4; }
+.mono { font-family:'Courier New', monospace; color:var(--text-soft); }
+.venta-final { font-weight:800; color:#6b5638; white-space:nowrap; }
+.cd-totales { max-width:420px; margin-left:auto; }
+.cd-tot-row { display:flex; justify-content:space-between; padding:6px 0; font-size:0.88rem; }
+.cd-tot-row.cd-grande { font-size:1.2rem; font-weight:800; color:#6b5638; border-top:1px solid var(--divider); margin-top:6px; padding-top:10px; }
+.cd-soft { color:var(--text-soft); }
+.cd-envio-btns { display:flex; gap:10px; flex-wrap:wrap; }
+.btn-anular { font-size:0.8rem; font-weight:700; color:var(--danger); border:1px solid #f0c4c4;
+    background:#fff; border-radius:9px; padding:9px 16px; cursor:pointer; }
+.btn-anular:hover { background:var(--danger); color:#fff; border-color:var(--danger); }
+</style>
+
+{% endblock %}

@@ -450,6 +450,12 @@ class Cotizacion(db.Model):
 
     unidades = db.Column(db.Integer, nullable=False, default=1)   # nº de bolsas (CUMPLE)
 
+    # v0.12 C1 -> opcion de bolsa fisica (solo CUMPLE):
+    #   incluye_bolsa = False -> el cliente trae la bolsa (sin costo)
+    #   incluye_bolsa = True  -> nosotros ponemos la bolsa (costo_bolsa por unidad, lo carga Juliana)
+    incluye_bolsa = db.Column(db.Boolean, nullable=False, default=False)
+    costo_bolsa = db.Column(db.Numeric(12, 2), nullable=False, default=0)  # por bolsa
+
     costo_total = db.Column(db.Numeric(12, 2), nullable=False, default=0)  # costo neto (food cost)
     total = db.Column(db.Numeric(12, 2), nullable=False, default=0)        # precio final c/IVA
 
@@ -474,6 +480,11 @@ class Cotizacion(db.Model):
     def cantidad_items(self):
         """Cantidad total de articulos en UNA bolsa / en el carrito."""
         return sum(i.cantidad for i in self.items)
+
+    @property
+    def subtotal_productos(self):
+        """Subtotal de los productos de UNA bolsa (sin multiplicar por unidades)."""
+        return round(sum(float(i.subtotal) for i in self.items), 2)
 
     @property
     def ganancia_estimada(self):

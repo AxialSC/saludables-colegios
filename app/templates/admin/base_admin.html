@@ -19,8 +19,10 @@
                class="{% if request.endpoint == 'admin.catalogo' %}activo{% endif %}">Catálogo</a>
             <a href="{{ url_for('admin.ofertas') }}"
                class="{% if 'oferta' in request.endpoint %}activo{% endif %}">🏷️ Ofertas</a>
-            <a href="#" class="disabled">🎉 Cumpleaños <span class="badge-soon">pronto</span></a>
-            <a href="#" class="disabled">🏫 Colegios <span class="badge-soon">pronto</span></a>
+            <a href="{{ url_for('admin.cotizador', tipo='CUMPLE') }}"
+               class="{% if 'cotizador' in (request.endpoint or '') and (request.args.get('tipo') == 'CUMPLE' or (request.view_args and request.view_args.get('tipo') == 'CUMPLE')) %}activo{% endif %}">🎉 Cumpleaños</a>
+            <a href="{{ url_for('admin.cotizador', tipo='COLEGIO') }}"
+               class="{% if 'cotizador' in (request.endpoint or '') and (request.args.get('tipo') == 'COLEGIO' or (request.view_args and request.view_args.get('tipo') == 'COLEGIO')) %}activo{% endif %}">🏫 Colegios</a>
             <a href="{{ url_for('admin.ajustes') }}"
                class="{% if request.endpoint == 'admin.ajustes' %}activo{% endif %}">Ajustes y precios</a>
             {% if current_user.es_super_admin %}
