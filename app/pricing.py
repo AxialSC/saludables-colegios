@@ -13,8 +13,15 @@ Reglas:
   - Descuentos por volumen (x5 -3%, x10 -5%) se aplican sobre el precio, PERO
     con un tope: si el descuento haria caer el margen por debajo del minimo,
     el precio se 'clampea' al precio de margen minimo (no se regala).
+
+v0.12 -> precio_oferta_minimo(): piso BLINDADO del 10% para Ofertas y Combos.
 """
 from .models import IVA
+
+
+# Margen minimo BLINDADO para Ofertas y Combos (v0.12).
+# NO es editable desde el panel: es el piso de ganancia que protege a Juliana.
+MARGEN_OFERTA = 10.0
 
 
 def margen_efectivo(producto, ajustes):
@@ -74,3 +81,20 @@ def escala_por_cantidad(cantidad):
 def precio_por_cantidad(producto, ajustes, cantidad):
     """Precio unitario final segun la cantidad pedida de ese producto."""
     return precio_final(producto, ajustes, escala_por_cantidad(cantidad))
+
+
+# ============================================================================
+#  v0.12 — OFERTAS / COMBOS: piso blindado del 10%
+# ============================================================================
+
+def precio_oferta_minimo(producto, margen_pct=MARGEN_OFERTA):
+    """
+    Precio FINAL con IVA en el PISO de margen para Ofertas y Combos (default 10%).
+    Es el minimo blindado: el backend NUNCA publica/cotiza por debajo de esto.
+
+    Reusa la misma matematica del motor (venta = costo / (1 - margen)),
+    para no reinventar nada.
+    """
+    costo = float(producto.costo_neto)
+    neta = _venta_neta(costo, margen_pct)
+    return round(neta * (1.0 + IVA), 2)

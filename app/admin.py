@@ -3,9 +3,11 @@ app/admin.py — Blueprint del panel administrativo (El Arquitecto).
 v0.1 Dashboard · v0.2 Catalogo + Importar · v0.3 Ajustes
 v0.6 -> Panel de PEDIDOS (CRM de ventas de Juliana)
 v0.9 -> Historial de modificaciones con código (prolijo)
+v0.12 -> OFERTAS: publicar productos en oferta por 7 dias (piso 10% blindado)
 """
 import os
 import tempfile
+from datetime import timedelta
 
 from flask import (Blueprint, render_template, redirect, url_for,
                    request, flash, abort, Response, current_app, jsonify)
@@ -15,7 +17,8 @@ from werkzeug.utils import secure_filename
 
 from .extensions import db
 from .models import (Producto, Pedido, Cobro, ModificacionPedido, ItemPedido,
-                     get_ajustes, EstadoPedido, FormaPago, CategoriaProducto)
+                     get_ajustes, EstadoPedido, FormaPago, CategoriaProducto,
+                     Oferta)
 from .services import aplicar_importacion
 from .utils.decorators import admin_requerido, super_admin_requerido
 from .utils.import_planilla import leer_planilla
@@ -26,6 +29,9 @@ from . import pricing
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
 EXTENSIONES_OK = ('.xlsx', '.xlsm', '.csv')
+
+# Dias que dura una oferta publicada (v0.12)
+DIAS_OFERTA = 7
 
 
 def _ahora():
@@ -401,6 +407,165 @@ def catalogo_categoria(pid):
     db.session.commit()
     return jsonify({'ok': True, 'categoria': cat,
                     'etiqueta': producto.categoria_etiqueta})
+
+
+# ======================= OFERTAS (v0.12) =======================
+
+@admin_bp.route('/ofertas')
+@admin_requerido
+def ofertas():
+    """Panel para armar y publicar ofertas (productos con precio especial, 7 dias)."""
+    ajustes = get_ajustes()
+
+    # Ofertas activas + no vencidas (las que el cliente ve hoy en la tienda)
+    activas = (Oferta.query.filter(Oferta.activa.is_(True))
+               .order_by(Oferta.vence_en.asc()).all())
+    vigentes = [o for o in activas if o.vigente]
+
+    # Marcas disponibles para el selector
+    marcas = db.session.execute(
+        select(Producto.marca)
+        .where(Producto.activo.is_(True))
+        .where(Producto.marca.isnot(None))
+        .where(Producto.marca != '')
+        .distinct().order_by(Producto.marca)
+    ).scalars().all()
+
+    return render_template('admin/ofertas.html', vigentes=vigentes,
+                           marcas=marcas, dias=DIAS_OFERTA, ajustes=ajustes)
+
+
+@admin_bp.route('/ofertas/buscar')
+@admin_requerido
+def ofertas_buscar():
+    """
+    JSON para el buscador del panel de ofertas. Devuelve productos con costo,
+    precio de lista y precio MINIMO (piso 10% blindado).
+    No devuelve nada si no hay ni texto ni marca (para no dumpear 1654 productos).
+    """
+    q = (request.args.get('q') or '').strip()
+    marca = (request.args.get('marca') or '').strip()
+    ajustes = get_ajustes()
+
+    if not q and not marca:
+        return jsonify([])
+
+    stmt = Producto.query.filter(Producto.activo.is_(True))
+    if marca:
+        stmt = stmt.filter(Producto.marca == marca)
+    if q:
+        like = f'%{q}%'
+        stmt = stmt.filter(or_(Producto.nombre.ilike(like),
+                               Producto.codigo.ilike(like),
+                               Producto.marca.ilike(like)))
+    prods = stmt.order_by(Producto.nombre).limit(80).all()
+
+    # IDs de productos que YA tienen oferta vigente (para marcarlos)
+    en_oferta = {o.producto_id for o in Oferta.query.filter(Oferta.activa.is_(True)).all()
+                 if o.vigente}
+
+    res = []
+    for p in prods:
+        res.append({
+            'id': p.id,
+            'codigo': p.codigo,
+            'nombre': p.nombre,
+            'marca': p.marca or '',
+            'costo': round(float(p.costo_neto), 2),
+            'precio_lista': pricing.precio_final(p, ajustes, 'x1'),
+            'precio_min': pricing.precio_oferta_minimo(p),   # piso 10% blindado
+            'en_oferta': p.id in en_oferta,
+        })
+    return jsonify(res)
+
+
+@admin_bp.route('/ofertas/publicar', methods=['POST'])
+@admin_requerido
+def ofertas_publicar():
+    """
+    Publica ofertas a partir de un JSON {producto_id: precio_oferta}.
+    BLINDAJE: el backend recalcula el piso 10% y NUNCA deja publicar por debajo
+    (si viene mas bajo, lo clampea al piso). Tampoco deja una 'oferta' mas cara
+    que el precio de lista. Si el producto ya tenia una oferta vigente, la
+    reemplaza (despublica la anterior).
+    """
+    import json
+    ajustes = get_ajustes()
+    try:
+        data = json.loads(request.form.get('ofertas_json') or '{}')
+    except (ValueError, TypeError):
+        data = {}
+
+    if not data:
+        flash('No seleccionaste ningún producto para publicar.', 'error')
+        return redirect(url_for('admin.ofertas'))
+
+    vence = _ahora() + timedelta(days=DIAS_OFERTA)
+    creadas = 0
+    clampeadas = 0
+
+    for pid, precio in data.items():
+        if not str(pid).isdigit():
+            continue
+        p = Producto.query.filter_by(id=int(pid), activo=True).first()
+        if p is None:
+            continue
+
+        piso = pricing.precio_oferta_minimo(p)              # piso 10% blindado
+        lista = pricing.precio_final(p, ajustes, 'x1')
+
+        try:
+            precio = round(float(precio), 2)
+        except (TypeError, ValueError):
+            precio = piso
+
+        # BLINDAJE: nunca por debajo del piso del 10%
+        if precio < piso:
+            precio = piso
+            clampeadas += 1
+        # Una oferta no puede ser mas cara que el precio de lista
+        if precio > lista:
+            precio = lista
+
+        # Reemplazo: si ya hay oferta vigente del mismo producto, se despublica
+        for o in Oferta.query.filter_by(producto_id=p.id, activa=True).all():
+            o.activa = False
+
+        db.session.add(Oferta(
+            producto_id=p.id,
+            precio_oferta=precio,
+            precio_lista_snapshot=lista,
+            costo_neto_snapshot=p.costo_neto,
+            publicada_en=_ahora(),
+            vence_en=vence,
+            activa=True,
+            creada_por=current_user.nombre,
+        ))
+        creadas += 1
+
+    db.session.commit()
+
+    if creadas:
+        msg = f'{creadas} oferta(s) publicada(s) por {DIAS_OFERTA} días.'
+        if clampeadas:
+            msg += (f' {clampeadas} se ajustó(aron) al precio mínimo para '
+                    f'protegerte el 10% de ganancia.')
+        flash(msg, 'success')
+    else:
+        flash('No se publicó ninguna oferta (revisá los productos).', 'warning')
+
+    return redirect(url_for('admin.ofertas'))
+
+
+@admin_bp.route('/ofertas/<int:oid>/despublicar', methods=['POST'])
+@admin_requerido
+def oferta_despublicar(oid):
+    """Saca una oferta de la tienda (no se borra: queda inactiva en la base)."""
+    o = Oferta.query.get_or_404(oid)
+    o.activa = False
+    db.session.commit()
+    flash('Oferta despublicada. Ya no se muestra en la tienda.', 'warning')
+    return redirect(url_for('admin.ofertas'))
 
 
 # ======================= FOTOS =======================
