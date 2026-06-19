@@ -487,7 +487,9 @@ def ofertas_buscar():
             'marca': p.marca or '',
             'costo': round(float(p.costo_neto), 2),
             'precio_lista': pricing.precio_final(p, ajustes, 'x1'),
-            'precio_min': pricing.precio_oferta_minimo(p),   # piso 10% blindado
+            'precio_min': pricing.precio_oferta_minimo(p, 10),   # piso 10% blindado
+            'precio_m20': pricing.precio_oferta_minimo(p, 20),   # oferta margen 20%
+            'precio_m15': pricing.precio_oferta_minimo(p, 15),   # oferta margen 15%
             'en_oferta': p.id in en_oferta,
         })
     return jsonify(res)

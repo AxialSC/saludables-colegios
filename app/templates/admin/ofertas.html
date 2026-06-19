@@ -7,9 +7,9 @@
 
 <p class="of-intro">
     Armá una tanda de ofertas: buscá productos (por nombre, código{% if marcas %}, marca{% else %} o rubro{% endif %}),
-    agregalos y publicá con <b>1 toque por {{ dias }} días</b>. El precio mínimo está
-    <b>blindado al 10%</b> de ganancia: nunca vas a publicar por debajo de eso.
-    Las ofertas se vencen solas a los {{ dias }} días (o las sacás vos cuando quieras).
+    agregalos y elegí el <b>nivel de descuento</b> con un toque. La lista vende al 30%; podés ofertar al
+    <b>20%</b>, <b>15%</b> o al <b>máximo: 10%</b> (piso blindado). Nunca por debajo de eso.
+    Las ofertas se publican por <b>{{ dias }} días</b> y se vencen solas.
 </p>
 
 <!-- ===================== OFERTAS A PUBLICAR (armado) ===================== -->
@@ -98,15 +98,16 @@
 .of-buscador { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
 .of-buscador .filtro-input { flex:1; min-width:200px; }
 
-.of-resultados { max-height:430px; overflow-y:auto; }
-.of-hint { font-size:0.82rem; color:var(--text-soft); padding:10px 2px; }
+.of-resultados { max-height:440px; overflow-y:auto; border:1px solid var(--divider); border-radius:var(--radius); }
+.of-hint { font-size:0.82rem; color:var(--text-soft); padding:14px; }
 .of-sub { font-size:0.76rem; color:var(--text-soft); margin-bottom:16px; }
 .of-badge-num { display:inline-block; background:var(--bronce); color:#fff; font-size:0.72rem;
     font-weight:800; padding:2px 9px; border-radius:20px; vertical-align:middle; margin-left:4px; }
 
-/* ---- Resultados del buscador ---- */
-.of-row { display:flex; align-items:center; gap:12px; padding:11px 6px; border-bottom:1px solid #f0ece4; }
-.of-row:last-child { border-bottom:none; }
+/* ---- Resultados del buscador (dos tonos para separar filas) ---- */
+.of-row { display:flex; align-items:center; gap:12px; padding:12px 14px; }
+.of-row:nth-child(odd)  { background:#ffffff; }
+.of-row:nth-child(even) { background:#f6f2ea; }
 .of-row .ofr-info { flex:1; min-width:0; }
 .of-row .ofr-nombre { font-weight:700; font-size:0.86rem; color:var(--carbon);
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -117,16 +118,27 @@
 .btn-mini { font-size:0.76rem; font-weight:700; padding:7px 12px; border-radius:8px;
     border:1px solid var(--bronce); background:#fff; color:#6b5638; cursor:pointer; white-space:nowrap; }
 .btn-mini:hover { background:var(--bronce); color:#fff; }
-.btn-mini:disabled { opacity:0.5; cursor:default; background:#eef3ee; border-color:#bcdcbc; color:#2e7d32; }
+.btn-mini:disabled { opacity:0.55; cursor:default; background:#eef3ee; border-color:#bcdcbc; color:#2e7d32; }
 
 /* ---- Armado ---- */
 .of-armado { border:2px solid var(--bronce); }
 .of-armado-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
-.arm-item { display:flex; align-items:center; gap:12px; padding:12px 4px; border-bottom:1px solid #f0ece4; }
+.arm-item { display:flex; align-items:center; gap:14px; padding:13px 4px; border-bottom:1px solid #f0ece4; flex-wrap:wrap; }
 .arm-item:last-child { border-bottom:none; }
-.arm-item .ai-info { flex:1; min-width:0; }
+.arm-item .ai-info { flex:1; min-width:220px; }
 .arm-item .ai-nombre { font-weight:700; font-size:0.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .arm-item .ai-meta { font-size:0.72rem; color:var(--text-soft); margin-top:3px; }
+.arm-controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+
+/* Botonera de descuento (segmentos 20 / 15 / MÁX) */
+.arm-presets { display:inline-flex; border:1px solid var(--divider); border-radius:9px; overflow:hidden; }
+.preset { font-size:0.72rem; font-weight:800; padding:7px 11px; border:none; cursor:pointer;
+    background:#f4f1ec; color:#8a857a; border-right:1px solid var(--divider); transition:all .12s ease; }
+.preset:last-child { border-right:none; }
+.preset:hover { background:#e9e3d8; color:#6b5638; }
+.preset.activo { background:var(--bronce); color:#fff; }
+.preset.activo.max { background:#2e7d32; box-shadow:inset 0 0 0 99px #2e7d32; }
+
 .arm-precio-row { display:flex; align-items:center; gap:7px; }
 .arm-precio-row .pesos { font-size:0.82rem; color:var(--text-soft); }
 .arm-input { width:108px; padding:7px 9px; border:1px solid var(--divider); border-radius:8px;
@@ -135,18 +147,11 @@
 .arm-input.at-min { border-color:#2e7d32; background:#f5fbf5; }
 .arm-input.error { border-color:var(--danger); background:#fdeaea; }
 .arm-input.flash { animation:pulseGreen .5s ease; }
-@keyframes pulseGreen { 0% { background:#cdeccd; } 100% { background:#f5fbf5; } }
-
-/* Boton MAX con estado encendido / apagado */
-.btn-max { font-size:0.66rem; font-weight:800; padding:6px 9px; border-radius:7px; cursor:pointer;
-    border:1px solid #c9c4ba; background:#f1efe9; color:#8a857a;
-    letter-spacing:0.04em; transition:all .15s ease; }
-.btn-max:hover { border-color:#2e7d32; color:#2e7d32; }
-.btn-max.activo { border-color:#2e7d32; background:#2e7d32; color:#fff; box-shadow:0 0 0 2px #d3edd6; }
+@keyframes pulseGreen { 0% { background:#cdeccd; } 100% { background:#fff; } }
 .ai-quitar { border:none; background:none; color:var(--danger); font-size:1rem; cursor:pointer; padding:0 4px; }
 .ai-error { font-size:0.66rem; color:var(--danger); font-weight:700; }
 .ai-pct { font-size:0.66rem; color:#2e7d32; font-weight:800; }
-.ai-atmin { font-size:0.66rem; color:#2e7d32; font-weight:800; }
+.ai-ganancia { font-size:0.66rem; color:#6b5638; font-weight:700; }
 .of-aviso-piso { font-size:0.74rem; color:var(--text-soft); margin-left:12px; }
 
 /* ---- Listado VIGENTES (prolijo) ---- */
@@ -182,19 +187,30 @@
 
 <script>
 (function () {
+    var IVA = 1.21;
     var Q = document.getElementById('of-q');
     var FILTRO = document.getElementById('of-filtro');
     var TIPO = FILTRO.getAttribute('data-tipo');   // 'marca' o 'rubro'
     var RES = document.getElementById('of-resultados');
-    var seleccion = {};   // { id: {codigo, nombre, marca, costo, lista, min, precio} }
+    var seleccion = {};   // { id: {codigo,nombre,marca,costo,lista,min,p20,p15,precio} }
     var tmr = null, reqId = 0;
 
     function fmt(v) {
         return '$' + Number(v).toLocaleString('es-AR',
             { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
-    function atMin(it) { return Math.abs(it.precio - it.min) < 0.01; }
+    function casi(a, b) { return Math.abs(a - b) < 0.01; }
     function bajoMin(it) { return it.precio < it.min - 0.01; }
+    // Margen real sobre venta a partir del precio final con IVA
+    function margenDe(it) {
+        var neta = it.precio / IVA;
+        if (neta <= 0) return 0;
+        return Math.round((1 - it.costo / neta) * 100);
+    }
+    function descuentoDe(it) {
+        if (it.lista <= 0) return 0;
+        return Math.round((it.lista - it.precio) / it.lista * 100);
+    }
 
     // ---------- Buscador en vivo ----------
     function buscar() {
@@ -231,8 +247,7 @@
                     '<div class="ofr-meta">' +
                         (p.marca ? '<span class="ofr-marca">' + p.marca + '</span> ' : '') +
                         'Cód. ' + p.codigo + ' · Costo: ' + fmt(p.costo) +
-                        ' · Lista: <b>' + fmt(p.precio_lista) + '</b>' +
-                        ' · Mínimo: <b>' + fmt(p.precio_min) + '</b> ' + enOferta +
+                        ' · Lista: <b>' + fmt(p.precio_lista) + '</b> ' + enOferta +
                     '</div>' +
                 '</div>' +
                 '<button type="button" class="btn-mini" ' + (ya ? 'disabled' : '') +
@@ -247,8 +262,9 @@
         if (seleccion[p.id]) return;
         seleccion[p.id] = {
             codigo: p.codigo, nombre: p.nombre, marca: p.marca,
-            costo: p.costo, lista: p.precio_lista, min: p.precio_min,
-            precio: p.precio_min   // arranca en el descuento maximo (piso 10%)
+            costo: p.costo, lista: p.precio_lista,
+            min: p.precio_min, p20: p.precio_m20, p15: p.precio_m15,
+            precio: p.precio_m20   // arranca en el descuento mas suave (20%)
         };
         if (btn) { btn.disabled = true; btn.textContent = '✓ Agregado'; }
         renderArmado();
@@ -256,8 +272,12 @@
 
     window.quitar = function (id) { delete seleccion[id]; renderArmado(); buscar(); };
 
-    window.setMax = function (id) {
-        seleccion[id].precio = seleccion[id].min;
+    // nivel: 20 | 15 | 10 (10 = MAX, piso blindado)
+    window.aplicarNivel = function (id, nivel) {
+        var it = seleccion[id];
+        if (nivel === 20) it.precio = it.p20;
+        else if (nivel === 15) it.precio = it.p15;
+        else it.precio = it.min;
         renderArmado();
         var inp = document.getElementById('arm-input-' + id);
         if (inp) { inp.classList.add('flash'); setTimeout(function () { inp.classList.remove('flash'); }, 500); }
@@ -272,6 +292,13 @@
     function limpiarArmado() { seleccion = {}; renderArmado(); buscar(); }
     window.limpiarArmado = limpiarArmado;
 
+    function nivelActivo(it) {
+        if (casi(it.precio, it.min)) return 10;
+        if (casi(it.precio, it.p15)) return 15;
+        if (casi(it.precio, it.p20)) return 20;
+        return 0;   // precio manual, ningun preset
+    }
+
     function renderArmado() {
         var ids = Object.keys(seleccion);
         var panel = document.getElementById('panel-armado');
@@ -283,33 +310,36 @@
 
         lista.innerHTML = ids.map(function (id) {
             var it = seleccion[id];
-            var enMin = atMin(it);
             var bajo = bajoMin(it);
-            var pct = it.lista > 0 ? Math.round((it.lista - it.precio) / it.lista * 100) : 0;
-            var estadoMeta = bajo
+            var nivel = nivelActivo(it);
+            var marg = margenDe(it);
+            var desc = descuentoDe(it);
+            var estado = bajo
                 ? '<span class="ai-error">¡Por debajo del 10%! Al publicar se ajusta al mínimo.</span>'
-                : (enMin ? '<span class="ai-atmin">✓ Descuento máximo (-' + pct + '%)</span>'
-                         : (pct > 0 ? '<span class="ai-pct">-' + pct + '%</span>' : ''));
+                : '<span class="ai-pct">-' + desc + '% vs lista</span> · <span class="ai-ganancia">ganás ' + marg + '%</span>';
             return '' +
             '<div class="arm-item" data-id="' + id + '">' +
                 '<div class="ai-info">' +
                     '<div class="ai-nombre">' + it.nombre + '</div>' +
                     '<div class="ai-meta">' +
                         (it.marca ? '<span class="ofr-marca">' + it.marca + '</span> ' : '') +
-                        'Lista: ' + fmt(it.lista) + ' · Mínimo: <b>' + fmt(it.min) + '</b> · ' + estadoMeta +
+                        'Lista: ' + fmt(it.lista) + ' · ' + estado +
                     '</div>' +
                 '</div>' +
-                '<div class="arm-precio-row">' +
-                    '<span class="pesos">$</span>' +
-                    '<input type="number" step="0.01" min="0" id="arm-input-' + id + '" ' +
-                        'class="arm-input ' + (bajo ? 'error' : (enMin ? 'at-min' : '')) + '" ' +
-                        'value="' + it.precio.toFixed(2) + '" ' +
-                        'onchange="cambiarPrecio(\'' + id + '\', this.value)">' +
-                    '<button type="button" class="btn-max ' + (enMin ? 'activo' : '') + '" ' +
-                        'onclick="setMax(\'' + id + '\')" ' +
-                        'title="' + (enMin ? 'Ya está al descuento máximo' : 'Aplicar descuento máximo (piso 10%)') + '">' +
-                        (enMin ? '✓ MÁX' : 'MÁX') + '</button>' +
-                    '<button type="button" class="ai-quitar" onclick="quitar(\'' + id + '\')">✕</button>' +
+                '<div class="arm-controls">' +
+                    '<div class="arm-presets">' +
+                        '<button type="button" class="preset ' + (nivel === 20 ? 'activo' : '') + '" onclick="aplicarNivel(\'' + id + '\',20)">20%</button>' +
+                        '<button type="button" class="preset ' + (nivel === 15 ? 'activo' : '') + '" onclick="aplicarNivel(\'' + id + '\',15)">15%</button>' +
+                        '<button type="button" class="preset max ' + (nivel === 10 ? 'activo' : '') + '" onclick="aplicarNivel(\'' + id + '\',10)">MÁX 10%</button>' +
+                    '</div>' +
+                    '<div class="arm-precio-row">' +
+                        '<span class="pesos">$</span>' +
+                        '<input type="number" step="0.01" min="0" id="arm-input-' + id + '" ' +
+                            'class="arm-input ' + (bajo ? 'error' : (nivel === 10 ? 'at-min' : '')) + '" ' +
+                            'value="' + it.precio.toFixed(2) + '" ' +
+                            'onchange="cambiarPrecio(\'' + id + '\', this.value)">' +
+                        '<button type="button" class="ai-quitar" onclick="quitar(\'' + id + '\')">✕</button>' +
+                    '</div>' +
                 '</div>' +
             '</div>';
         }).join('');
