@@ -66,20 +66,32 @@
     <div class="cd-tot-row cd-soft"><span>Ganancia estimada</span><span>{{ coti.ganancia_estimada|pesos }}</span></div>
 </div>
 
-<!-- C2: PDF + envío (proximo paso) -->
+<!-- C2: PDF + envío -->
+{% set msg = 'Hola ' ~ (coti.nombre_cliente or '') ~ '! Te paso el presupuesto ' ~ coti.numero ~ ' de ' ~ ajustes.nombre_negocio ~ ' por ' ~ (coti.total|pesos) ~ '. Te adjunto el detalle en PDF. Cualquier consulta escribime. Saludos!' %}
 <div class="panel cd-envio">
     <h3 style="margin-bottom:6px;">Enviar al cliente</h3>
     <p class="cd-soft" style="font-size:0.8rem; margin-bottom:12px;">
-        El PDF para el cliente y los botones de WhatsApp / mail se activan en el próximo paso (C2).
+        Descargá el PDF y mandáselo al cliente. Los botones de WhatsApp y mail abren el mensaje listo;
+        solo tenés que <b>adjuntar el PDF que bajaste</b>.
     </p>
     <div class="cd-envio-btns">
-        <button class="btn btn-bronce" disabled>📄 Descargar PDF (próximo)</button>
-        <button class="btn btn-carbon" disabled>💬 WhatsApp (próximo)</button>
+        <a href="{{ url_for('admin.cotizador_pdf', cid=coti.id) }}" target="_blank" rel="noopener" class="btn btn-bronce">📄 Ver / Descargar PDF</a>
+        <a href="https://wa.me/?text={{ msg|urlencode }}" target="_blank" rel="noopener" class="cd-wa">💬 WhatsApp</a>
+        <a href="mailto:{{ coti.email or '' }}?subject={{ ('Presupuesto ' ~ coti.numero ~ ' - ' ~ ajustes.nombre_negocio)|urlencode }}&body={{ msg|urlencode }}" class="btn btn-carbon">✉️ Mail</a>
     </div>
 </div>
 
 {% if coti.estado != 'ANULADA' %}
-<div class="panel">
+<div class="panel cd-acciones">
+    <div class="cd-estado-wrap">
+        <span class="cd-soft" style="font-size:0.82rem;">Marcar como:</span>
+        <form method="POST" action="{{ url_for('admin.cotizador_estado', cid=coti.id) }}" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" name="estado" value="ENVIADA" class="cd-est-btn">📤 Enviada</button>
+            <button type="submit" name="estado" value="CERRADA" class="cd-est-btn cerrada">✅ Vendida</button>
+            <button type="submit" name="estado" value="BORRADOR" class="cd-est-btn">↩ Borrador</button>
+        </form>
+    </div>
     <form method="POST" action="{{ url_for('admin.cotizador_anular', cid=coti.id) }}"
           onsubmit="return confirm('¿Anular esta cotización? No se borra, queda registrada.');">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -111,6 +123,16 @@
 .cd-tot-row.cd-grande { font-size:1.2rem; font-weight:800; color:#6b5638; border-top:1px solid var(--divider); margin-top:6px; padding-top:10px; }
 .cd-soft { color:var(--text-soft); }
 .cd-envio-btns { display:flex; gap:10px; flex-wrap:wrap; }
+.cd-wa { display:inline-block; background:#25D366; color:#fff; font-weight:800; font-size:0.85rem;
+    padding:10px 16px; border-radius:9px; }
+.cd-wa:hover { background:#1da955; }
+.cd-acciones { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+.cd-estado-wrap { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.cd-est-btn { font-size:0.78rem; font-weight:700; color:var(--carbon); border:1px solid var(--divider);
+    background:#fff; border-radius:8px; padding:7px 12px; cursor:pointer; }
+.cd-est-btn:hover { background:#faf8f4; border-color:var(--bronce); }
+.cd-est-btn.cerrada { border-color:#2e7d32; color:#2e7d32; }
+.cd-est-btn.cerrada:hover { background:#2e7d32; color:#fff; }
 .btn-anular { font-size:0.8rem; font-weight:700; color:var(--danger); border:1px solid #f0c4c4;
     background:#fff; border-radius:9px; padding:9px 16px; cursor:pointer; }
 .btn-anular:hover { background:var(--danger); color:#fff; border-color:var(--danger); }

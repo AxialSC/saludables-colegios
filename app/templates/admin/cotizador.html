@@ -1,20 +1,26 @@
 {% extends 'admin/base_admin.html' %}
-{% block title %}Cotizador · {{ app_nombre }}{% endblock %}
+{% block title %}{% if tipo_sel == 'CUMPLE' %}Cumpleaños{% elif tipo_sel == 'COLEGIO' %}Colegios{% else %}Cotizador{% endif %} · {{ app_nombre }}{% endblock %}
 {% block seccion %}Ventas{% endblock %}
 {% block titulo %}{% if tipo_sel == 'CUMPLE' %}🎉 Cumpleaños{% elif tipo_sel == 'COLEGIO' %}🏫 Colegios{% else %}🧾 Cotizador{% endif %}{% endblock %}
 
 {% block contenido %}
 
+{% if tipo_sel == 'CUMPLE' %}
+<div class="cot-acciones">
+    <a href="{{ url_for('admin.cotizador_armar', tipo='CUMPLE') }}" class="btn btn-bronce">🎉 Nueva bolsa de cumpleaños</a>
+</div>
+<p class="cot-help-mini">Acá ves solo las cotizaciones de <b>Cumpleaños</b>. Las de colegios están en la solapa 🏫 Colegios del menú.</p>
+{% elif tipo_sel == 'COLEGIO' %}
+<div class="cot-acciones">
+    <a href="{{ url_for('admin.cotizador_armar', tipo='COLEGIO') }}" class="btn btn-carbon">🏫 Nueva cotización de colegio</a>
+</div>
+<p class="cot-help-mini">Acá ves solo las cotizaciones de <b>Colegios</b>. Las de cumpleaños están en la solapa 🎉 Cumpleaños del menú.</p>
+{% else %}
 <div class="cot-acciones">
     <a href="{{ url_for('admin.cotizador_armar', tipo='CUMPLE') }}" class="btn btn-bronce">🎉 Nueva bolsa de cumpleaños</a>
     <a href="{{ url_for('admin.cotizador_armar', tipo='COLEGIO') }}" class="btn btn-carbon">🏫 Nueva cotización de colegio</a>
 </div>
-
-<div class="cot-filtros">
-    <a href="{{ url_for('admin.cotizador') }}" class="cot-f {% if not tipo_sel %}activo{% endif %}">Todas</a>
-    <a href="{{ url_for('admin.cotizador', tipo='CUMPLE') }}" class="cot-f {% if tipo_sel == 'CUMPLE' %}activo{% endif %}">🎉 Cumpleaños</a>
-    <a href="{{ url_for('admin.cotizador', tipo='COLEGIO') }}" class="cot-f {% if tipo_sel == 'COLEGIO' %}activo{% endif %}">🏫 Colegios</a>
-</div>
+{% endif %}
 
 <div class="panel" style="padding:0; overflow:hidden;">
     {% if cotis %}
@@ -22,9 +28,9 @@
         <thead>
             <tr>
                 <th>N°</th>
-                <th>Tipo</th>
+                {% if not tipo_sel %}<th>Tipo</th>{% endif %}
                 <th>Cliente</th>
-                <th style="text-align:center;">Bolsas/Unid.</th>
+                <th style="text-align:center;">{% if tipo_sel == 'COLEGIO' %}Ítems{% else %}Bolsas{% endif %}</th>
                 <th style="text-align:right;">Total</th>
                 <th>Estado</th>
                 <th>Fecha</th>
@@ -35,9 +41,9 @@
             {% for c in cotis %}
             <tr class="{% if c.estado == 'ANULADA' %}fuera-lista{% endif %}">
                 <td class="mono">{{ c.numero }}</td>
-                <td>{{ c.tipo_etiqueta }}</td>
+                {% if not tipo_sel %}<td>{{ c.tipo_etiqueta }}</td>{% endif %}
                 <td>{{ c.nombre_cliente or '—' }}</td>
-                <td style="text-align:center;">{{ c.unidades }}</td>
+                <td style="text-align:center;">{% if c.tipo == 'COLEGIO' %}{{ c.cantidad_items }}{% else %}{{ c.unidades }}{% endif %}</td>
                 <td style="text-align:right;" class="venta-final">{{ c.total|pesos }}</td>
                 <td><span class="cot-estado est-{{ c.estado|lower }}">{{ c.estado_etiqueta }}</span></td>
                 <td>{{ c.creada_en|ar_datetime }}</td>
@@ -50,19 +56,16 @@
     </table>
     {% else %}
     <div style="text-align:center; padding:40px 20px;">
-        <h3>Todavía no hay cotizaciones{% if tipo_sel %} de este tipo{% endif %}</h3>
-        <p style="color:var(--text-soft); margin-top:8px;">Creá una nueva con los botones de arriba.</p>
+        <h3>Todavía no hay cotizaciones{% if tipo_sel == 'CUMPLE' %} de cumpleaños{% elif tipo_sel == 'COLEGIO' %} de colegios{% endif %}</h3>
+        <p style="color:var(--text-soft); margin-top:8px;">Creá una nueva con el botón de arriba.</p>
     </div>
     {% endif %}
 </div>
 
 <style>
-.cot-acciones { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
-.cot-filtros { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
-.cot-f { font-size:0.8rem; font-weight:700; padding:8px 14px; border-radius:9px;
-    background:#fff; border:1px solid var(--divider); color:var(--text); }
-.cot-f:hover { border-color:var(--bronce); }
-.cot-f.activo { background:var(--carbon); color:var(--crema); border-color:var(--carbon); }
+.cot-acciones { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+.cot-help-mini { font-size:0.8rem; color:var(--text-soft); margin-bottom:16px;
+    background:#faf8f4; border:1px solid var(--divider); border-radius:var(--radius); padding:10px 14px; }
 .tabla { width:100%; border-collapse:collapse; font-size:0.85rem; }
 .tabla thead th { background:#faf8f4; text-align:left; padding:13px 16px;
     font-size:0.68rem; letter-spacing:0.1em; text-transform:uppercase;

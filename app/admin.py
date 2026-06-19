@@ -25,6 +25,7 @@ from .utils.decorators import admin_requerido, super_admin_requerido
 from .utils.import_planilla import leer_planilla
 from .utils.timezone import ahora_argentina
 from .pdf_pedido import generar_pdf_pedido
+from .pdf_cotizacion import generar_pdf_cotizacion
 from . import pricing
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
@@ -767,6 +768,40 @@ def cotizador_anular(cid):
     db.session.commit()
     flash(f'Cotización {coti.numero} anulada.', 'warning')
     return redirect(url_for('admin.cotizador'))
+
+
+@admin_bp.route('/cotizador/<int:cid>/pdf')
+@admin_requerido
+def cotizador_pdf(cid):
+    """PDF del presupuesto (Cumpleaños / Colegio) para mandarle al cliente."""
+    coti = Cotizacion.query.get_or_404(cid)
+    ajustes = get_ajustes()
+    pdf = generar_pdf_cotizacion(coti, ajustes)
+    return Response(pdf, mimetype='application/pdf', headers={
+        'Content-Disposition': f'inline; filename="{coti.numero}.pdf"'
+    })
+
+
+@admin_bp.route('/cotizador/<int:cid>/estado', methods=['POST'])
+@admin_requerido
+def cotizador_estado(cid):
+    """Cambia el estado de una cotización (Borrador / Enviada / Cerrada=vendida)."""
+    coti = Cotizacion.query.get_or_404(cid)
+    if coti.estado == EstadoCotizacion.ANULADA:
+        flash('La cotización está anulada.', 'error')
+        return redirect(url_for('admin.cotizador_detalle', cid=cid))
+
+    nuevo = (request.form.get('estado') or '').strip().upper()
+    validos = (EstadoCotizacion.BORRADOR, EstadoCotizacion.ENVIADA, EstadoCotizacion.CERRADA)
+    if nuevo not in validos:
+        flash('Estado inválido.', 'error')
+        return redirect(url_for('admin.cotizador_detalle', cid=cid))
+
+    coti.estado = nuevo
+    coti.modificada_en = _ahora()
+    db.session.commit()
+    flash(f'Cotización marcada como {EstadoCotizacion.ETIQUETAS[nuevo]}.', 'success')
+    return redirect(url_for('admin.cotizador_detalle', cid=cid))
 
 
 # ======================= FOTOS =======================

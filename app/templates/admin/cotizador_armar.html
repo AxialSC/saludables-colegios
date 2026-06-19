@@ -15,6 +15,35 @@
     {% endif %}
 </p>
 
+<details class="cot-help">
+    <summary>📘 ¿Cómo funciona? — Guía paso a paso</summary>
+    <div class="cot-help-body">
+        {% if es_cumple %}
+        <p class="cot-help-ej">💡 <b>Ejemplo:</b> una mamá quiere <b>20 bolsitas</b> para el cumple, cada una con
+        1 alfajor + 1 jugo + 1 chupetín. Armás <u>una</u> bolsa y el sistema multiplica todo × 20.</p>
+        <ol class="cot-pasos">
+            <li><b>Datos del cliente</b> (opcional): nombre, WhatsApp, mail. Aparecen en el PDF.</li>
+            <li><b>Cantidad de bolsas:</b> poné cuántas bolsitas iguales querés. Mínimo sugerido <b>{{ min_bolsas }}</b>.</li>
+            <li><b>¿Quién pone la bolsa?</b> Si la trae el cliente, no tiene costo. Si la ponemos nosotros, cargás el costo por bolsa (lo definís vos según el caso).</li>
+            <li><b>Agregá productos:</b> buscá por nombre o código y tocá “+ Agregar”. Ponés <b>cuántos van en una bolsa</b> (normalmente 1) y el <b>descuento</b>: 20% / 15% / MÁX 10%.</li>
+            <li><b>Mirá el total</b> (productos por bolsa × cantidad de bolsas) y tocá <b>Guardar</b>.</li>
+            <li>Después generás el <b>PDF</b> y se lo mandás al cliente por WhatsApp o mail.</li>
+        </ol>
+        {% else %}
+        <p class="cot-help-ej">💡 <b>Ejemplo:</b> un colegio pide 50 alfajores y 30 jugos. Cargás cada producto
+        con su cantidad total y listo.</p>
+        <ol class="cot-pasos">
+            <li><b>Datos del cliente</b> (opcional): nombre del colegio, WhatsApp, mail. Aparecen en el PDF.</li>
+            <li><b>Agregá productos:</b> buscá por nombre o código y tocá “+ Agregar”. Ponés la <b>cantidad total</b> que pidió el colegio.</li>
+            <li><b>Descuento por producto:</b> 20% / 15% / MÁX 10% según lo que arregles con el cliente.</li>
+            <li><b>Mirá el total</b> y tocá <b>Guardar</b>.</li>
+            <li>Después generás el <b>PDF</b> y se lo mandás por WhatsApp o mail.</li>
+        </ol>
+        {% endif %}
+        <p class="cot-help-nota">🔒 El descuento <b>nunca</b> baja del 10% de ganancia: el sistema lo cuida solo, aunque escribas un precio más bajo.</p>
+    </div>
+</details>
+
 <form method="POST" action="{{ url_for('admin.cotizador_guardar') }}" id="form-coti">
 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 <input type="hidden" name="tipo" value="{{ tipo }}">
@@ -111,6 +140,21 @@
 <style>
 .cot-intro { font-size:0.86rem; color:var(--text-soft); line-height:1.6; margin-bottom:18px;
     background:#faf8f4; border:1px solid var(--divider); border-radius:var(--radius); padding:14px 16px; }
+
+/* Help colapsable */
+.cot-help { margin-bottom:18px; border:1px solid var(--bronce); border-radius:var(--radius);
+    background:#fff; overflow:hidden; }
+.cot-help summary { cursor:pointer; padding:13px 16px; font-weight:800; font-size:0.86rem;
+    color:#6b5638; background:#faf6ef; list-style:none; user-select:none; }
+.cot-help summary::-webkit-details-marker { display:none; }
+.cot-help[open] summary { border-bottom:1px solid var(--divider); }
+.cot-help-body { padding:14px 18px; }
+.cot-help-ej { font-size:0.84rem; background:#f1f8f1; border:1px solid #cfe6cf; border-radius:10px;
+    padding:10px 12px; margin-bottom:12px; color:#2e5b39; line-height:1.5; }
+.cot-pasos { margin:0 0 6px 18px; padding:0; }
+.cot-pasos li { font-size:0.84rem; line-height:1.6; margin-bottom:7px; color:var(--text); }
+.cot-help-nota { font-size:0.8rem; color:#6b5638; background:#faf6ef; border-radius:8px;
+    padding:9px 12px; margin-top:6px; }
 .cot-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; }
 @media (max-width:760px) { .cot-grid { grid-template-columns:1fr; } }
 .cot-field { margin-bottom:12px; }
