@@ -422,7 +422,7 @@ def ofertas():
                .order_by(Oferta.vence_en.asc()).all())
     vigentes = [o for o in activas if o.vigente]
 
-    # Marcas disponibles para el selector
+    # Marcas disponibles para el selector (si la planilla las trae)
     marcas = db.session.execute(
         select(Producto.marca)
         .where(Producto.activo.is_(True))
@@ -431,8 +431,18 @@ def ofertas():
         .distinct().order_by(Producto.marca)
     ).scalars().all()
 
+    # Rubros: se usan como filtro alternativo cuando no hay marcas cargadas
+    rubros = db.session.execute(
+        select(Producto.rubro)
+        .where(Producto.activo.is_(True))
+        .where(Producto.rubro.isnot(None))
+        .where(Producto.rubro != '')
+        .distinct().order_by(Producto.rubro)
+    ).scalars().all()
+
     return render_template('admin/ofertas.html', vigentes=vigentes,
-                           marcas=marcas, dias=DIAS_OFERTA, ajustes=ajustes)
+                           marcas=marcas, rubros=rubros,
+                           dias=DIAS_OFERTA, ajustes=ajustes)
 
 
 @admin_bp.route('/ofertas/buscar')
@@ -440,19 +450,23 @@ def ofertas():
 def ofertas_buscar():
     """
     JSON para el buscador del panel de ofertas. Devuelve productos con costo,
-    precio de lista y precio MINIMO (piso 10% blindado).
-    No devuelve nada si no hay ni texto ni marca (para no dumpear 1654 productos).
+    precio de lista y precio MINIMO (piso 10% blindado). Filtra por texto, por
+    marca y/o por rubro. No devuelve nada si no hay ningun filtro (para no
+    dumpear los 1654 productos de una).
     """
     q = (request.args.get('q') or '').strip()
     marca = (request.args.get('marca') or '').strip()
+    rubro = (request.args.get('rubro') or '').strip()
     ajustes = get_ajustes()
 
-    if not q and not marca:
+    if not q and not marca and not rubro:
         return jsonify([])
 
     stmt = Producto.query.filter(Producto.activo.is_(True))
     if marca:
         stmt = stmt.filter(Producto.marca == marca)
+    if rubro:
+        stmt = stmt.filter(Producto.rubro == rubro)
     if q:
         like = f'%{q}%'
         stmt = stmt.filter(or_(Producto.nombre.ilike(like),
