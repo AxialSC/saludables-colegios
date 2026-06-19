@@ -6,6 +6,8 @@
        1 a 4   -> precio x1
        5 a 9   -> precio x5  (-desc)
        10 o más-> precio x10 (-desc)
+   - v0.12: si el producto está en OFERTA, usa el precio de oferta (plano,
+     sin escalón). El precio igual se revalida en el backend al confirmar.
    - Mínimo de compra: el botón de pedido se bloquea hasta llegar.
    ===================================================================== */
 (function () {
@@ -25,8 +27,9 @@
       { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  // Precio unitario segun la cantidad de ESE producto
+  // Precio unitario segun la cantidad de ESE producto (o precio de oferta, plano)
   function precioUnit(item) {
+    if (item.of) return item.of;     // precio de oferta: plano, sin escalon
     const q = item.qty;
     if (q >= 10) return item.p10;
     if (q >= 5) return item.p5;
@@ -35,6 +38,7 @@
 
   // Pista para vender mas (idea de Ivan)
   function pista(item) {
+    if (item.of) return '🏷️ Precio de oferta aplicado';
     const q = item.qty;
     if (q < 5)  return 'Sumá ' + (5 - q) + ' y baja a ' + fmt(item.p5) + ' c/u';
     if (q < 10) return 'Sumá ' + (10 - q) + ' y baja a ' + fmt(item.p10) + ' c/u';
@@ -55,16 +59,18 @@
   window.agregarAlCarrito = function (btn) {
     const d = btn.dataset;
     const cod = d.codigo;
+    const esOferta = d.oferta === '1';
     if (carrito[cod]) {
       carrito[cod].qty += 1;
     } else {
       carrito[cod] = {
         nombre: d.nombre,
         p1: Number(d.p1), p5: Number(d.p5), p10: Number(d.p10),
+        of: esOferta ? Number(d.poferta) : null,
         qty: 1
       };
     }
-    guardar(); render(); toast('Agregado al carrito');
+    guardar(); render(); toast(esOferta ? '🏷️ Oferta agregada al carrito' : 'Agregado al carrito');
   };
 
   window.cambiarCant = function (cod, delta) {
@@ -125,10 +131,11 @@
         cont.innerHTML = cods.map(function (cod) {
           const it = carrito[cod];
           const pu = precioUnit(it);
+          const ofTag = it.of ? '<span class="ci-oftag">OFERTA</span> ' : '';
           return '' +
             '<div class="cart-item">' +
               '<div class="ci-info">' +
-                '<div class="ci-nombre">' + it.nombre + '</div>' +
+                '<div class="ci-nombre">' + ofTag + it.nombre + '</div>' +
                 '<div class="ci-precio">' + fmt(pu) + ' c/u · subtotal ' + fmt(pu * it.qty) + '</div>' +
                 '<div class="ci-pista">' + pista(it) + '</div>' +
               '</div>' +

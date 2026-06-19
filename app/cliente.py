@@ -7,6 +7,10 @@ v0.5 -> checkout: datos del cliente (CUIT validado), guarda el pedido,
 v0.9.1 -> orden del catalogo (recomendados / nombre / precio / mas vendidos)
 v0.9.2 -> buscador EN VIVO (?ajax=1 devuelve solo el fragmento _grid.html)
 v0.10.0 -> filtros Saludables y Con/Sin alcohol (segun marcado del panel)
+v0.11.0 -> categoria unica (solapas comida / sin / con)
+v0.12.0 -> solapa OFERTAS: muestra productos en oferta (precio tachado + precio
+           nuevo). El precio de oferta se RECALCULA en backend (defensa en
+           profundidad): aunque el front mande otro precio, manda el real.
 """
 import json
 
@@ -15,9 +19,10 @@ from flask import (Blueprint, render_template, request, redirect, url_for,
 from sqlalchemy import select, or_, func
 
 from .extensions import db
-from .models import (Producto, Pedido, ItemPedido, get_ajustes,
+from .models import (Producto, Pedido, ItemPedido, Oferta, get_ajustes,
                      generar_numero_pedido, EstadoPedido, CategoriaProducto)
 from .utils.validaciones import validar_cuit, limpiar_cuit
+from .utils.timezone import ahora_argentina
 from . import pricing
 from .pdf_pedido import generar_pdf_pedido
 
@@ -33,6 +38,24 @@ ORDENES = {
     'precio_desc': 'Precio: mayor a menor',
     'vendidos':    'Más vendidos',
 }
+
+
+def _ahora_local():
+    return ahora_argentina().replace(tzinfo=None)
+
+
+def _ofertas_vigentes_dict():
+    """
+    Devuelve {producto_id: Oferta} solo con las ofertas ACTIVAS y NO vencidas.
+    Si un producto tuviera varias, queda la publicada mas recientemente.
+    """
+    ahora = _ahora_local()
+    d = {}
+    for o in (Oferta.query
+              .filter(Oferta.activa.is_(True), Oferta.vence_en > ahora)
+              .order_by(Oferta.publicada_en.asc()).all()):
+        d[o.producto_id] = o
+    return d
 
 
 def _rubro_display(rubro):
@@ -51,18 +74,20 @@ def catalogo():
     orden = (request.args.get('orden') or 'relevancia').strip()
     if orden not in ORDENES:
         orden = 'relevancia'
-    # Filtro por categoria/solapa (v0.11): comida | sin | con
+    # Filtro por categoria/solapa (v0.11): comida | sin | con · (v0.12): ofertas
     cat = (request.args.get('cat') or '').strip().lower()
     _mapa_cat = {
         'comida': CategoriaProducto.COMIDA,
         'sin': CategoriaProducto.BEBIDA_SIN,
         'con': CategoriaProducto.BEBIDA_CON,
     }
+    es_ofertas = (cat == 'ofertas')
     cat_db = _mapa_cat.get(cat)
-    if cat_db is None:
+    if cat_db is None and not es_ofertas:
         cat = ''
 
     ajustes = get_ajustes()
+    ofertas_dict = _ofertas_vigentes_dict()
 
     stmt = select(Producto).where(Producto.activo.is_(True))
     if rubro:
@@ -74,6 +99,9 @@ def catalogo():
                               Producto.rubro.ilike(like)))
     if cat_db:
         stmt = stmt.where(Producto.categoria == cat_db)
+    if es_ofertas:
+        ids = list(ofertas_dict.keys())
+        stmt = stmt.where(Producto.id.in_(ids) if ids else Producto.id == -1)
 
     # --- Orden ---
     # Nota: para "precio" ordenamos por costo_neto. Con el markup general da el
@@ -102,7 +130,16 @@ def catalogo():
 
     paginacion = db.paginate(stmt, page=page, per_page=POR_PAGINA, error_out=False)
 
-    items = [{'p': p, 'precios': pricing.precios(p, ajustes)} for p in paginacion.items]
+    items = []
+    for p in paginacion.items:
+        pr = pricing.precios(p, ajustes)
+        of = ofertas_dict.get(p.id)
+        oferta = None
+        if of:
+            lista = float(of.precio_lista_snapshot) if of.precio_lista_snapshot else pr['x1']
+            oferta = {'precio': float(of.precio_oferta), 'lista': lista,
+                      'pct': of.descuento_pct}
+        items.append({'p': p, 'precios': pr, 'oferta': oferta})
 
     # Contexto que necesita el fragmento de la grilla
     ctx_grid = dict(items=items, paginacion=paginacion, q=q, rubro_sel=rubro,
@@ -120,15 +157,18 @@ def catalogo():
 
     return render_template('cliente/catalogo.html',
                            rubros=rubros, ordenes=ORDENES, ajustes=ajustes,
-                           **ctx_grid)
+                           n_ofertas=len(ofertas_dict), **ctx_grid)
 
 
 def _recalcular_carrito(carrito_dict, ajustes):
     """
     Recalcula el carrito en el SERVIDOR (defensa en profundidad, regla AXIAL).
     No confia en los precios que manda el navegador.
+    Si un producto tiene oferta vigente, usa el PRECIO DE OFERTA (plano, sin
+    escalon por cantidad). Si no, usa el precio normal con escalon.
     Devuelve (items, total, descartados).
     """
+    ofertas_dict = _ofertas_vigentes_dict()
     items = []
     total = 0.0
     descartados = 0
@@ -143,7 +183,11 @@ def _recalcular_carrito(carrito_dict, ajustes):
         if p is None:
             descartados += 1
             continue
-        pu = pricing.precio_por_cantidad(p, ajustes, qty)
+        of = ofertas_dict.get(p.id)
+        if of:
+            pu = float(of.precio_oferta)         # precio de oferta, blindado
+        else:
+            pu = pricing.precio_por_cantidad(p, ajustes, qty)
         sub = round(pu * qty, 2)
         items.append({'producto': p, 'cantidad': qty,
                       'precio_unitario': pu, 'subtotal': sub})

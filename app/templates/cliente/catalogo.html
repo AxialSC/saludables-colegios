@@ -31,6 +31,10 @@
     .t-solapa:hover { border-color: var(--t-verde); }
     .t-solapa.activa { background: var(--t-verde); color: #fff; border-color: var(--t-verde); }
     .t-solapa.sol-con.activa { background: var(--t-bronce); border-color: var(--t-bronce); }
+    /* v0.12 · Solapa Ofertas (destacada en rojo) */
+    .t-solapa.sol-of { color: var(--t-oferta); border-color: #efc9c9; background: #fff6f6; }
+    .t-solapa.sol-of:hover { border-color: var(--t-oferta); }
+    .t-solapa.sol-of.activa { background: var(--t-oferta); color: #fff; border-color: var(--t-oferta); }
     /* v0.9.3 · Footer profesional */
     .ft { background: #1A1A1A; color: #cfcabf; margin-top: 44px; }
     .ft-inner { max-width: 1180px; margin: 0 auto; padding: 38px 18px 28px; }
@@ -88,6 +92,8 @@
 <div class="t-solapas">
     <a href="{{ url_for('cliente.catalogo', q=q or none, rubro=rubro_sel or none, orden=o) }}"
        class="t-solapa {% if not cat %}activa{% endif %}">Todo</a>
+    <a href="{{ url_for('cliente.catalogo', q=q or none, rubro=rubro_sel or none, orden=o, cat='ofertas') }}"
+       class="t-solapa sol-of {% if cat == 'ofertas' %}activa{% endif %}">🏷️ Ofertas{% if n_ofertas %} ({{ n_ofertas }}){% endif %}</a>
     <a href="{{ url_for('cliente.catalogo', q=q or none, rubro=rubro_sel or none, orden=o, cat='comida') }}"
        class="t-solapa {% if cat == 'comida' %}activa{% endif %}">🥗 Saludables</a>
     <a href="{{ url_for('cliente.catalogo', q=q or none, rubro=rubro_sel or none, orden=o, cat='sin') }}"
