@@ -8,9 +8,16 @@ una columna vacia al principio o cambia un poco de lugar.
 
 La funcion principal devuelve una lista de dicts:
     {'rubro': str, 'codigo': str, 'nombre': str, 'costo_neto': float}
+
+NOTA (limpieza de rubros): el rubro que viene del Excel se limpia con
+limpiar_rubro_o_default() (saca palabras basura tipo 'TEOLOGISTICA', recorta
+espacios y deja formato Titulo prolijo). Asi cada importacion entra limpia y
+no se ensucian los chips de la tienda. La logica vive en app/utils/rubros.py.
 """
 import csv
 import unicodedata
+
+from .rubros import limpiar_rubro_o_default
 
 
 def _normalizar(texto):
@@ -137,7 +144,8 @@ def leer_planilla(ruta):
         costo = parse_precio(pcio)
         codigo = str(codigo).strip() if codigo is not None else ''
         nombre = str(nombre).strip() if nombre is not None else ''
-        rubro = str(rubro).strip().upper() if rubro else 'SIN RUBRO'
+        # Limpieza central: saca basura (TEOLOGISTICA), prolija y nunca vacio.
+        rubro = limpiar_rubro_o_default(rubro)
 
         # Validacion minima: codigo, nombre y costo > 0
         if not codigo or not nombre or not costo or costo <= 0:

@@ -3,7 +3,7 @@ app/cli.py — Comandos de linea de comando.
   flask --app run init-db                  -> crea las tablas
   flask --app run seed-data                -> crea usuarios iniciales
   flask --app run import-planilla <ruta>   -> importa una planilla (respaldo / pruebas)
-  flask --app run normalizar-rubros        -> limpia rubros duplicados (PREVISUALIZACION)
+  flask --app run normalizar-rubros        -> limpia rubros (PREVISUALIZACION, no toca nada)
   flask --app run normalizar-rubros --aplicar  -> aplica la limpieza de rubros
 """
 import click
@@ -13,6 +13,7 @@ from .extensions import db
 from .models import Usuario, Rol
 from .services import aplicar_importacion
 from .utils.import_planilla import leer_planilla
+from .utils.rubros import limpiar_rubro, RUBRO_VACIO
 
 
 @click.command('init-db')
@@ -245,32 +246,29 @@ def migrar_v12b():
 @with_appcontext
 def normalizar_rubros(aplicar):
     """
-    Limpia rubros duplicados de 'productos' por diferencias invisibles:
-    espacios al inicio/final, espacios dobles internos y mayusculas/minusculas.
+    Limpia y unifica los rubros de 'productos' que YA estan cargados, para que el
+    cliente vea chips prolijos y sin repetidos. Usa la misma limpieza que el
+    importador (app/utils/rubros.py), asi la base queda igual de prolija que un
+    Excel recien importado.
 
-    Por defecto corre en modo PREVISUALIZACION (dry-run): muestra que pasaria
-    pero NO modifica nada. Con --aplicar hace los cambios de verdad.
+    Que hace con cada rubro:
+      1. Saca palabras basura (ej: 'TEOLOGISTICA').
+      2. Recorta espacios y colapsa espacios dobles.
+      3. Lo deja en formato Titulo ('BEBIDAS' -> 'Bebidas',
+         'LIMPIEZA Y HOGAR' -> 'Limpieza y Hogar').
+      4. Si un rubro queda vacio al limpiar, va a 'Sin Rubro'.
+    Los rubros que eran lo mismo escrito distinto se FUSIONAN
+    (ej: 'BEBIDAS' + 'BEBIDAS TEOLOGISTICA' -> 'Bebidas').
 
-    Criterio (sin inventar rubros nuevos):
-      1. Limpieza SIEMPRE segura: trim + colapsar espacios internos.
-         (ej:  "Bebidas "  ->  "Bebidas")
-      2. Unificacion por mayus/minus: los rubros que SOLO se diferencian en
-         espacios o mayusculas se agrupan y todos pasan a la forma 'ganadora'
-         = la que tiene MAS productos (si hay empate, la primera alfabeticamente).
-         (ej:  "BEBIDAS" (2 prod)  +  "Bebidas" (40 prod)  ->  "Bebidas")
-      NO une rubros semanticamente distintos (ej: 'Gaseosas' y 'Bebidas' quedan
-      separados: eso es decision tuya, no del comando).
+    Por defecto corre en PREVISUALIZACION (dry-run): NO modifica nada, solo
+    muestra que pasaria. Con --aplicar hace los cambios de verdad.
 
-    Seguridad:
-      - Si un rubro queda VACIO al limpiarlo (era todo espacios), se AVISA y NO se
-        toca (la columna es NOT NULL: lo revisas a mano).
-      - Hace UPDATE matcheando el texto EXACTO original, fila por fila.
+    Seguridad: NO borra ni mueve productos, solo cambia el TEXTO del rubro.
+    Idempotente: si ya esta todo prolijo, no hace nada.
     """
     from sqlalchemy import text
-    import re
     from collections import defaultdict
 
-    # 1. Rubros actuales con su conteo de productos
     filas = db.session.execute(text(
         "SELECT rubro, COUNT(*) AS n FROM productos GROUP BY rubro ORDER BY rubro"
     )).all()
@@ -279,60 +277,46 @@ def normalizar_rubros(aplicar):
         click.echo('No hay productos cargados. Nada que hacer.')
         return
 
-    def limpiar(s):
-        # trim + colapsar espacios internos (NO toca mayus/minus)
-        return re.sub(r'\s+', ' ', (s or '').strip())
-
-    # Agrupar por clave insensible a mayus/minus y espacios
-    grupos = defaultdict(list)   # clave -> [(rubro_original, rubro_limpio, n), ...]
-    vacios = []                  # rubros que quedan vacios tras limpiar
+    cambios = []                       # (rubro_origen, rubro_destino, n)
+    a_sin_rubro = []                   # rubros que quedaban vacios -> 'Sin Rubro'
+    final_counts = defaultdict(int)    # rubro_final -> total de productos
     for rubro_orig, n in filas:
-        limpio = limpiar(rubro_orig)
+        limpio = limpiar_rubro(rubro_orig)
         if limpio == '':
-            vacios.append((rubro_orig, n))
-            continue
-        grupos[limpio.casefold()].append((rubro_orig, limpio, n))
+            destino = RUBRO_VACIO
+            a_sin_rubro.append((rubro_orig, n))
+        else:
+            destino = limpio
+        final_counts[destino] += n
+        if rubro_orig != destino:
+            cambios.append((rubro_orig, destino, n))
 
-    # Elegir la forma ganadora de cada grupo y armar los cambios
-    cambios = []          # (rubro_origen, rubro_destino, n)
-    grupos_afectados = 0
-    for _clave, variantes in grupos.items():
-        por_limpio = defaultdict(int)   # cuenta productos por forma LIMPIA
-        for _orig, limpio, n in variantes:
-            por_limpio[limpio] += n
-        # ganadora: mas productos; empate -> alfabetica
-        ganadora = sorted(por_limpio.items(), key=lambda kv: (-kv[1], kv[0]))[0][0]
-
-        hubo_cambio = False
-        for orig, _limpio, n in variantes:
-            if orig != ganadora:
-                cambios.append((orig, ganadora, n))
-                hubo_cambio = True
-        if hubo_cambio:
-            grupos_afectados += 1
-
-    # 2. Reporte
+    # ---- Reporte ----
     modo = '(PREVISUALIZACION - no se toca nada)' if not aplicar else '(APLICANDO)'
     click.echo('')
     click.echo('=== NORMALIZACION DE RUBROS ' + modo + ' ===')
-    click.echo(f'Rubros distintos hoy: {len(filas)}')
-    click.echo(f'Grupos con duplicados: {grupos_afectados}')
+    click.echo(f'Rubros distintos hoy: {len(filas)}  ->  quedarian: {len(final_counts)}')
     click.echo('')
 
     if not cambios:
-        click.echo('No hay rubros duplicados por espacios/mayusculas. Todo limpio.')
+        click.echo('No hay nada que cambiar. Los rubros ya estan prolijos.')
     else:
         click.echo('Cambios que se harian:')
         for orig, destino, n in sorted(cambios, key=lambda c: c[1].casefold()):
             click.echo(f'   "{orig}"  ->  "{destino}"   ({n} producto/s)')
 
-    if vacios:
-        click.echo('')
-        click.echo('ATENCION - rubros que quedan VACIOS al limpiar (NO se tocan):')
-        for orig, n in vacios:
-            click.echo(f'   "{orig}"   ({n} producto/s)  <- revisalo a mano')
+    click.echo('')
+    click.echo('Rubros que quedarian (resultado final):')
+    for rubro, n in sorted(final_counts.items(), key=lambda kv: kv[0].casefold()):
+        click.echo(f'   {rubro}   ({n} producto/s)')
 
-    # 3. Aplicar (solo con --aplicar)
+    if a_sin_rubro:
+        click.echo('')
+        click.echo('Nota - estos no tenian un rubro real y van a "Sin Rubro":')
+        for orig, n in a_sin_rubro:
+            click.echo(f'   "{orig}"   ({n} producto/s)')
+
+    # ---- Aplicar ----
     if not aplicar:
         click.echo('')
         click.echo('Esto fue solo una PREVISUALIZACION. No se modifico nada.')
