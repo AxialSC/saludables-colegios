@@ -3,6 +3,8 @@ app/cli.py — Comandos de linea de comando.
   flask --app run init-db                  -> crea las tablas
   flask --app run seed-data                -> crea usuarios iniciales
   flask --app run import-planilla <ruta>   -> importa una planilla (respaldo / pruebas)
+  flask --app run normalizar-rubros        -> limpia rubros duplicados (PREVISUALIZACION)
+  flask --app run normalizar-rubros --aplicar  -> aplica la limpieza de rubros
 """
 import click
 from flask.cli import with_appcontext
@@ -237,6 +239,124 @@ def migrar_v12b():
         click.echo('Las columnas de bolsa ya existían. No se hizo nada (idempotente).')
 
 
+@click.command('normalizar-rubros')
+@click.option('--aplicar', is_flag=True, default=False,
+              help='Aplica los cambios. SIN este flag corre en PREVISUALIZACION (no toca nada).')
+@with_appcontext
+def normalizar_rubros(aplicar):
+    """
+    Limpia rubros duplicados de 'productos' por diferencias invisibles:
+    espacios al inicio/final, espacios dobles internos y mayusculas/minusculas.
+
+    Por defecto corre en modo PREVISUALIZACION (dry-run): muestra que pasaria
+    pero NO modifica nada. Con --aplicar hace los cambios de verdad.
+
+    Criterio (sin inventar rubros nuevos):
+      1. Limpieza SIEMPRE segura: trim + colapsar espacios internos.
+         (ej:  "Bebidas "  ->  "Bebidas")
+      2. Unificacion por mayus/minus: los rubros que SOLO se diferencian en
+         espacios o mayusculas se agrupan y todos pasan a la forma 'ganadora'
+         = la que tiene MAS productos (si hay empate, la primera alfabeticamente).
+         (ej:  "BEBIDAS" (2 prod)  +  "Bebidas" (40 prod)  ->  "Bebidas")
+      NO une rubros semanticamente distintos (ej: 'Gaseosas' y 'Bebidas' quedan
+      separados: eso es decision tuya, no del comando).
+
+    Seguridad:
+      - Si un rubro queda VACIO al limpiarlo (era todo espacios), se AVISA y NO se
+        toca (la columna es NOT NULL: lo revisas a mano).
+      - Hace UPDATE matcheando el texto EXACTO original, fila por fila.
+    """
+    from sqlalchemy import text
+    import re
+    from collections import defaultdict
+
+    # 1. Rubros actuales con su conteo de productos
+    filas = db.session.execute(text(
+        "SELECT rubro, COUNT(*) AS n FROM productos GROUP BY rubro ORDER BY rubro"
+    )).all()
+
+    if not filas:
+        click.echo('No hay productos cargados. Nada que hacer.')
+        return
+
+    def limpiar(s):
+        # trim + colapsar espacios internos (NO toca mayus/minus)
+        return re.sub(r'\s+', ' ', (s or '').strip())
+
+    # Agrupar por clave insensible a mayus/minus y espacios
+    grupos = defaultdict(list)   # clave -> [(rubro_original, rubro_limpio, n), ...]
+    vacios = []                  # rubros que quedan vacios tras limpiar
+    for rubro_orig, n in filas:
+        limpio = limpiar(rubro_orig)
+        if limpio == '':
+            vacios.append((rubro_orig, n))
+            continue
+        grupos[limpio.casefold()].append((rubro_orig, limpio, n))
+
+    # Elegir la forma ganadora de cada grupo y armar los cambios
+    cambios = []          # (rubro_origen, rubro_destino, n)
+    grupos_afectados = 0
+    for _clave, variantes in grupos.items():
+        por_limpio = defaultdict(int)   # cuenta productos por forma LIMPIA
+        for _orig, limpio, n in variantes:
+            por_limpio[limpio] += n
+        # ganadora: mas productos; empate -> alfabetica
+        ganadora = sorted(por_limpio.items(), key=lambda kv: (-kv[1], kv[0]))[0][0]
+
+        hubo_cambio = False
+        for orig, _limpio, n in variantes:
+            if orig != ganadora:
+                cambios.append((orig, ganadora, n))
+                hubo_cambio = True
+        if hubo_cambio:
+            grupos_afectados += 1
+
+    # 2. Reporte
+    modo = '(PREVISUALIZACION - no se toca nada)' if not aplicar else '(APLICANDO)'
+    click.echo('')
+    click.echo('=== NORMALIZACION DE RUBROS ' + modo + ' ===')
+    click.echo(f'Rubros distintos hoy: {len(filas)}')
+    click.echo(f'Grupos con duplicados: {grupos_afectados}')
+    click.echo('')
+
+    if not cambios:
+        click.echo('No hay rubros duplicados por espacios/mayusculas. Todo limpio.')
+    else:
+        click.echo('Cambios que se harian:')
+        for orig, destino, n in sorted(cambios, key=lambda c: c[1].casefold()):
+            click.echo(f'   "{orig}"  ->  "{destino}"   ({n} producto/s)')
+
+    if vacios:
+        click.echo('')
+        click.echo('ATENCION - rubros que quedan VACIOS al limpiar (NO se tocan):')
+        for orig, n in vacios:
+            click.echo(f'   "{orig}"   ({n} producto/s)  <- revisalo a mano')
+
+    # 3. Aplicar (solo con --aplicar)
+    if not aplicar:
+        click.echo('')
+        click.echo('Esto fue solo una PREVISUALIZACION. No se modifico nada.')
+        click.echo('Si estas de acuerdo, primero hace backup y despues corre:')
+        click.echo('   flask --app run normalizar-rubros --aplicar')
+        return
+
+    if not cambios:
+        return
+
+    total_filas = 0
+    for orig, destino, _n in cambios:
+        r = db.session.execute(
+            text("UPDATE productos SET rubro = :destino WHERE rubro = :orig"),
+            {'destino': destino, 'orig': orig}
+        )
+        total_filas += r.rowcount
+    db.session.commit()
+
+    click.echo('')
+    click.echo(f'OK -> rubros normalizados. {total_filas} producto(s) actualizado(s) '
+               f'en {len(cambios)} cambio(s).')
+
+
 def registrar_comandos(app):
     app.cli.add_command(init_db)
     app.cli.add_command(seed_data)
@@ -247,3 +367,4 @@ def registrar_comandos(app):
     app.cli.add_command(migrar_v11)
     app.cli.add_command(migrar_v12)
     app.cli.add_command(migrar_v12b)
+    app.cli.add_command(normalizar_rubros)
