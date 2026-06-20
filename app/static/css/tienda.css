@@ -482,3 +482,19 @@ a { color: inherit; text-decoration: none; }
 .t-grid.lista .t-of-badge { top: 3px; left: 3px; padding: 2px 5px; border-radius: 7px; flex-direction: row; box-shadow: 0 2px 5px rgba(198,40,40,.30); }
 .t-grid.lista .t-of-badge b { font-size: 0.56rem; }
 .t-grid.lista .t-of-badge small { display: none; }
+
+/* v0.13.2 · Vista lista AUN mas compacta (mas productos a la vista) */
+.t-grid.lista { gap: 7px; }
+.t-grid.lista .t-card { padding: 6px 10px; gap: 10px; }
+.t-grid.lista .t-thumb { width: 52px; height: 52px; border-radius: 9px; }
+.t-grid.lista .t-thumb img { padding: 4px; }
+.t-grid.lista .t-thumb-ph { width: 34px; height: 34px; font-size: 1rem; }
+.t-grid.lista .t-meta { gap: 1px; }
+.t-grid.lista .t-rubro { font-size: 0.54rem; padding: 2px 6px; }
+.t-grid.lista .t-codigo { font-size: 0.56rem; }
+.t-grid.lista .t-nombre { font-size: 0.82rem; }
+.t-grid.lista .t-precio { font-size: 0.98rem; }
+.t-grid.lista .t-escala span { font-size: 0.6rem; padding: 2px 6px; }
+.t-grid.lista .t-add { padding: 8px 13px; font-size: 0.76rem; }
+.t-grid.lista .t-of-badge { padding: 2px 4px; }
+.t-grid.lista .t-of-badge b { font-size: 0.52rem; }
