@@ -42,6 +42,9 @@
     .bn-form input:focus, .bn-form select:focus { border-color: var(--bronce); }
     .bn-help { font-size: 0.72rem; color: var(--text-soft); margin-top: 8px; }
     .bn-tope { font-size: 0.75rem; color: var(--warning); }
+    .bn-check { display: flex; align-items: center; gap: 6px; font-size: 0.82rem;
+        font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--text-dark); white-space: nowrap; }
+    .bn-check input { width: auto; }
 </style>
 
 <p class="bn-intro">
@@ -118,6 +121,9 @@
                        placeholder="ej: baggio · ofertas · mensaje…">
             </div>
             <div class="col" style="flex:0 0 auto;">
+                <label class="bn-check"><input type="checkbox" name="girar" value="si"> Girar 90°</label>
+            </div>
+            <div class="col" style="flex:0 0 auto;">
                 <button type="submit" class="btn btn-bronce">Subir banner</button>
             </div>
         </div>
@@ -125,7 +131,8 @@
             <b>Búsqueda:</b> escribí un término (ej: <i>baggio</i>) y lleva al catálogo buscando eso. ·
             <b>Solapa:</b> escribí <i>ofertas</i>, <i>comida</i>, <i>sin</i> o <i>con</i>. ·
             <b>WhatsApp:</b> escribí el mensaje (o dejalo vacío) y abre el chat de Juliana. ·
-            <b>Sin link:</b> dejá el valor vacío.
+            <b>Sin link:</b> dejá el valor vacío. ·
+            <b>Girar 90°:</b> tildalo si subís una foto horizontal y la querés vertical (para los laterales).
         </div>
     </form>
     {% else %}

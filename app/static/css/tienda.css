@@ -498,3 +498,7 @@ a { color: inherit; text-decoration: none; }
 .t-grid.lista .t-add { padding: 8px 13px; font-size: 0.76rem; }
 .t-grid.lista .t-of-badge { padding: 2px 4px; }
 .t-grid.lista .t-of-badge b { font-size: 0.52rem; }
+
+/* v0.14 · Centrar la barra verde (aviso) con el resto del contenido */
+.t-aviso { max-width: 1180px; margin: 16px auto 0; }
+@media (max-width: 1216px) { .t-aviso { margin-left: 16px; margin-right: 16px; } }

@@ -911,7 +911,7 @@ def banners():
 @super_admin_requerido
 def banner_subir():
     """Sube una imagen de banner a una zona, con su destino (link)."""
-    from PIL import Image
+    from PIL import Image, ImageOps
 
     zona = (request.form.get('zona') or '').strip().upper()
     if zona not in ZonaBanner.TODAS:
@@ -938,14 +938,19 @@ def banner_subir():
         destino_tipo = DestinoBanner.NINGUNO
     destino_valor = (request.form.get('destino_valor') or '').strip() or None
 
+    girar = (request.form.get('girar') == 'si')
     carpeta = _carpeta_banners()
     nombre_archivo = f'{zona.lower()}_{secrets.token_hex(4)}.jpg'
     try:
-        img = Image.open(f.stream).convert('RGB')
+        img = Image.open(f.stream)
+        img = ImageOps.exif_transpose(img)      # corrige fotos giradas (celular)
+        img = img.convert('RGB')
+        if girar:
+            img = img.rotate(-90, expand=True)  # girar 90° horario, sin perder proporcion
         if zona == ZonaBanner.CENTRAL:
-            img.thumbnail((1400, 700))    # ancho (carrusel)
+            img.thumbnail((1400, 700))          # ancho (carrusel)
         else:
-            img.thumbnail((600, 1600))    # vertical (lateral)
+            img.thumbnail((600, 1600))          # vertical (lateral)
         img.save(os.path.join(carpeta, nombre_archivo), 'JPEG', quality=85)
     except Exception:
         flash('No pude procesar esa imagen. Probá con otra.', 'error')
