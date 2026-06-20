@@ -502,3 +502,32 @@ a { color: inherit; text-decoration: none; }
 /* v0.14 · Centrar la barra verde (aviso) con el resto del contenido */
 .t-aviso { max-width: 1180px; margin: 16px auto 0; }
 @media (max-width: 1216px) { .t-aviso { margin-left: 16px; margin-right: 16px; } }
+
+/* =====================================================================
+   v0.14.0 · BANNERS en la tienda (carrusel central + laterales fijos)
+   ===================================================================== */
+.bn-central {
+    position: relative; max-width: 1180px; margin: 16px auto 0;
+    height: clamp(120px, 20vw, 240px); border-radius: 14px; overflow: hidden;
+    box-shadow: 0 4px 14px rgba(0,0,0,.08); background: #fff;
+}
+@media (max-width: 1216px) { .bn-central { margin-left: 16px; margin-right: 16px; } }
+.bn-central .bn-slide { position: absolute; inset: 0; opacity: 0; transition: opacity .6s ease; }
+.bn-central .bn-slide.on { opacity: 1; }
+.bn-central .bn-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.bn-rail { position: fixed; top: 168px; width: 158px; height: 70vh; max-height: 580px; z-index: 20; }
+.bn-rail.izq { left: 18px; }
+.bn-rail.der { right: 18px; }
+.bn-rail .bn-rslide { position: absolute; inset: 0; opacity: 0; transition: opacity .8s ease; }
+.bn-rail .bn-rslide.on { opacity: 1; }
+.bn-rail .bn-rslide img {
+    width: 100%; height: 100%; object-fit: cover; border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.10); display: block;
+}
+/* En pantallas chicas no hay lugar para los laterales: se ocultan */
+@media (max-width: 1500px) { .bn-rail { display: none; } }
+
+/* v0.14.0 · Mostrar el rubro completo (no cortar "Bebidas", "Comestible", etc.) */
+.t-rubro { max-width: none; overflow: visible; text-overflow: clip; }
+.t-meta { flex-wrap: wrap; }

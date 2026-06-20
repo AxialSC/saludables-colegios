@@ -109,6 +109,41 @@
 </div>
 </div>
 
+{% set bn = banners|default({}) %}
+{% if bn.get('CENTRAL') %}
+<div class="bn-central" id="bnCentral">
+    {% for b in bn['CENTRAL'] %}
+    {% if b.link %}
+    <a class="bn-slide {% if loop.first %}on{% endif %}" href="{{ b.link }}"{% if 'http' in b.link %} target="_blank" rel="noopener"{% endif %}>
+        <img src="{{ url_for('static', filename='img/banners/' + b.imagen) }}" alt="">
+    </a>
+    {% else %}
+    <div class="bn-slide {% if loop.first %}on{% endif %}">
+        <img src="{{ url_for('static', filename='img/banners/' + b.imagen) }}" alt="">
+    </div>
+    {% endif %}
+    {% endfor %}
+</div>
+{% endif %}
+
+{% for zona, cls in [('IZQ', 'izq'), ('DER', 'der')] %}
+{% if bn.get(zona) %}
+<div class="bn-rail {{ cls }}" data-rail>
+    {% for b in bn[zona] %}
+    {% if b.link %}
+    <a class="bn-rslide {% if loop.first %}on{% endif %}" href="{{ b.link }}"{% if 'http' in b.link %} target="_blank" rel="noopener"{% endif %}>
+        <img src="{{ url_for('static', filename='img/banners/' + b.imagen) }}" alt="">
+    </a>
+    {% else %}
+    <div class="bn-rslide {% if loop.first %}on{% endif %}">
+        <img src="{{ url_for('static', filename='img/banners/' + b.imagen) }}" alt="">
+    </div>
+    {% endif %}
+    {% endfor %}
+</div>
+{% endif %}
+{% endfor %}
+
 <div class="t-aviso">
     🛒 Pedido mínimo <b>{{ ajustes.minimo_compra|pesos }}</b> · Precios finales con IVA incluido
 </div>
@@ -236,6 +271,7 @@
         if (modo === 'lista') { bl.classList.add('activo'); bg.classList.remove('activo'); }
         else { bg.classList.add('activo'); bl.classList.remove('activo'); }
         aplicarVista();
+        try { localStorage.setItem('salu_vista', modo); } catch (e) {}
     }
     function actualizarContador() {
         var meta = document.getElementById('grid-meta');
@@ -283,6 +319,40 @@
     CLEAR.addEventListener('click', function () {
         INPUT.value = ''; CLEAR.style.display = 'none';
         clearTimeout(tmr); actualizar(); INPUT.focus();
+    });
+
+    // v0.14 · recordar la vista (grilla/lista) al cambiar de pagina
+    try {
+        if (localStorage.getItem('salu_vista') === 'lista') setVista('lista');
+    } catch (e) {}
+
+    // v0.14 · carrusel central: rota cada 2s, se frena al pasar el mouse
+    (function () {
+        var c = document.getElementById('bnCentral');
+        if (!c) return;
+        var sl = c.querySelectorAll('.bn-slide');
+        if (sl.length < 2) return;
+        var i = 0, pausa = false;
+        c.addEventListener('mouseenter', function () { pausa = true; });
+        c.addEventListener('mouseleave', function () { pausa = false; });
+        setInterval(function () {
+            if (pausa) return;
+            sl[i].classList.remove('on');
+            i = (i + 1) % sl.length;
+            sl[i].classList.add('on');
+        }, 2000);
+    })();
+
+    // v0.14 · banners laterales: rotan cada 4s
+    document.querySelectorAll('[data-rail]').forEach(function (rail) {
+        var sl = rail.querySelectorAll('.bn-rslide');
+        if (sl.length < 2) return;
+        var i = 0;
+        setInterval(function () {
+            sl[i].classList.remove('on');
+            i = (i + 1) % sl.length;
+            sl[i].classList.add('on');
+        }, 4000);
     });
 </script>
 <script src="{{ url_for('static', filename='js/carrito.js') }}"></script>

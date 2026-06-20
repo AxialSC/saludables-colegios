@@ -11,8 +11,11 @@ v0.11.0 -> categoria unica (solapas comida / sin / con)
 v0.12.0 -> solapa OFERTAS: muestra productos en oferta (precio tachado + precio
            nuevo). El precio de oferta se RECALCULA en backend (defensa en
            profundidad): aunque el front mande otro precio, manda el real.
+v0.14.0 -> BANNERS: el catalogo recibe los banners activos (central + laterales)
+           y arma a donde lleva cada uno (busqueda / solapa / WhatsApp).
 """
 import json
+from urllib.parse import quote
 
 from flask import (Blueprint, render_template, request, redirect, url_for,
                    abort, Response, flash)
@@ -20,7 +23,8 @@ from sqlalchemy import select, or_, func
 
 from .extensions import db
 from .models import (Producto, Pedido, ItemPedido, Oferta, get_ajustes,
-                     generar_numero_pedido, EstadoPedido, CategoriaProducto)
+                     generar_numero_pedido, EstadoPedido, CategoriaProducto,
+                     Banner, ZonaBanner, DestinoBanner)
 from .utils.validaciones import validar_cuit, limpiar_cuit
 from .utils.timezone import ahora_argentina
 from . import pricing
@@ -64,6 +68,37 @@ def _rubro_display(rubro):
     r = rubro.replace('TEOLOGISTICA', '').strip()
     r = r.replace('Y HOGAR', 'y Hogar')
     return r.title()
+
+
+def _link_banner(b, ajustes):
+    """
+    Arma a donde lleva un banner al tocarlo, segun su destino:
+      - BUSQUEDA -> catalogo con ?q=<texto>
+      - SOLAPA   -> catalogo con ?cat=<ofertas|comida|sin|con>
+      - WHATSAPP -> wa.me de Juliana con un mensaje
+      - NINGUNO  -> sin link
+    """
+    t = b.destino_tipo
+    v = (b.destino_valor or '').strip()
+    if t == DestinoBanner.BUSQUEDA and v:
+        return url_for('cliente.catalogo', q=v)
+    if t == DestinoBanner.SOLAPA and v:
+        return url_for('cliente.catalogo', cat=v)
+    if t == DestinoBanner.WHATSAPP:
+        msg = v or 'Hola! Tengo una consulta sobre Saludables Pilar.'
+        return f'https://wa.me/{ajustes.whatsapp}?text={quote(msg)}'
+    return None
+
+
+def _banners_tienda(ajustes):
+    """Devuelve los banners ACTIVOS agrupados por zona, con su link ya armado."""
+    out = {ZonaBanner.CENTRAL: [], ZonaBanner.IZQ: [], ZonaBanner.DER: []}
+    banners = (Banner.query.filter_by(activo=True)
+               .order_by(Banner.zona, Banner.orden, Banner.id).all())
+    for b in banners:
+        if b.zona in out:
+            out[b.zona].append({'imagen': b.imagen, 'link': _link_banner(b, ajustes)})
+    return out
 
 
 @cliente_bp.route('/')
@@ -157,7 +192,8 @@ def catalogo():
 
     return render_template('cliente/catalogo.html',
                            rubros=rubros, ordenes=ORDENES, ajustes=ajustes,
-                           n_ofertas=len(ofertas_dict), **ctx_grid)
+                           n_ofertas=len(ofertas_dict),
+                           banners=_banners_tienda(ajustes), **ctx_grid)
 
 
 def _recalcular_carrito(carrito_dict, ajustes):
