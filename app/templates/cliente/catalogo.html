@@ -53,6 +53,11 @@
     .ft-legal-txt { display: flex; flex-direction: column; gap: 4px; font-size: 0.72rem; color: #8b8b8b; }
     .ft-firma { color: #6f6f6f; letter-spacing: .06em; }
     @media (max-width: 520px) { .ft-legal { justify-content: center; text-align: center; } .ft-legal-txt { align-items: center; } }
+    /* v0.13.1 · Barra superior FIJA al scrollear (buscador + chips + solapas) */
+    .t-sticky { position: sticky; top: 0; z-index: 45; background: var(--t-card);
+        box-shadow: 0 6px 14px -10px rgba(0,0,0,.28); }
+    .t-sticky .t-header { position: static; border-bottom: none; }
+    .t-solapas { margin: 0 auto; padding: 12px 18px 14px; }
     </style>
 </head>
 <body>
@@ -61,6 +66,7 @@
 {% set o = orden if orden != 'relevancia' else none %}
 {% set c = cat or none %}
 
+<div class="t-sticky">
 <header class="t-header">
     <div class="t-header-top">
         <div class="t-marca">{{ ajustes.nombre_negocio }}</div>
@@ -100,6 +106,7 @@
        class="t-solapa {% if cat == 'sin' %}activa{% endif %}">💧 Sin alcohol</a>
     <a href="{{ url_for('cliente.catalogo', q=q or none, rubro=rubro_sel or none, orden=o, cat='con') }}"
        class="t-solapa sol-con {% if cat == 'con' %}activa{% endif %}">🍷 Con alcohol</a>
+</div>
 </div>
 
 <div class="t-aviso">

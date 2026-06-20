@@ -477,3 +477,8 @@ a { color: inherit; text-decoration: none; }
     .t-grid.lista .t-precio-box { order: 3; margin-left: 0; }
     .t-grid.lista .t-add { order: 4; }
 }
+
+/* v0.13.1 · En vista LISTA la pastilla de oferta es chiquita (solo el %) */
+.t-grid.lista .t-of-badge { top: 3px; left: 3px; padding: 2px 5px; border-radius: 7px; flex-direction: row; box-shadow: 0 2px 5px rgba(198,40,40,.30); }
+.t-grid.lista .t-of-badge b { font-size: 0.56rem; }
+.t-grid.lista .t-of-badge small { display: none; }
