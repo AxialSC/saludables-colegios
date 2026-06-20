@@ -196,11 +196,34 @@ a { color: inherit; text-decoration: none; }
     padding: 2px 6px; border-radius: 5px; margin-left: 6px; text-transform: uppercase;
 }
 
-.sidebar .user-box { padding: 18px 24px; border-top: 1px solid #2e2e2e; }
-.sidebar .user-box .nombre { font-size: 0.82rem; font-weight: 600; }
-.sidebar .user-box .rol { font-size: 0.65rem; color: var(--bronce); letter-spacing: 0.1em; text-transform: uppercase; }
-.sidebar .user-box a.salir { font-size: 0.7rem; color: var(--text-soft); margin-top: 8px; display: inline-block; }
-.sidebar .user-box a.salir:hover { color: var(--danger); }
+/* ---- Caja de usuario + cerrar sesion (v0.13: avatar + boton prolijo) ---- */
+.sidebar .user-box { padding: 18px 20px 20px; border-top: 1px solid #2e2e2e; }
+.sidebar .user-id { display: flex; align-items: center; gap: 11px; margin-bottom: 14px; }
+.sidebar .user-avatar {
+    width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+    background: var(--bronce); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; font-weight: 700;
+}
+.sidebar .user-meta { min-width: 0; }
+.sidebar .user-box .nombre {
+    font-size: 0.84rem; font-weight: 600; color: var(--crema);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sidebar .user-box .rol {
+    font-size: 0.6rem; color: var(--bronce); letter-spacing: 0.12em;
+    text-transform: uppercase; margin-top: 3px;
+}
+.sidebar .btn-salir {
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    width: 100%; padding: 10px;
+    border: 1px solid #3a3a3a; border-radius: var(--radius);
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: #cfcabf; background: transparent;
+    transition: all 0.16s ease;
+}
+.sidebar .btn-salir:hover { background: var(--danger); border-color: var(--danger); color: #fff; }
+.sidebar .btn-salir-ic { font-size: 0.95rem; line-height: 1; }
 
 .contenido { flex: 1; display: flex; flex-direction: column; }
 .topbar {
