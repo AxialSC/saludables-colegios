@@ -446,3 +446,34 @@ a { color: inherit; text-decoration: none; }
     margin-top: 14px; padding: 14px 12px 2px;
     border-top: 2px solid var(--t-line); font-size: 1.12rem;
 }
+
+/* =====================================================================
+   v0.13.1 · Vista LISTA compacta (mas articulos a la vista, foto prolija)
+   Override final: gana por orden de aparicion sobre las reglas de lista de arriba.
+   ===================================================================== */
+.t-grid.lista { grid-template-columns: 1fr; gap: 8px; }
+.t-grid.lista .t-card { flex-direction: row; align-items: center; padding: 8px 12px; gap: 12px; }
+.t-grid.lista .t-thumb {
+    width: 62px; height: 62px; flex-shrink: 0;
+    border: 1px solid var(--t-line); border-radius: 10px; background: #fff;
+}
+.t-grid.lista .t-thumb img { padding: 5px; }
+.t-grid.lista .t-thumb-ph { width: 40px; height: 40px; font-size: 1.2rem; }
+.t-grid.lista .t-body { flex-direction: row; align-items: center; gap: 12px; padding: 0; flex-grow: 1; flex-wrap: wrap; }
+.t-grid.lista .t-meta { flex: 0 0 auto; order: 1; flex-direction: column; align-items: flex-start; gap: 2px; }
+.t-grid.lista .t-nombre { order: 2; flex: 1 1 160px; min-height: 0; -webkit-line-clamp: 2; font-size: 0.85rem; }
+.t-grid.lista .t-precio-box { order: 3; margin: 0; text-align: right; }
+.t-grid.lista .t-precio { font-size: 1.05rem; }
+.t-grid.lista .t-escala { justify-content: flex-end; margin-top: 4px; }
+.t-grid.lista .t-add { order: 4; width: auto; margin: 0; padding: 9px 15px; flex-shrink: 0; }
+.t-grid.lista .t-of-badge { top: 4px; left: 4px; padding: 3px 5px; }
+.t-grid.lista .t-of-badge b { font-size: 0.62rem; }
+.t-grid.lista .t-of-badge small { font-size: 0.42rem; }
+.t-grid.lista .t-of-label { margin-top: 2px; }
+
+/* En celular, que el boton Agregar baje a una segunda linea sin romper */
+@media (max-width: 520px) {
+    .t-grid.lista .t-nombre { flex: 1 1 100%; }
+    .t-grid.lista .t-precio-box { order: 3; margin-left: 0; }
+    .t-grid.lista .t-add { order: 4; }
+}
