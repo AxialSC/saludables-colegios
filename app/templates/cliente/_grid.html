@@ -1,7 +1,10 @@
 {# Fragmento de la grilla de productos.
    Se usa incrustado en catalogo.html Y como respuesta del buscador en vivo (?ajax=1).
    No duplica diseno: las cards viven solo aca.
-   v0.12 -> si it.oferta existe, la card muestra precio tachado + precio de oferta. #}
+   v0.12 -> si it.oferta existe, la card muestra precio tachado + precio de oferta.
+   v0.13 -> rediseno estilo "gondola" (foto protagonista, precio marcado, pastilla -XX%).
+            Se mantienen INTACTOS los engaches del JS (data-* y onclick del boton Agregar)
+            y el id="grid" / id="grid-meta" que usa el buscador en vivo y el toggle de vista. #}
 <span id="grid-meta" data-total="{{ paginacion.total }}"
       data-buscando="{{ 1 if (q or rubro_sel or cat) else 0 }}" hidden></span>
 
@@ -11,23 +14,29 @@
     {% set p = it.p %}{% set pr = it.precios %}{% set of = it.oferta %}
     <div class="t-card{% if of %} en-oferta{% endif %}">
         <div class="t-thumb{% if p.imagen %} has-img{% endif %}">
-            {% if of %}<span class="t-of-badge">-{{ of.pct }}%</span>{% endif %}
-            {% if p.imagen %}<img src="{{ url_for('static', filename='img/productos/' + p.imagen) }}" alt="{{ p.nombre }}" loading="lazy">{% else %}{{ rubro_display(p.rubro)[0]|upper }}{% endif %}
+            {% if of %}<span class="t-of-badge"><b>-{{ of.pct }}%</b><small>OFF</small></span>{% endif %}
+            {% if p.imagen %}
+            <img src="{{ url_for('static', filename='img/productos/' + p.imagen) }}" alt="{{ p.nombre }}" loading="lazy">
+            {% else %}
+            <span class="t-thumb-ph">{{ rubro_display(p.rubro)[0]|upper }}</span>
+            {% endif %}
         </div>
         <div class="t-body">
-            <span class="t-rubro">{{ rubro_display(p.rubro) }}</span>
+            <div class="t-meta">
+                <span class="t-rubro">{{ rubro_display(p.rubro) }}</span>
+                <span class="t-codigo">Cód. {{ p.codigo }}</span>
+            </div>
             <div class="t-nombre">{{ p.nombre }}</div>
-            <span class="t-codigo">Cód. {{ p.codigo }}</span>
             <div class="t-precio-box">
                 {% if of %}
                 <div class="t-precio-lista">{{ of.lista|pesos }}</div>
                 <div class="t-precio t-precio-of">{{ of.precio|pesos }} <small>c/u</small></div>
-                <div class="t-of-label">🏷️ OFERTA · {{ of.pct }}% OFF</div>
+                <div class="t-of-label">🏷️ Oferta · {{ of.pct }}% OFF</div>
                 {% else %}
                 <div class="t-precio">{{ pr.x1|pesos }} <small>c/u</small></div>
                 <div class="t-escala">
-                    <span>5u: <b>{{ pr.x5|pesos }}</b></span>
-                    <span>10u: <b>{{ pr.x10|pesos }}</b></span>
+                    <span>5u <b>{{ pr.x5|pesos }}</b></span>
+                    <span>10u <b>{{ pr.x10|pesos }}</b></span>
                 </div>
                 {% endif %}
             </div>
