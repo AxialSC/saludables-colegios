@@ -341,6 +341,32 @@ def normalizar_rubros(aplicar):
                f'en {len(cambios)} cambio(s).')
 
 
+@click.command('migrar-v14')
+@with_appcontext
+def migrar_v14():
+    """
+    Migracion v0.14: crea la tabla nueva 'banners' (carrusel central + laterales).
+    NO toca ninguna tabla existente: db.create_all() solo crea lo que falta.
+    Idempotente: correrla de nuevo no hace nada.
+    """
+    from sqlalchemy import inspect
+
+    insp = inspect(db.engine)
+    antes = set(insp.get_table_names())
+
+    db.create_all()  # solo agrega tablas faltantes
+
+    insp = inspect(db.engine)
+    nuevas = sorted(set(insp.get_table_names()) - antes)
+
+    if nuevas:
+        for t in nuevas:
+            click.echo(f'   + tabla {t}')
+        click.echo(f'OK -> migración v0.14 aplicada ({len(nuevas)} tabla(s) nueva(s)).')
+    else:
+        click.echo('La tabla de banners ya existía. No se hizo nada (idempotente).')
+
+
 def registrar_comandos(app):
     app.cli.add_command(init_db)
     app.cli.add_command(seed_data)
@@ -352,3 +378,4 @@ def registrar_comandos(app):
     app.cli.add_command(migrar_v12)
     app.cli.add_command(migrar_v12b)
     app.cli.add_command(normalizar_rubros)
+    app.cli.add_command(migrar_v14)

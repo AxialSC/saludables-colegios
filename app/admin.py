@@ -4,8 +4,11 @@ v0.1 Dashboard · v0.2 Catalogo + Importar · v0.3 Ajustes
 v0.6 -> Panel de PEDIDOS (CRM de ventas de Juliana)
 v0.9 -> Historial de modificaciones con código (prolijo)
 v0.12 -> OFERTAS: publicar productos en oferta por 7 dias (piso 10% blindado)
+v0.14 -> BANNERS: pestaña (solo super admin) para cargar el carrusel central
+         y los banners laterales de la tienda.
 """
 import os
+import secrets
 import tempfile
 from datetime import timedelta
 
@@ -19,7 +22,8 @@ from .extensions import db
 from .models import (Producto, Pedido, Cobro, ModificacionPedido, ItemPedido,
                      get_ajustes, EstadoPedido, FormaPago, CategoriaProducto,
                      Oferta, Cotizacion, CotizacionItem, TipoCotizacion,
-                     EstadoCotizacion, generar_numero_cotizacion)
+                     EstadoCotizacion, generar_numero_cotizacion,
+                     Banner, ZonaBanner, DestinoBanner)
 from .services import aplicar_importacion
 from .utils.decorators import admin_requerido, super_admin_requerido
 from .utils.import_planilla import leer_planilla
@@ -37,6 +41,17 @@ DIAS_OFERTA = 7
 
 # Minimo sugerido de bolsas para Cumpleaños (v0.12 C1). Aviso, no bloqueo.
 MIN_BOLSAS_CUMPLE = 20
+
+# Banners (v0.14): topes por zona y solapas disponibles como destino
+MAX_BANNER_CENTRAL = 4
+MAX_BANNER_LATERAL = 2
+EXTENSIONES_IMG_BANNER = ('.jpg', '.jpeg', '.png', '.webp')
+SOLAPAS_BANNER = [
+    ('ofertas', '🏷️ Ofertas'),
+    ('comida', '🥗 Saludables'),
+    ('sin', '💧 Sin alcohol'),
+    ('con', '🍷 Con alcohol'),
+]
 
 
 def _ahora():
@@ -865,6 +880,111 @@ def fotos():
     con_foto = Producto.query.filter(Producto.imagen.isnot(None)).count()
     total = Producto.query.count()
     return render_template('admin/fotos.html', con_foto=con_foto, total=total)
+
+
+# ======================= BANNERS (v0.14 · solo super admin) =======================
+
+def _carpeta_banners():
+    carpeta = os.path.join(current_app.static_folder, 'img', 'banners')
+    os.makedirs(carpeta, exist_ok=True)
+    return carpeta
+
+
+@admin_bp.route('/banners')
+@super_admin_requerido
+def banners():
+    """Pantalla para cargar/gestionar los banners (central + laterales)."""
+    data = {z: Banner.query.filter_by(zona=z).order_by(Banner.orden, Banner.id).all()
+            for z in ZonaBanner.TODAS}
+    topes = {ZonaBanner.CENTRAL: MAX_BANNER_CENTRAL,
+             ZonaBanner.IZQ: MAX_BANNER_LATERAL,
+             ZonaBanner.DER: MAX_BANNER_LATERAL}
+    return render_template('admin/banners.html',
+                           data=data, topes=topes,
+                           zonas=ZonaBanner.ETIQUETAS,
+                           destinos=DestinoBanner.ETIQUETAS,
+                           solapas=SOLAPAS_BANNER,
+                           ajustes=get_ajustes())
+
+
+@admin_bp.route('/banners/subir', methods=['POST'])
+@super_admin_requerido
+def banner_subir():
+    """Sube una imagen de banner a una zona, con su destino (link)."""
+    from PIL import Image
+
+    zona = (request.form.get('zona') or '').strip().upper()
+    if zona not in ZonaBanner.TODAS:
+        flash('Zona inválida.', 'error')
+        return redirect(url_for('admin.banners'))
+
+    tope = MAX_BANNER_CENTRAL if zona == ZonaBanner.CENTRAL else MAX_BANNER_LATERAL
+    if Banner.query.filter_by(zona=zona).count() >= tope:
+        flash(f'Ya tenés el máximo de {tope} imágenes en {ZonaBanner.ETIQUETAS[zona]}. '
+              f'Borrá una para subir otra.', 'warning')
+        return redirect(url_for('admin.banners'))
+
+    f = request.files.get('imagen')
+    if not f or not f.filename:
+        flash('No seleccionaste ninguna imagen.', 'error')
+        return redirect(url_for('admin.banners'))
+    ext = os.path.splitext(secure_filename(f.filename))[1].lower()
+    if ext not in EXTENSIONES_IMG_BANNER:
+        flash('Formato inválido. Subí una imagen JPG, PNG o WEBP.', 'error')
+        return redirect(url_for('admin.banners'))
+
+    destino_tipo = (request.form.get('destino_tipo') or DestinoBanner.NINGUNO).strip().upper()
+    if destino_tipo not in DestinoBanner.TODOS:
+        destino_tipo = DestinoBanner.NINGUNO
+    destino_valor = (request.form.get('destino_valor') or '').strip() or None
+
+    carpeta = _carpeta_banners()
+    nombre_archivo = f'{zona.lower()}_{secrets.token_hex(4)}.jpg'
+    try:
+        img = Image.open(f.stream).convert('RGB')
+        if zona == ZonaBanner.CENTRAL:
+            img.thumbnail((1400, 700))    # ancho (carrusel)
+        else:
+            img.thumbnail((600, 1600))    # vertical (lateral)
+        img.save(os.path.join(carpeta, nombre_archivo), 'JPEG', quality=85)
+    except Exception:
+        flash('No pude procesar esa imagen. Probá con otra.', 'error')
+        return redirect(url_for('admin.banners'))
+
+    orden = (db.session.query(func.coalesce(func.max(Banner.orden), 0))
+             .filter(Banner.zona == zona).scalar() or 0) + 1
+    db.session.add(Banner(zona=zona, imagen=nombre_archivo, orden=orden,
+                          destino_tipo=destino_tipo, destino_valor=destino_valor,
+                          activo=True))
+    db.session.commit()
+    flash('Banner agregado ✓', 'success')
+    return redirect(url_for('admin.banners'))
+
+
+@admin_bp.route('/banners/<int:bid>/borrar', methods=['POST'])
+@super_admin_requerido
+def banner_borrar(bid):
+    """Elimina un banner (borra la fila y el archivo de imagen)."""
+    b = Banner.query.get_or_404(bid)
+    try:
+        os.remove(os.path.join(_carpeta_banners(), b.imagen))
+    except OSError:
+        pass
+    db.session.delete(b)
+    db.session.commit()
+    flash('Banner eliminado.', 'warning')
+    return redirect(url_for('admin.banners'))
+
+
+@admin_bp.route('/banners/<int:bid>/activo', methods=['POST'])
+@super_admin_requerido
+def banner_activo(bid):
+    """Activa o pausa un banner sin borrarlo."""
+    b = Banner.query.get_or_404(bid)
+    b.activo = not b.activo
+    db.session.commit()
+    flash('Banner ' + ('activado' if b.activo else 'pausado') + '.', 'success')
+    return redirect(url_for('admin.banners'))
 
 
 # ======================= AJUSTES =======================

@@ -31,6 +31,10 @@
             {% endif %}
             <a href="{{ url_for('admin.fotos') }}"
                class="{% if request.endpoint == 'admin.fotos' %}activo{% endif %}">Fotos</a>
+            {% if current_user.es_super_admin %}
+            <a href="{{ url_for('admin.banners') }}"
+               class="{% if 'banner' in request.endpoint %}activo{% endif %}">🖼️ Banners</a>
+            {% endif %}
             <a href="{{ url_for('cliente.catalogo') }}" target="_blank">Ver tienda ↗</a>
             <a href="#" class="disabled">Reportes <span class="badge-soon">v0.7</span></a>
             {% if current_user.es_super_admin %}

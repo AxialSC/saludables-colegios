@@ -7,6 +7,7 @@ v0.10.0 -> Producto: es_saludable + es_alcoholica (solapas Saludables / con-sin 
 v0.11.0 -> Producto.categoria (categoria unica, fuente de verdad de las solapas)
 v0.12.0 -> Oferta (ofertas publicas por 7 dias) + Cotizacion / CotizacionItem
            (Cumpleaños y Colegios: carritos que arma Juliana, con PDF + WhatsApp/mail).
+v0.14.0 -> Banner (carrusel central + laterales izq/der de la tienda).
 """
 from flask_login import UserMixin
 
@@ -520,3 +521,65 @@ def generar_numero_pedido(origen='WEB'):
     pref = prefijos.get(origen, 'WEB')
     n = Pedido.query.filter_by(origen=origen).count() + 1
     return f'{pref}-{n:05d}'
+
+
+# ============================================================================
+#  v0.14.0 — BANNERS (carrusel central + laterales izquierdo/derecho)
+# ============================================================================
+
+class ZonaBanner:
+    """Donde aparece el banner en la tienda."""
+    CENTRAL = 'CENTRAL'   # carrusel arriba de todo (lo primero que se ve)
+    IZQ = 'IZQ'           # lateral izquierdo (fijo, ocupa el scroll)
+    DER = 'DER'           # lateral derecho (fijo, ocupa el scroll)
+
+    TODAS = (CENTRAL, IZQ, DER)
+    ETIQUETAS = {
+        CENTRAL: 'Banner central (carrusel arriba)',
+        IZQ: 'Banner lateral izquierdo',
+        DER: 'Banner lateral derecho',
+    }
+
+
+class DestinoBanner:
+    """A donde lleva el banner cuando el cliente lo toca."""
+    NINGUNO = 'NINGUNO'     # solo imagen, no es clickeable
+    BUSQUEDA = 'BUSQUEDA'   # lleva al catalogo con una busqueda (destino_valor = texto)
+    SOLAPA = 'SOLAPA'       # lleva a una solapa (destino_valor = ofertas/comida/sin/con)
+    WHATSAPP = 'WHATSAPP'   # abre WhatsApp de Juliana (destino_valor = mensaje opcional)
+
+    TODOS = (NINGUNO, BUSQUEDA, SOLAPA, WHATSAPP)
+    ETIQUETAS = {
+        NINGUNO: 'Sin link (solo imagen)',
+        BUSQUEDA: 'Búsqueda en la tienda',
+        SOLAPA: 'Solapa / categoría',
+        WHATSAPP: 'WhatsApp a Juliana',
+    }
+
+
+class Banner(db.Model):
+    """
+    Imagen de banner que muestra la tienda (v0.14).
+      - zona CENTRAL  -> entra al carrusel de arriba (varias rotan).
+      - zona IZQ/DER  -> banner lateral fijo (1 o 2 imagenes que rotan lento).
+    El archivo de imagen vive en static/img/banners/ (lo sube Ivan desde el panel).
+    El destino define a donde lleva al tocarlo (busqueda, solapa o WhatsApp).
+    """
+    __tablename__ = 'banners'
+
+    id = db.Column(db.Integer, primary_key=True)
+    zona = db.Column(db.String(10), nullable=False, index=True)
+    imagen = db.Column(db.String(255), nullable=False)        # archivo en static/img/banners/
+    orden = db.Column(db.Integer, nullable=False, default=0)  # orden dentro de la zona
+    destino_tipo = db.Column(db.String(12), nullable=False, default=DestinoBanner.NINGUNO)
+    destino_valor = db.Column(db.String(200), nullable=True)
+    activo = db.Column(db.Boolean, nullable=False, default=True)
+    creado = db.Column(db.DateTime, default=_ahora)
+
+    @property
+    def zona_etiqueta(self):
+        return ZonaBanner.ETIQUETAS.get(self.zona, self.zona)
+
+    @property
+    def destino_etiqueta(self):
+        return DestinoBanner.ETIQUETAS.get(self.destino_tipo, self.destino_tipo)

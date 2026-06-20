@@ -1,0 +1,142 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block seccion %}Tienda{% endblock %}
+{% block titulo %}Banners{% endblock %}
+
+{% block contenido %}
+<style>
+    .bn-intro { font-size: 0.88rem; color: var(--text-soft); margin-bottom: 22px; max-width: 760px; }
+    .bn-zona { margin-bottom: 26px; }
+    .bn-zona h3 { font-weight: 500; margin-bottom: 4px; }
+    .bn-zona .bn-sub { font-size: 0.78rem; color: var(--text-soft); margin-bottom: 14px; }
+    .bn-lista { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 16px; }
+    .bn-card {
+        width: 220px; border: 1px solid var(--divider); border-radius: var(--radius);
+        overflow: hidden; background: #fff; box-shadow: var(--shadow);
+    }
+    .bn-img { width: 100%; height: 120px; object-fit: cover; display: block; background: #f0ede5; }
+    .bn-card.pausado .bn-img { filter: grayscale(1) opacity(.55); }
+    .bn-body { padding: 10px 12px; }
+    .bn-dest { font-size: 0.72rem; color: var(--text-dark); }
+    .bn-dest small { color: var(--text-soft); }
+    .bn-estado { font-size: 0.62rem; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; }
+    .bn-estado.on { color: var(--success); }
+    .bn-estado.off { color: var(--warning); }
+    .bn-acc { display: flex; gap: 8px; margin-top: 10px; }
+    .bn-acc button {
+        border: 1px solid var(--divider); background: #fff; border-radius: 8px;
+        padding: 6px 10px; font-size: 0.7rem; font-weight: 700; cursor: pointer; color: var(--text-dark);
+    }
+    .bn-acc button:hover { background: var(--crema); }
+    .bn-acc .del:hover { background: #fdeaea; color: var(--danger); border-color: #f3cccc; }
+    .bn-vacio { font-size: 0.8rem; color: var(--text-soft); padding: 10px 0; }
+    .bn-form { background: #fff; border: 1px dashed var(--divider); border-radius: var(--radius); padding: 16px; }
+    .bn-form .row { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; }
+    .bn-form .col { flex: 1 1 180px; }
+    .bn-form label { display: block; font-size: 0.68rem; font-weight: 700; letter-spacing: .1em;
+        text-transform: uppercase; color: var(--text-soft); margin-bottom: 6px; }
+    .bn-form input, .bn-form select {
+        width: 100%; padding: 10px 12px; border: 1px solid var(--divider);
+        border-radius: var(--radius); font-size: 0.9rem; background: #fff; outline: none;
+    }
+    .bn-form input:focus, .bn-form select:focus { border-color: var(--bronce); }
+    .bn-help { font-size: 0.72rem; color: var(--text-soft); margin-top: 8px; }
+    .bn-tope { font-size: 0.75rem; color: var(--warning); }
+</style>
+
+<p class="bn-intro">
+    Acá cargás las imágenes que va a mostrar la tienda. El <b>central</b> es un carrusel arriba de todo
+    (lo primero que ven los clientes). Los <b>laterales</b> quedan fijos a los costados.
+    Para cada imagen elegís a dónde lleva al tocarla. <b>(Paso 1: por ahora se cargan acá; en la próxima
+    versión aparecen en la tienda.)</b>
+</p>
+
+{% for z, etiqueta in zonas.items() %}
+{% set lista = data[z] %}
+{% set tope = topes[z] %}
+<div class="bn-zona panel">
+    <h3>{{ etiqueta }}</h3>
+    <div class="bn-sub">
+        {% if z == 'CENTRAL' %}Hasta {{ tope }} imágenes que rotan solas.{% else %}Hasta {{ tope }} imágenes (rotan lento).{% endif %}
+        · Cargadas: {{ lista|length }}/{{ tope }}
+    </div>
+
+    {% if lista %}
+    <div class="bn-lista">
+        {% for b in lista %}
+        <div class="bn-card {% if not b.activo %}pausado{% endif %}">
+            <img class="bn-img" src="{{ url_for('static', filename='img/banners/' + b.imagen) }}" alt="banner">
+            <div class="bn-body">
+                <div class="bn-dest">
+                    {{ b.destino_etiqueta }}{% if b.destino_valor %}<br><small>{{ b.destino_valor }}</small>{% endif %}
+                </div>
+                <div style="margin-top:6px;">
+                    <span class="bn-estado {{ 'on' if b.activo else 'off' }}">
+                        {{ 'Activo' if b.activo else 'Pausado' }}
+                    </span>
+                </div>
+                <div class="bn-acc">
+                    <form method="POST" action="{{ url_for('admin.banner_activo', bid=b.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit">{{ 'Pausar' if b.activo else 'Activar' }}</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('admin.banner_borrar', bid=b.id) }}"
+                          onsubmit="return confirm('¿Borrar este banner? No se puede deshacer.');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="del">Borrar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="bn-vacio">Todavía no cargaste imágenes en esta zona.</div>
+    {% endif %}
+
+    {% if lista|length < tope %}
+    <form class="bn-form" method="POST" action="{{ url_for('admin.banner_subir') }}"
+          enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="zona" value="{{ z }}">
+        <div class="row">
+            <div class="col">
+                <label>Imagen (JPG / PNG / WEBP)</label>
+                <input type="file" name="imagen" accept="image/*" required>
+            </div>
+            <div class="col">
+                <label>¿A dónde lleva?</label>
+                <select name="destino_tipo">
+                    {% for k, v in destinos.items() %}
+                    <option value="{{ k }}">{{ v }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col">
+                <label>Valor del link</label>
+                <input type="text" name="destino_valor" list="solapas-list"
+                       placeholder="ej: baggio · ofertas · mensaje…">
+            </div>
+            <div class="col" style="flex:0 0 auto;">
+                <button type="submit" class="btn btn-bronce">Subir banner</button>
+            </div>
+        </div>
+        <div class="bn-help">
+            <b>Búsqueda:</b> escribí un término (ej: <i>baggio</i>) y lleva al catálogo buscando eso. ·
+            <b>Solapa:</b> escribí <i>ofertas</i>, <i>comida</i>, <i>sin</i> o <i>con</i>. ·
+            <b>WhatsApp:</b> escribí el mensaje (o dejalo vacío) y abre el chat de Juliana. ·
+            <b>Sin link:</b> dejá el valor vacío.
+        </div>
+    </form>
+    {% else %}
+    <div class="bn-tope">Llegaste al máximo de {{ tope }}. Borrá una imagen para subir otra.</div>
+    {% endif %}
+</div>
+{% endfor %}
+
+<datalist id="solapas-list">
+    {% for val, et in solapas %}
+    <option value="{{ val }}">{{ et }}</option>
+    {% endfor %}
+</datalist>
+{% endblock %}
