@@ -6,6 +6,8 @@ v0.9 -> Historial de modificaciones con código (prolijo)
 v0.12 -> OFERTAS: publicar productos en oferta por 7 dias (piso 10% blindado)
 v0.14 -> BANNERS: pestaña (solo super admin) para cargar el carrusel central
          y los banners laterales de la tienda.
+v0.14.1 -> FOOD COST (placeholder): pestaña (solo super admin) que deja lista la
+           seccion del lector de facturas PDF de Torres. NO toca la base de datos.
 """
 import os
 import secrets
@@ -990,6 +992,19 @@ def banner_activo(bid):
     db.session.commit()
     flash('Banner ' + ('activado' if b.activo else 'pausado') + '.', 'success')
     return redirect(url_for('admin.banners'))
+
+
+# ======================= FOOD COST (v0.15 · en preparacion) =======================
+# Placeholder de la futura seccion de Control de Compras / Food Cost.
+# Deja la pestaña en el menu (solo super admin) lista para cuando tengamos la
+# primera factura de muestra de Torres. NO toca la base de datos: es solo una
+# pantalla informativa. El motor real (lectura de PDF + tablas) llega en v0.15.0.
+
+@admin_bp.route('/food-cost')
+@super_admin_requerido
+def food_cost():
+    """Placeholder de Food Cost. Esperando la primera factura de Torres."""
+    return render_template('admin/food_cost.html')
 
 
 # ======================= AJUSTES =======================
