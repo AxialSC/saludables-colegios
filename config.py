@@ -16,9 +16,13 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.16.0'
+    APP_VERSION = '0.16.1'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
+
+    # URL publica del sistema (se usa en el mensaje de bienvenida por WhatsApp).
+    # Si tu dominio es otro, cambialo aca.
+    APP_URL = 'https://saludablespilar.pythonanywhere.com/'
 
     # Base de datos (SQLite en instance/)
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'instance', 'saludables.db')

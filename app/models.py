@@ -10,6 +10,7 @@ v0.12.0 -> Oferta (ofertas publicas por 7 dias) + Cotizacion / CotizacionItem
 v0.14.0 -> Banner (carrusel central + laterales izq/der de la tienda).
 v0.16.0 -> Usuario: PERFIL COMPLETO (DNI, nacimiento, contacto, datos bancarios
            para pago de comisiones). Base para el modulo de Revendedores (Etapa 2).
+v0.16.1 -> Usuario: + CUIT y + clave temporal reenviable por WhatsApp.
 """
 from flask_login import UserMixin
 
@@ -67,6 +68,7 @@ class Usuario(UserMixin, db.Model):
     # ----- v0.16: PERFIL DE LA PERSONA (sobre todo para revendedoras) -----
     apellido = db.Column(db.String(120), nullable=True)
     dni = db.Column(db.String(15), nullable=True)
+    cuit = db.Column(db.String(13), nullable=True)            # v0.16.1
     fecha_nacimiento = db.Column(db.Date, nullable=True)
     telefono = db.Column(db.String(30), nullable=True)        # movil / celular
     email = db.Column(db.String(120), nullable=True)
@@ -78,6 +80,10 @@ class Usuario(UserMixin, db.Model):
     banco_fintech = db.Column(db.String(80), nullable=True)   # nombre del banco / fintech
     forma_pago_comision = db.Column(db.String(20), nullable=True)  # ver FormaPagoComision
     notas = db.Column(db.Text, nullable=True)
+
+    # v0.16.1: clave temporal en claro, SOLO para poder reenviarla por WhatsApp
+    # mientras la persona todavia no entro. Se ignora cuando ya cambio la clave.
+    password_temporal = db.Column(db.String(40), nullable=True)
 
     def set_password(self, raw):
         self.password_hash = bcrypt.generate_password_hash(raw).decode('utf-8')
@@ -117,6 +123,23 @@ class Usuario(UserMixin, db.Model):
     @property
     def forma_pago_comision_etiqueta(self):
         return FormaPagoComision.ETIQUETAS.get(self.forma_pago_comision, '—')
+
+    @property
+    def wa_numero(self):
+        """Telefono normalizado para armar un link wa.me (solo digitos, con 54)."""
+        if not self.telefono:
+            return None
+        d = ''.join(c for c in self.telefono if c.isdigit())
+        if not d:
+            return None
+        if not d.startswith('54'):
+            d = '54' + d
+        return d
+
+    @property
+    def clave_temporal_visible(self):
+        """La clave temporal SOLO si la persona todavia no la cambio."""
+        return self.password_temporal if self.debe_cambiar_password else None
 
     def __repr__(self):
         return f'<Usuario {self.usuario} ({self.rol})>'

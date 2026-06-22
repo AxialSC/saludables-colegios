@@ -37,6 +37,7 @@
       <td>
         <div class="us-nombre">{{ u.nombre_completo }}</div>
         {% if u.dni %}<div class="us-sub">DNI {{ u.dni }}</div>{% endif %}
+        {% if u.cuit %}<div class="us-sub">CUIT {{ u.cuit }}</div>{% endif %}
       </td>
       <td><code>{{ u.usuario }}</code></td>
       <td>
@@ -54,11 +55,19 @@
           <span class="us-estado ina">Inactivo</span>
         {% endif %}
         {% if u.debe_cambiar_password %}<div class="us-flag">cambia clave al entrar</div>{% endif %}
+        {% if u.clave_temporal_visible %}<div class="us-clave">🔑 {{ u.clave_temporal_visible }}</div>{% endif %}
       </td>
       <td class="us-acc">
         {% if u.es_super_admin %}
           <span class="us-sub">— protegido —</span>
         {% else %}
+          {% if u.link_wa %}
+            <a href="{{ u.link_wa }}" target="_blank" rel="noopener" class="us-a wa"
+               title="Abre WhatsApp con el mensaje de bienvenida ya cargado">📲 WhatsApp</a>
+          {% else %}
+            <span class="us-a wa-off" title="Cargá el teléfono para habilitar el envío">📲 WhatsApp</span>
+          {% endif %}
+
           <a href="{{ url_for('admin.usuario_editar', uid=u.id) }}" class="us-a">Editar</a>
 
           <form method="POST" action="{{ url_for('admin.usuario_reset', uid=u.id) }}"
@@ -118,6 +127,9 @@
   .us-estado.act { color:#2e7d32; }
   .us-estado.ina { color:#c62828; }
   .us-flag { font-size:11px; color:#b8860b; margin-top:2px; }
+  .us-clave { font-size:12px; font-weight:700; color:#1a1a1a; margin-top:3px;
+              background:#fff3d6; display:inline-block; padding:1px 7px; border-radius:5px;
+              letter-spacing:.04em; }
   .us-acc { white-space:nowrap; }
   .us-a { display:inline-block; margin:2px 4px 2px 0; padding:5px 10px; font-size:13px;
           border:1px solid var(--admin-divider,#E0DAD0); background:#fff; color:#444;
@@ -125,6 +137,9 @@
   .us-a:hover { background:#f0ece5; }
   .us-a.danger { color:#c62828; border-color:#f0c4c4; }
   .us-a.ok { color:#2e7d32; border-color:#bfe3c7; }
+  .us-a.wa { color:#fff; background:#25D366; border-color:#1ebe5a; font-weight:600; }
+  .us-a.wa:hover { background:#1ebe5a; }
+  .us-a.wa-off { color:#aaa; background:#f4f1ec; border-color:#e7e0d5; cursor:not-allowed; }
   .us-vacio { color:#888; padding:20px 0; }
 </style>
 {% endblock %}

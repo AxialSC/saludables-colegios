@@ -58,6 +58,11 @@
         <input type="text" name="dni" value="{{ u.dni or '' if u else '' }}">
       </label>
       <label class="uf-f">
+        <span>CUIT</span>
+        <input type="text" name="cuit" value="{{ u.cuit or '' if u else '' }}"
+               placeholder="ej: 27-29274249-3">
+      </label>
+      <label class="uf-f">
         <span>Fecha de nacimiento</span>
         <input type="date" name="fecha_nacimiento"
                value="{{ u.fecha_nacimiento.isoformat() if u and u.fecha_nacimiento else '' }}">

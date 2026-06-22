@@ -16,6 +16,7 @@ import os
 import secrets
 import tempfile
 from datetime import timedelta, datetime as _dt
+from urllib.parse import quote
 
 from flask import (Blueprint, render_template, redirect, url_for,
                    request, flash, abort, Response, current_app, jsonify)
@@ -1048,6 +1049,7 @@ def _datos_perfil_del_form():
         nombre=(g('nombre') or '').strip(),
         apellido=(g('apellido') or '').strip() or None,
         dni=(g('dni') or '').strip() or None,
+        cuit=(g('cuit') or '').strip() or None,
         fecha_nacimiento=_parse_fecha(g('fecha_nacimiento')),
         telefono=(g('telefono') or '').strip() or None,
         email=(g('email') or '').strip() or None,
@@ -1061,6 +1063,36 @@ def _datos_perfil_del_form():
     )
 
 
+def _mensaje_bienvenida(u, clave, app_url, negocio):
+    """Arma el texto de bienvenida para mandarle a la revendedora por WhatsApp."""
+    nombre = u.nombre or 'Hola'
+    if clave:
+        return (
+            f'¡Hola {nombre}! 🎉 Te damos la bienvenida como revendedora de {negocio}.\n\n'
+            f'Estos son tus datos para ingresar:\n'
+            f'👤 Usuario: {u.usuario}\n'
+            f'🔑 Contraseña temporal: {clave}\n'
+            f'🌐 Ingresá acá: {app_url}\n\n'
+            f'Apenas entres, el sistema te va a pedir que cambies la contraseña. '
+            f'¡Bienvenida! 🙌'
+        )
+    # Ya cambió la clave: recordatorio sin contraseña
+    return (
+        f'¡Hola {nombre}! Te dejamos tus datos de acceso a {negocio}.\n\n'
+        f'👤 Usuario: {u.usuario}\n'
+        f'🌐 Ingresá acá: {app_url}\n\n'
+        f'Si no recordás tu contraseña, avisanos y te la reseteamos. 🙌'
+    )
+
+
+def _link_whatsapp_bienvenida(u, app_url, negocio):
+    """Devuelve el link wa.me con el mensaje pre-cargado, o None si no hay telefono."""
+    if not u.wa_numero:
+        return None
+    mensaje = _mensaje_bienvenida(u, u.clave_temporal_visible, app_url, negocio)
+    return f'https://wa.me/{u.wa_numero}?text={quote(mensaje)}'
+
+
 @admin_bp.route('/usuarios')
 @super_admin_requerido
 def usuarios():
@@ -1071,6 +1103,13 @@ def usuarios():
         stmt = stmt.filter_by(rol=rol_sel)
     lista = stmt.order_by(Usuario.rol, Usuario.nombre).all()
     n_admins = Usuario.query.filter_by(rol=Rol.ADMIN).count()
+
+    # Armar el link de WhatsApp de bienvenida para cada usuario (si tiene telefono)
+    app_url = current_app.config.get('APP_URL', '')
+    negocio = get_ajustes().nombre_negocio
+    for u in lista:
+        u.link_wa = _link_whatsapp_bienvenida(u, app_url, negocio)
+
     return render_template('admin/usuarios.html', lista=lista, rol_sel=rol_sel,
                            roles=Rol.ETIQUETAS, n_admins=n_admins, max_admins=MAX_ADMINS)
 
@@ -1105,7 +1144,7 @@ def usuario_nuevo():
             generada = pass_inicial
 
         u = Usuario(usuario=login, rol=rol, activo=True,
-                    debe_cambiar_password=True, **datos)
+                    debe_cambiar_password=True, password_temporal=pass_inicial, **datos)
         u.set_password(pass_inicial)
         db.session.add(u)
         db.session.commit()
@@ -1186,6 +1225,7 @@ def usuario_reset(uid):
     nueva = _password_temporal()
     u.set_password(nueva)
     u.debe_cambiar_password = True
+    u.password_temporal = nueva
     db.session.commit()
     flash(f'Contraseña de "{u.usuario}" reseteada · Nueva temporal: {nueva} '
           f'— pasásela por WhatsApp; al entrar la tiene que cambiar.', 'success')
