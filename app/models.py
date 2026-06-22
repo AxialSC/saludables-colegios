@@ -8,6 +8,8 @@ v0.11.0 -> Producto.categoria (categoria unica, fuente de verdad de las solapas)
 v0.12.0 -> Oferta (ofertas publicas por 7 dias) + Cotizacion / CotizacionItem
            (Cumpleaños y Colegios: carritos que arma Juliana, con PDF + WhatsApp/mail).
 v0.14.0 -> Banner (carrusel central + laterales izq/der de la tienda).
+v0.16.0 -> Usuario: PERFIL COMPLETO (DNI, nacimiento, contacto, datos bancarios
+           para pago de comisiones). Base para el modulo de Revendedores (Etapa 2).
 """
 from flask_login import UserMixin
 
@@ -22,14 +24,30 @@ def _ahora():
 class Rol:
     """Roles del sistema (string simple, evita bugs de comparacion de Enum)."""
     SUPER_ADMIN = 'SUPER_ADMIN'   # Ivan (dueno del sistema, carga planillas)
-    ADMIN = 'ADMIN'               # Juliana (administra todo menos importar)
-    REVENDEDORA = 'REVENDEDORA'   # Futuro (v0.8.0)
+    ADMIN = 'ADMIN'               # Juliana + hasta 4 mas (administran todo menos importar)
+    REVENDEDORA = 'REVENDEDORA'   # Vendedores del CRM (Etapa 2: comisiones / niveles)
 
     TODOS = (SUPER_ADMIN, ADMIN, REVENDEDORA)
+    # Roles que el super admin PUEDE asignar desde el panel (SUPER_ADMIN no se toca).
+    ASIGNABLES = (ADMIN, REVENDEDORA)
     ETIQUETAS = {
         SUPER_ADMIN: 'Super Administrador',
         ADMIN: 'Administradora',
         REVENDEDORA: 'Revendedora',
+    }
+
+
+# Forma en que se le paga la comision a una revendedora (Etapa 2 lo usa).
+class FormaPagoComision:
+    EFECTIVO = 'EFECTIVO'
+    TRANSFERENCIA = 'TRANSFERENCIA'
+    MERCADOPAGO = 'MERCADOPAGO'
+
+    TODAS = (EFECTIVO, TRANSFERENCIA, MERCADOPAGO)
+    ETIQUETAS = {
+        EFECTIVO: 'Efectivo',
+        TRANSFERENCIA: 'Transferencia bancaria',
+        MERCADOPAGO: 'MercadoPago / billetera',
     }
 
 
@@ -46,6 +64,21 @@ class Usuario(UserMixin, db.Model):
     creado = db.Column(db.DateTime, default=_ahora)
     ultimo_acceso = db.Column(db.DateTime, nullable=True)
 
+    # ----- v0.16: PERFIL DE LA PERSONA (sobre todo para revendedoras) -----
+    apellido = db.Column(db.String(120), nullable=True)
+    dni = db.Column(db.String(15), nullable=True)
+    fecha_nacimiento = db.Column(db.Date, nullable=True)
+    telefono = db.Column(db.String(30), nullable=True)        # movil / celular
+    email = db.Column(db.String(120), nullable=True)
+    direccion = db.Column(db.String(200), nullable=True)
+    localidad = db.Column(db.String(120), nullable=True)      # barrio / zona
+    # Datos para pagarle las comisiones (Etapa 2)
+    cbu_cvu = db.Column(db.String(30), nullable=True)         # CBU o CVU (22 digitos)
+    alias_cbu = db.Column(db.String(60), nullable=True)       # alias bancario
+    banco_fintech = db.Column(db.String(80), nullable=True)   # nombre del banco / fintech
+    forma_pago_comision = db.Column(db.String(20), nullable=True)  # ver FormaPagoComision
+    notas = db.Column(db.Text, nullable=True)
+
     def set_password(self, raw):
         self.password_hash = bcrypt.generate_password_hash(raw).decode('utf-8')
 
@@ -61,8 +94,29 @@ class Usuario(UserMixin, db.Model):
         return self.rol in (Rol.SUPER_ADMIN, Rol.ADMIN)
 
     @property
+    def es_revendedora(self):
+        return self.rol == Rol.REVENDEDORA
+
+    @property
     def rol_etiqueta(self):
         return Rol.ETIQUETAS.get(self.rol, self.rol)
+
+    @property
+    def nombre_completo(self):
+        return f'{self.nombre} {self.apellido}'.strip() if self.apellido else self.nombre
+
+    @property
+    def edad(self):
+        """Edad en anios a partir de la fecha de nacimiento (None si no cargada)."""
+        if not self.fecha_nacimiento:
+            return None
+        hoy = ahora_argentina().date()
+        return (hoy.year - self.fecha_nacimiento.year
+                - ((hoy.month, hoy.day) < (self.fecha_nacimiento.month, self.fecha_nacimiento.day)))
+
+    @property
+    def forma_pago_comision_etiqueta(self):
+        return FormaPagoComision.ETIQUETAS.get(self.forma_pago_comision, '—')
 
     def __repr__(self):
         return f'<Usuario {self.usuario} ({self.rol})>'

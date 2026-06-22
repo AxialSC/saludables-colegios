@@ -1,0 +1,130 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block seccion %}Administración{% endblock %}
+{% block titulo %}👥 Usuarios{% endblock %}
+
+{% block contenido %}
+<div class="us-top">
+  <div class="us-filtros">
+    <a href="{{ url_for('admin.usuarios') }}"
+       class="us-chip {% if not rol_sel %}on{% endif %}">Todos</a>
+    <a href="{{ url_for('admin.usuarios', rol='ADMIN') }}"
+       class="us-chip {% if rol_sel == 'ADMIN' %}on{% endif %}">Administradoras
+       <span class="us-cupo">{{ n_admins }}/{{ max_admins }}</span></a>
+    <a href="{{ url_for('admin.usuarios', rol='REVENDEDORA') }}"
+       class="us-chip {% if rol_sel == 'REVENDEDORA' %}on{% endif %}">Revendedoras</a>
+    <a href="{{ url_for('admin.usuarios', rol='SUPER_ADMIN') }}"
+       class="us-chip {% if rol_sel == 'SUPER_ADMIN' %}on{% endif %}">Super admin</a>
+  </div>
+  <a href="{{ url_for('admin.usuario_nuevo') }}" class="us-btn-nuevo">+ Nuevo usuario</a>
+</div>
+
+{% if lista %}
+<table class="us-tabla">
+  <thead>
+    <tr>
+      <th>Nombre</th>
+      <th>Usuario</th>
+      <th>Rol</th>
+      <th>Contacto</th>
+      <th>Estado</th>
+      <th class="us-acc">Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for u in lista %}
+    <tr class="{% if not u.activo %}us-inactivo{% endif %}">
+      <td>
+        <div class="us-nombre">{{ u.nombre_completo }}</div>
+        {% if u.dni %}<div class="us-sub">DNI {{ u.dni }}</div>{% endif %}
+      </td>
+      <td><code>{{ u.usuario }}</code></td>
+      <td>
+        <span class="us-rol r-{{ u.rol|lower }}">{{ u.rol_etiqueta }}</span>
+      </td>
+      <td class="us-sub">
+        {% if u.telefono %}📱 {{ u.telefono }}<br>{% endif %}
+        {% if u.email %}✉️ {{ u.email }}{% endif %}
+        {% if not u.telefono and not u.email %}—{% endif %}
+      </td>
+      <td>
+        {% if u.activo %}
+          <span class="us-estado act">Activo</span>
+        {% else %}
+          <span class="us-estado ina">Inactivo</span>
+        {% endif %}
+        {% if u.debe_cambiar_password %}<div class="us-flag">cambia clave al entrar</div>{% endif %}
+      </td>
+      <td class="us-acc">
+        {% if u.es_super_admin %}
+          <span class="us-sub">— protegido —</span>
+        {% else %}
+          <a href="{{ url_for('admin.usuario_editar', uid=u.id) }}" class="us-a">Editar</a>
+
+          <form method="POST" action="{{ url_for('admin.usuario_reset', uid=u.id) }}"
+                style="display:inline"
+                onsubmit="return confirm('¿Resetear la contraseña de {{ u.usuario }}? Se genera una nueva temporal.');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="us-a">Reset clave</button>
+          </form>
+
+          <form method="POST" action="{{ url_for('admin.usuario_activo', uid=u.id) }}"
+                style="display:inline"
+                onsubmit="return confirm('¿{{ 'Desactivar' if u.activo else 'Activar' }} a {{ u.usuario }}?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="us-a {% if u.activo %}danger{% else %}ok{% endif %}">
+              {{ 'Desactivar' if u.activo else 'Activar' }}
+            </button>
+          </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="us-vacio">No hay usuarios con ese filtro.</p>
+{% endif %}
+
+<style>
+  .us-top { display:flex; justify-content:space-between; align-items:center;
+            gap:16px; flex-wrap:wrap; margin-bottom:18px; }
+  .us-filtros { display:flex; gap:8px; flex-wrap:wrap; }
+  .us-chip { padding:7px 14px; border-radius:999px; text-decoration:none;
+             border:1px solid var(--admin-divider,#E0DAD0); color:#555;
+             font-size:14px; background:#fff; }
+  .us-chip.on { background:var(--admin-carbon,#1A1A1A); color:#fff; border-color:var(--admin-carbon,#1A1A1A); }
+  .us-cupo { font-size:12px; opacity:.7; margin-left:4px; }
+  .us-btn-nuevo { background:var(--admin-bronce,#8B6F47); color:#fff; text-decoration:none;
+                  padding:10px 18px; border-radius:8px; font-weight:600; white-space:nowrap; }
+  .us-btn-nuevo:hover { filter:brightness(1.08); }
+
+  .us-tabla { width:100%; border-collapse:collapse; background:#fff;
+              border:1px solid var(--admin-divider,#E0DAD0); border-radius:10px; overflow:hidden; }
+  .us-tabla th { text-align:left; padding:12px 14px; font-size:12px; letter-spacing:.08em;
+                 text-transform:uppercase; color:var(--admin-bronce,#8B6F47);
+                 background:var(--admin-crema,#F4F1EC); border-bottom:1px solid var(--admin-divider,#E0DAD0); }
+  .us-tabla td { padding:12px 14px; border-bottom:1px solid #f0ece5; vertical-align:top; }
+  .us-tabla tbody tr:nth-child(even) { background:#faf8f4; }   /* 2 tonos */
+  .us-tabla tbody tr:hover { background:#f3eee5; }
+  .us-inactivo { opacity:.55; }
+  .us-nombre { font-weight:600; color:var(--admin-carbon,#1A1A1A); }
+  .us-sub { font-size:12px; color:#888; }
+  .us-rol { font-size:12px; padding:3px 9px; border-radius:6px; font-weight:600; }
+  .r-super_admin { background:#fff3d6; color:#8a6d1e; }
+  .r-admin { background:#e6f0ff; color:#2756a6; }
+  .r-revendedora { background:#e7f6ec; color:#2e7d32; }
+  .us-estado { font-size:12px; font-weight:700; }
+  .us-estado.act { color:#2e7d32; }
+  .us-estado.ina { color:#c62828; }
+  .us-flag { font-size:11px; color:#b8860b; margin-top:2px; }
+  .us-acc { white-space:nowrap; }
+  .us-a { display:inline-block; margin:2px 4px 2px 0; padding:5px 10px; font-size:13px;
+          border:1px solid var(--admin-divider,#E0DAD0); background:#fff; color:#444;
+          border-radius:6px; cursor:pointer; text-decoration:none; }
+  .us-a:hover { background:#f0ece5; }
+  .us-a.danger { color:#c62828; border-color:#f0c4c4; }
+  .us-a.ok { color:#2e7d32; border-color:#bfe3c7; }
+  .us-vacio { color:#888; padding:20px 0; }
+</style>
+{% endblock %}

@@ -8,11 +8,14 @@ v0.14 -> BANNERS: pestaña (solo super admin) para cargar el carrusel central
          y los banners laterales de la tienda.
 v0.14.1 -> FOOD COST (placeholder): pestaña (solo super admin) que deja lista la
            seccion del lector de facturas PDF de Torres. NO toca la base de datos.
+v0.16.0 -> USUARIOS: ABM completo (solo super admin) con perfil de la persona
+           (DNI, nacimiento, contacto, datos bancarios para comisiones). Crear /
+           editar / activar-desactivar / resetear contrasena. Tope de 5 admins.
 """
 import os
 import secrets
 import tempfile
-from datetime import timedelta
+from datetime import timedelta, datetime as _dt
 
 from flask import (Blueprint, render_template, redirect, url_for,
                    request, flash, abort, Response, current_app, jsonify)
@@ -25,7 +28,8 @@ from .models import (Producto, Pedido, Cobro, ModificacionPedido, ItemPedido,
                      get_ajustes, EstadoPedido, FormaPago, CategoriaProducto,
                      Oferta, Cotizacion, CotizacionItem, TipoCotizacion,
                      EstadoCotizacion, generar_numero_cotizacion,
-                     Banner, ZonaBanner, DestinoBanner)
+                     Banner, ZonaBanner, DestinoBanner,
+                     Usuario, Rol, FormaPagoComision)
 from .services import aplicar_importacion
 from .utils.decorators import admin_requerido, super_admin_requerido
 from .utils.import_planilla import leer_planilla
@@ -54,6 +58,9 @@ SOLAPAS_BANNER = [
     ('sin', '💧 Sin alcohol'),
     ('con', '🍷 Con alcohol'),
 ]
+
+# Usuarios (v0.16): tope de administradoras (Juliana + hasta 4 mas). El super admin no cuenta.
+MAX_ADMINS = 5
 
 
 def _ahora():
@@ -1005,6 +1012,184 @@ def banner_activo(bid):
 def food_cost():
     """Placeholder de Food Cost. Esperando la primera factura de Torres."""
     return render_template('admin/food_cost.html')
+
+
+# ======================= USUARIOS (v0.16 · solo super admin) =======================
+# ABM de usuarios con perfil completo de la persona. Pensado tanto para las
+# administradoras como para las revendedoras (Etapa 2: comisiones y niveles).
+# Candados de seguridad:
+#   - Solo el super admin entra (decorador).
+#   - El rol SUPER_ADMIN NO se asigna desde el panel (solo existe Ivan via seed).
+#   - No se borra a nadie: se desactiva (historial intacto).
+#   - No te podes desactivar a vos mismo ni tocar al super admin.
+#   - Tope de 5 administradoras.
+
+def _password_temporal():
+    """Genera una contrasena temporal corta y legible (ej: Salud-4827)."""
+    return f'Salud-{secrets.randbelow(9000) + 1000}'
+
+
+def _parse_fecha(s):
+    """Convierte 'YYYY-MM-DD' (input date) a date, o None si viene vacio/mal."""
+    s = (s or '').strip()
+    if not s:
+        return None
+    try:
+        return _dt.strptime(s, '%Y-%m-%d').date()
+    except ValueError:
+        return None
+
+
+def _datos_perfil_del_form():
+    """Lee del form los campos de perfil comunes (crear/editar)."""
+    g = request.form.get
+    forma = (g('forma_pago_comision') or '').strip().upper()
+    return dict(
+        nombre=(g('nombre') or '').strip(),
+        apellido=(g('apellido') or '').strip() or None,
+        dni=(g('dni') or '').strip() or None,
+        fecha_nacimiento=_parse_fecha(g('fecha_nacimiento')),
+        telefono=(g('telefono') or '').strip() or None,
+        email=(g('email') or '').strip() or None,
+        direccion=(g('direccion') or '').strip() or None,
+        localidad=(g('localidad') or '').strip() or None,
+        cbu_cvu=(g('cbu_cvu') or '').strip() or None,
+        alias_cbu=(g('alias_cbu') or '').strip() or None,
+        banco_fintech=(g('banco_fintech') or '').strip() or None,
+        forma_pago_comision=(forma if forma in FormaPagoComision.TODAS else None),
+        notas=(g('notas') or '').strip() or None,
+    )
+
+
+@admin_bp.route('/usuarios')
+@super_admin_requerido
+def usuarios():
+    """Lista de usuarios del sistema, filtrable por rol."""
+    rol_sel = (request.args.get('rol') or '').strip().upper()
+    stmt = Usuario.query
+    if rol_sel in Rol.TODOS:
+        stmt = stmt.filter_by(rol=rol_sel)
+    lista = stmt.order_by(Usuario.rol, Usuario.nombre).all()
+    n_admins = Usuario.query.filter_by(rol=Rol.ADMIN).count()
+    return render_template('admin/usuarios.html', lista=lista, rol_sel=rol_sel,
+                           roles=Rol.ETIQUETAS, n_admins=n_admins, max_admins=MAX_ADMINS)
+
+
+@admin_bp.route('/usuarios/nuevo', methods=['GET', 'POST'])
+@super_admin_requerido
+def usuario_nuevo():
+    if request.method == 'POST':
+        datos = _datos_perfil_del_form()
+        login = (request.form.get('usuario') or '').strip().lower()
+        rol = (request.form.get('rol') or '').strip().upper()
+        pass_inicial = (request.form.get('password') or '').strip()
+
+        if not login or not datos['nombre']:
+            flash('El usuario (para ingresar) y el nombre son obligatorios.', 'error')
+            return redirect(url_for('admin.usuario_nuevo'))
+        if rol not in Rol.ASIGNABLES:
+            flash('Rol inválido. Solo podés crear Administradoras o Revendedoras.', 'error')
+            return redirect(url_for('admin.usuario_nuevo'))
+        if Usuario.query.filter_by(usuario=login).first():
+            flash(f'Ya existe un usuario "{login}". Elegí otro nombre de ingreso.', 'error')
+            return redirect(url_for('admin.usuario_nuevo'))
+        if rol == Rol.ADMIN and Usuario.query.filter_by(rol=Rol.ADMIN).count() >= MAX_ADMINS:
+            flash(f'Ya tenés el máximo de {MAX_ADMINS} administradoras. '
+                  f'Desactivá una antes de crear otra.', 'error')
+            return redirect(url_for('admin.usuario_nuevo'))
+
+        # Password: la que puso Ivan, o una temporal generada
+        generada = None
+        if not pass_inicial:
+            pass_inicial = _password_temporal()
+            generada = pass_inicial
+
+        u = Usuario(usuario=login, rol=rol, activo=True,
+                    debe_cambiar_password=True, **datos)
+        u.set_password(pass_inicial)
+        db.session.add(u)
+        db.session.commit()
+
+        if generada:
+            flash(f'Usuario "{login}" creado ✓ · Contraseña temporal: {generada} '
+                  f'— pasásela por WhatsApp; al entrar el sistema la obliga a cambiarla.',
+                  'success')
+        else:
+            flash(f'Usuario "{login}" creado ✓ — al entrar va a tener que cambiar la contraseña.',
+                  'success')
+        return redirect(url_for('admin.usuarios'))
+
+    return render_template('admin/usuario_form.html', u=None,
+                           roles_asignables=[(r, Rol.ETIQUETAS[r]) for r in Rol.ASIGNABLES],
+                           formas_comision=FormaPagoComision.ETIQUETAS)
+
+
+@admin_bp.route('/usuarios/<int:uid>/editar', methods=['GET', 'POST'])
+@super_admin_requerido
+def usuario_editar(uid):
+    u = Usuario.query.get_or_404(uid)
+    if u.es_super_admin:
+        flash('El Super Administrador no se edita desde este panel.', 'warning')
+        return redirect(url_for('admin.usuarios'))
+
+    if request.method == 'POST':
+        datos = _datos_perfil_del_form()
+        rol = (request.form.get('rol') or '').strip().upper()
+        if not datos['nombre']:
+            flash('El nombre es obligatorio.', 'error')
+            return redirect(url_for('admin.usuario_editar', uid=uid))
+        if rol not in Rol.ASIGNABLES:
+            flash('Rol inválido.', 'error')
+            return redirect(url_for('admin.usuario_editar', uid=uid))
+        # Si pasa a ADMIN (y no lo era), controlar el cupo
+        if rol == Rol.ADMIN and u.rol != Rol.ADMIN:
+            if Usuario.query.filter_by(rol=Rol.ADMIN).count() >= MAX_ADMINS:
+                flash(f'Ya tenés el máximo de {MAX_ADMINS} administradoras.', 'error')
+                return redirect(url_for('admin.usuario_editar', uid=uid))
+
+        for k, v in datos.items():
+            setattr(u, k, v)
+        u.rol = rol
+        db.session.commit()
+        flash(f'Usuario "{u.usuario}" actualizado ✓', 'success')
+        return redirect(url_for('admin.usuarios'))
+
+    return render_template('admin/usuario_form.html', u=u,
+                           roles_asignables=[(r, Rol.ETIQUETAS[r]) for r in Rol.ASIGNABLES],
+                           formas_comision=FormaPagoComision.ETIQUETAS)
+
+
+@admin_bp.route('/usuarios/<int:uid>/activo', methods=['POST'])
+@super_admin_requerido
+def usuario_activo(uid):
+    u = Usuario.query.get_or_404(uid)
+    if u.es_super_admin:
+        flash('No podés desactivar al Super Administrador.', 'error')
+        return redirect(url_for('admin.usuarios'))
+    if u.id == current_user.id:
+        flash('No podés desactivarte a vos mismo.', 'error')
+        return redirect(url_for('admin.usuarios'))
+    u.activo = not u.activo
+    db.session.commit()
+    flash(f'Usuario "{u.usuario}" ' + ('activado' if u.activo else 'desactivado') + '.',
+          'success')
+    return redirect(url_for('admin.usuarios'))
+
+
+@admin_bp.route('/usuarios/<int:uid>/reset-password', methods=['POST'])
+@super_admin_requerido
+def usuario_reset(uid):
+    u = Usuario.query.get_or_404(uid)
+    if u.es_super_admin:
+        flash('La contraseña del Super Administrador no se resetea desde acá.', 'error')
+        return redirect(url_for('admin.usuarios'))
+    nueva = _password_temporal()
+    u.set_password(nueva)
+    u.debe_cambiar_password = True
+    db.session.commit()
+    flash(f'Contraseña de "{u.usuario}" reseteada · Nueva temporal: {nueva} '
+          f'— pasásela por WhatsApp; al entrar la tiene que cambiar.', 'success')
+    return redirect(url_for('admin.usuarios'))
 
 
 # ======================= AJUSTES =======================
