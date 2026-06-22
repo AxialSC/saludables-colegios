@@ -30,7 +30,7 @@ from .models import (Producto, Pedido, Cobro, ModificacionPedido, ItemPedido,
                      Oferta, Cotizacion, CotizacionItem, TipoCotizacion,
                      EstadoCotizacion, generar_numero_cotizacion,
                      Banner, ZonaBanner, DestinoBanner,
-                     Usuario, Rol, FormaPagoComision)
+                     Usuario, Rol, FormaPagoComision, Cliente)
 from .services import aplicar_importacion
 from .utils.decorators import admin_requerido, super_admin_requerido
 from .utils.import_planilla import leer_planilla
@@ -50,7 +50,7 @@ DIAS_OFERTA = 7
 MIN_BOLSAS_CUMPLE = 20
 
 # Banners (v0.14): topes por zona y solapas disponibles como destino
-MAX_BANNER_CENTRAL = 4
+MAX_BANNER_CENTRAL = 6
 MAX_BANNER_LATERAL = 2
 EXTENSIONES_IMG_BANNER = ('.jpg', '.jpeg', '.png', '.webp')
 SOLAPAS_BANNER = [
@@ -1101,14 +1101,23 @@ def usuarios():
     n_admins = Usuario.query.filter_by(rol=Rol.ADMIN).count()
     n_super = Usuario.query.filter_by(rol=Rol.SUPER_ADMIN).count()
 
-    # Codigo estable de ficha de revendedora (REV-001): ranking por orden de alta (id).
-    # Como nunca se borra (se desactiva), el numero de cada una queda fijo.
+    # Codigo de ficha estable por orden de alta (id). Como no se borra (se
+    # desactiva), el numero de cada uno queda fijo. Admins: ADMIN-001;
+    # revendedoras: REV-001.
+    admin_ids = [a.id for a in Usuario.query.filter_by(rol=Rol.ADMIN)
+                 .order_by(Usuario.id).all()]
+    num_adm = {uid: i + 1 for i, uid in enumerate(admin_ids)}
     revend_ids = [r.id for r in Usuario.query.filter_by(rol=Rol.REVENDEDORA)
                   .order_by(Usuario.id).all()]
     num_rev = {uid: i + 1 for i, uid in enumerate(revend_ids)}
     n_rev = len(revend_ids)
     for u in lista:
-        u.codigo_rev = f'REV-{num_rev[u.id]:03d}' if u.id in num_rev else None
+        if u.id in num_rev:
+            u.codigo_rev = f'REV-{num_rev[u.id]:03d}'
+        elif u.id in num_adm:
+            u.codigo_rev = f'ADMIN-{num_adm[u.id]:03d}'
+        else:
+            u.codigo_rev = None
 
     return render_template('admin/usuarios.html', lista=lista, rol_sel=rol_sel,
                            roles=Rol.ETIQUETAS, n_admins=n_admins, max_admins=MAX_ADMINS,
@@ -1264,8 +1273,105 @@ def usuario_reset(uid):
     return redirect(url_for('admin.usuarios'))
 
 
-# ======================= AJUSTES =======================
+# ======================= CLIENTES (v0.17 · CRM base) =======================
+# Base de clientes compartida. La gestionan los admins (Juliana, etc.) y mas
+# adelante tambien las revendedoras desde su portal. 'revendedora_id' marca de
+# quien es cada cliente (o "de la casa" si queda sin asignar).
 
+def _datos_cliente_del_form():
+    g = request.form.get
+    rev_id = g('revendedora_id')
+    try:
+        rev_id = int(rev_id) if rev_id else None
+    except (TypeError, ValueError):
+        rev_id = None
+    return dict(
+        nombre=(g('nombre') or '').strip(),
+        apellido=(g('apellido') or '').strip() or None,
+        dni_cuit=(g('dni_cuit') or '').strip() or None,
+        telefono=(g('telefono') or '').strip() or None,
+        email=(g('email') or '').strip() or None,
+        direccion=(g('direccion') or '').strip() or None,
+        localidad=(g('localidad') or '').strip() or None,
+        notas=(g('notas') or '').strip() or None,
+        revendedora_id=rev_id,
+    )
+
+
+@admin_bp.route('/clientes')
+@admin_requerido
+def clientes():
+    """Lista de clientes, con búsqueda y filtro por revendedora."""
+    q = (request.args.get('q') or '').strip()
+    rev_sel = request.args.get('rev', type=int)
+
+    stmt = Cliente.query
+    if rev_sel:
+        stmt = stmt.filter_by(revendedora_id=rev_sel)
+    if q:
+        like = f'%{q}%'
+        stmt = stmt.filter(or_(Cliente.nombre.ilike(like), Cliente.apellido.ilike(like),
+                               Cliente.dni_cuit.ilike(like), Cliente.telefono.ilike(like)))
+    lista = stmt.order_by(Cliente.activo.desc(), Cliente.nombre).all()
+
+    revendedoras = (Usuario.query.filter_by(rol=Rol.REVENDEDORA)
+                    .order_by(Usuario.nombre).all())
+    total = Cliente.query.count()
+    return render_template('admin/clientes.html', lista=lista, revendedoras=revendedoras,
+                           rev_sel=rev_sel, q=q, total=total)
+
+
+@admin_bp.route('/clientes/nuevo', methods=['GET', 'POST'])
+@admin_requerido
+def cliente_nuevo():
+    if request.method == 'POST':
+        datos = _datos_cliente_del_form()
+        if not datos['nombre']:
+            flash('El nombre del cliente es obligatorio.', 'error')
+            return redirect(url_for('admin.cliente_nuevo'))
+        c = Cliente(activo=True, creado_por=current_user.nombre, **datos)
+        db.session.add(c)
+        db.session.commit()
+        flash(f'Cliente "{c.nombre_completo}" creado ✓', 'success')
+        return redirect(url_for('admin.clientes'))
+
+    revendedoras = (Usuario.query.filter_by(rol=Rol.REVENDEDORA)
+                    .order_by(Usuario.nombre).all())
+    return render_template('admin/cliente_form.html', c=None, revendedoras=revendedoras)
+
+
+@admin_bp.route('/clientes/<int:cid>/editar', methods=['GET', 'POST'])
+@admin_requerido
+def cliente_editar(cid):
+    c = Cliente.query.get_or_404(cid)
+    if request.method == 'POST':
+        datos = _datos_cliente_del_form()
+        if not datos['nombre']:
+            flash('El nombre del cliente es obligatorio.', 'error')
+            return redirect(url_for('admin.cliente_editar', cid=cid))
+        for k, v in datos.items():
+            setattr(c, k, v)
+        db.session.commit()
+        flash(f'Cliente "{c.nombre_completo}" actualizado ✓', 'success')
+        return redirect(url_for('admin.clientes'))
+
+    revendedoras = (Usuario.query.filter_by(rol=Rol.REVENDEDORA)
+                    .order_by(Usuario.nombre).all())
+    return render_template('admin/cliente_form.html', c=c, revendedoras=revendedoras)
+
+
+@admin_bp.route('/clientes/<int:cid>/activo', methods=['POST'])
+@admin_requerido
+def cliente_activo(cid):
+    c = Cliente.query.get_or_404(cid)
+    c.activo = not c.activo
+    db.session.commit()
+    flash(f'Cliente "{c.nombre_completo}" ' + ('activado' if c.activo else 'desactivado') + '.',
+          'success')
+    return redirect(url_for('admin.clientes'))
+
+
+# ======================= AJUSTES =======================
 @admin_bp.route('/ajustes', methods=['GET', 'POST'])
 @admin_requerido
 def ajustes():

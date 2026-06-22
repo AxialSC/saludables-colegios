@@ -1,0 +1,106 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block seccion %}CRM · Clientes{% endblock %}
+{% block titulo %}{{ 'Editar cliente' if c else 'Nuevo cliente' }}{% endblock %}
+
+{% block contenido %}
+<form method="POST" class="cf"
+      action="{{ url_for('admin.cliente_editar', cid=c.id) if c else url_for('admin.cliente_nuevo') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <section class="cf-card">
+    <div class="cf-head"><span class="cf-dot">◆</span> Datos del cliente</div>
+    <div class="cf-body">
+      <div class="cf-grid">
+        <label class="cf-f">
+          <span class="cf-lab">Nombre <i>*</i></span>
+          <input type="text" name="nombre" required value="{{ c.nombre if c else '' }}">
+        </label>
+        <label class="cf-f">
+          <span class="cf-lab">Apellido</span>
+          <input type="text" name="apellido" value="{{ c.apellido or '' if c else '' }}">
+        </label>
+        <label class="cf-f">
+          <span class="cf-lab">DNI / CUIT</span>
+          <input type="text" name="dni_cuit" value="{{ c.dni_cuit or '' if c else '' }}">
+        </label>
+        <label class="cf-f">
+          <span class="cf-lab">Teléfono / Celular</span>
+          <input type="text" name="telefono" value="{{ c.telefono or '' if c else '' }}" placeholder="+54 9 11 5555 5555">
+        </label>
+        <label class="cf-f uf-ancho">
+          <span class="cf-lab">Email</span>
+          <input type="email" name="email" value="{{ c.email or '' if c else '' }}">
+        </label>
+        <label class="cf-f uf-ancho">
+          <span class="cf-lab">Dirección</span>
+          <input type="text" name="direccion" value="{{ c.direccion or '' if c else '' }}">
+        </label>
+        <label class="cf-f">
+          <span class="cf-lab">Localidad / Zona</span>
+          <input type="text" name="localidad" value="{{ c.localidad or '' if c else '' }}">
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <section class="cf-card">
+    <div class="cf-head"><span class="cf-dot">◆</span> Asignación y notas</div>
+    <div class="cf-body">
+      <div class="cf-grid">
+        <label class="cf-f">
+          <span class="cf-lab">Revendedora</span>
+          <select name="revendedora_id">
+            <option value="">— De la casa (sin asignar) —</option>
+            {% for r in revendedoras %}
+            <option value="{{ r.id }}" {% if c and c.revendedora_id == r.id %}selected{% endif %}>{{ r.nombre_completo }}</option>
+            {% endfor %}
+          </select>
+          <small>De quién es este cliente. Si lo cargás vos sin asignar, queda "de la casa".</small>
+        </label>
+        <label class="cf-f uf-ancho">
+          <span class="cf-lab">Notas internas</span>
+          <textarea name="notas" rows="2">{{ c.notas or '' if c else '' }}</textarea>
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <div class="cf-acciones">
+    <a href="{{ url_for('admin.clientes') }}" class="cf-cancel">Cancelar</a>
+    <button type="submit" class="cf-guardar">{{ 'Guardar cambios' if c else '+ Crear cliente' }}</button>
+  </div>
+</form>
+
+<style>
+  .cf {
+    --carbon:#1A1A1A; --bronce:#8B6F47; --oro:#C2A05B; --crema:#F4F1EC; --linea:#E7E0D4;
+    max-width:880px; font-size:14px;
+  }
+  .cf-card { background:#fff; border:1px solid var(--linea); border-radius:12px; overflow:hidden;
+             margin-bottom:18px; box-shadow:0 1px 2px rgba(26,26,26,.04); }
+  .cf-head { background:var(--carbon); color:var(--oro); padding:12px 20px; font-size:12px;
+             font-weight:700; letter-spacing:.13em; text-transform:uppercase; display:flex; align-items:center; gap:9px; }
+  .cf-head .cf-dot { font-size:10px; }
+  .cf-body { padding:22px 20px; }
+  .cf-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px 22px; }
+  .cf-f { display:flex; flex-direction:column; gap:6px; }
+  .cf-f.uf-ancho { grid-column:1 / -1; }
+  .cf-lab { font-size:11px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:#8a8071; }
+  .cf-lab i { color:var(--bronce); font-style:normal; }
+  .cf-f small { font-size:11.5px; color:#a99f8d; }
+  .cf-f input, .cf-f select, .cf-f textarea {
+     padding:10px 13px; border:1px solid var(--linea); border-radius:8px; font-size:14px;
+     font-family:inherit; color:var(--carbon); background:#fff; transition:border .14s, box-shadow .14s; }
+  .cf-f textarea { resize:vertical; }
+  .cf-f input:focus, .cf-f select:focus, .cf-f textarea:focus {
+     outline:none; border-color:var(--bronce); box-shadow:0 0 0 3px rgba(139,111,71,.12); }
+  .cf-acciones { display:flex; justify-content:flex-end; align-items:center; gap:8px; }
+  .cf-cancel { padding:11px 22px; color:#8a8071; text-decoration:none; font-weight:600; font-size:14px; }
+  .cf-cancel:hover { color:var(--carbon); }
+  .cf-guardar { background:var(--carbon); color:#fff; border:none; padding:12px 26px; border-radius:9px;
+                font-weight:600; cursor:pointer; font-size:14.5px; font-family:inherit; transition:background .13s; }
+  .cf-guardar:hover { background:var(--bronce); }
+  @media (max-width:640px){ .cf-grid { grid-template-columns:1fr; } }
+</style>
+{% endblock %}

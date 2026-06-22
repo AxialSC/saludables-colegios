@@ -11,6 +11,7 @@ v0.14.0 -> Banner (carrusel central + laterales izq/der de la tienda).
 v0.16.0 -> Usuario: PERFIL COMPLETO (DNI, nacimiento, contacto, datos bancarios
            para pago de comisiones). Base para el modulo de Revendedores (Etapa 2).
 v0.16.1 -> Usuario: + CUIT y + clave temporal reenviable por WhatsApp.
+v0.17.0 -> Cliente: base de clientes (cimiento del CRM de revendedoras).
 """
 from flask_login import UserMixin
 
@@ -660,3 +661,53 @@ class Banner(db.Model):
     @property
     def destino_etiqueta(self):
         return DestinoBanner.ETIQUETAS.get(self.destino_tipo, self.destino_tipo)
+
+
+# ============================================================================
+#  v0.17.0 — BASE DE CLIENTES (cimiento del CRM de revendedoras, Etapa 2)
+# ============================================================================
+
+class Cliente(db.Model):
+    """
+    Cliente final del negocio (v0.17). Lo da de alta una revendedora o un admin.
+    Todos viven en la MISMA base: la revendedora ve y gestiona los suyos, y
+    Juliana / cualquier admin ven y consultan TODOS.
+
+    'revendedora_id' indica de quién es el cliente:
+      - apunta a un Usuario con rol REVENDEDORA, o
+      - queda NULL = cliente "de la casa" (cargado por un admin, sin asignar).
+
+    Sobre esta tabla se construye después el módulo de Ventas y las métricas.
+    """
+    __tablename__ = 'clientes'
+
+    id = db.Column(db.Integer, primary_key=True)
+    revendedora_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'),
+                               nullable=True, index=True)
+
+    nombre = db.Column(db.String(120), nullable=False)
+    apellido = db.Column(db.String(120), nullable=True)
+    dni_cuit = db.Column(db.String(15), nullable=True)
+    telefono = db.Column(db.String(30), nullable=True)
+    email = db.Column(db.String(120), nullable=True)
+    direccion = db.Column(db.String(200), nullable=True)
+    localidad = db.Column(db.String(120), nullable=True)
+    notas = db.Column(db.Text, nullable=True)
+
+    activo = db.Column(db.Boolean, nullable=False, default=True)
+    creado = db.Column(db.DateTime, default=_ahora)
+    creado_por = db.Column(db.String(80), nullable=True)
+
+    # La revendedora dueña del cliente (o None si es de la casa)
+    revendedora = db.relationship('Usuario', lazy='joined')
+
+    @property
+    def nombre_completo(self):
+        return f'{self.nombre} {self.apellido}'.strip() if self.apellido else self.nombre
+
+    @property
+    def revendedora_nombre(self):
+        return self.revendedora.nombre_completo if self.revendedora else 'De la casa'
+
+    def __repr__(self):
+        return f'<Cliente {self.nombre_completo}>'
