@@ -1064,33 +1064,27 @@ def _datos_perfil_del_form():
 
 
 def _mensaje_bienvenida(u, clave, app_url, negocio):
-    """Arma el texto de bienvenida para mandarle a la revendedora por WhatsApp."""
+    """
+    Texto de bienvenida para mandarle a la revendedora por WhatsApp.
+    Sin emojis a proposito: algunos telefonos los muestran como simbolos raros.
+    """
     nombre = u.nombre or 'Hola'
     if clave:
         return (
-            f'¡Hola {nombre}! 🎉 Te damos la bienvenida como revendedora de {negocio}.\n\n'
+            f'¡Hola {nombre}! Te damos la bienvenida como revendedora de {negocio}.\n\n'
             f'Estos son tus datos para ingresar:\n'
-            f'👤 Usuario: {u.usuario}\n'
-            f'🔑 Contraseña temporal: {clave}\n'
-            f'🌐 Ingresá acá: {app_url}\n\n'
-            f'Apenas entres, el sistema te va a pedir que cambies la contraseña. '
-            f'¡Bienvenida! 🙌'
+            f'Usuario: {u.usuario}\n'
+            f'Contraseña temporal: {clave}\n'
+            f'Ingresá acá: {app_url}\n\n'
+            f'Cuando entres por primera vez, el sistema te va a pedir que cambies la '
+            f'contraseña por una tuya. ¡Bienvenida!'
         )
-    # Ya cambió la clave: recordatorio sin contraseña
     return (
         f'¡Hola {nombre}! Te dejamos tus datos de acceso a {negocio}.\n\n'
-        f'👤 Usuario: {u.usuario}\n'
-        f'🌐 Ingresá acá: {app_url}\n\n'
-        f'Si no recordás tu contraseña, avisanos y te la reseteamos. 🙌'
+        f'Usuario: {u.usuario}\n'
+        f'Ingresá acá: {app_url}\n\n'
+        f'Si no recordás tu contraseña, avisanos y te la reseteamos.'
     )
-
-
-def _link_whatsapp_bienvenida(u, app_url, negocio):
-    """Devuelve el link wa.me con el mensaje pre-cargado, o None si no hay telefono."""
-    if not u.wa_numero:
-        return None
-    mensaje = _mensaje_bienvenida(u, u.clave_temporal_visible, app_url, negocio)
-    return f'https://wa.me/{u.wa_numero}?text={quote(mensaje)}'
 
 
 @admin_bp.route('/usuarios')
@@ -1102,16 +1096,54 @@ def usuarios():
     if rol_sel in Rol.TODOS:
         stmt = stmt.filter_by(rol=rol_sel)
     lista = stmt.order_by(Usuario.rol, Usuario.nombre).all()
-    n_admins = Usuario.query.filter_by(rol=Rol.ADMIN).count()
 
-    # Armar el link de WhatsApp de bienvenida para cada usuario (si tiene telefono)
-    app_url = current_app.config.get('APP_URL', '')
-    negocio = get_ajustes().nombre_negocio
+    # Conteos para los filtros
+    n_admins = Usuario.query.filter_by(rol=Rol.ADMIN).count()
+    n_super = Usuario.query.filter_by(rol=Rol.SUPER_ADMIN).count()
+
+    # Codigo estable de ficha de revendedora (REV-001): ranking por orden de alta (id).
+    # Como nunca se borra (se desactiva), el numero de cada una queda fijo.
+    revend_ids = [r.id for r in Usuario.query.filter_by(rol=Rol.REVENDEDORA)
+                  .order_by(Usuario.id).all()]
+    num_rev = {uid: i + 1 for i, uid in enumerate(revend_ids)}
+    n_rev = len(revend_ids)
     for u in lista:
-        u.link_wa = _link_whatsapp_bienvenida(u, app_url, negocio)
+        u.codigo_rev = f'REV-{num_rev[u.id]:03d}' if u.id in num_rev else None
 
     return render_template('admin/usuarios.html', lista=lista, rol_sel=rol_sel,
-                           roles=Rol.ETIQUETAS, n_admins=n_admins, max_admins=MAX_ADMINS)
+                           roles=Rol.ETIQUETAS, n_admins=n_admins, max_admins=MAX_ADMINS,
+                           n_rev=n_rev, n_super=n_super)
+
+
+@admin_bp.route('/usuarios/<int:uid>/whatsapp', methods=['POST'])
+@super_admin_requerido
+def usuario_whatsapp(uid):
+    """
+    Manda el acceso por WhatsApp. Asegura SIEMPRE una clave temporal valida:
+    si la persona todavia no entro y ya tiene una, la reusa; si no (o si ya habia
+    cambiado la suya), genera una nueva temporal y la deja lista. Despues redirige
+    a wa.me con el mensaje cargado. El target=_blank del form lo abre en otra pestaña.
+    """
+    u = Usuario.query.get_or_404(uid)
+    if u.es_super_admin:
+        abort(403)
+    if not u.wa_numero:
+        flash('Cargá el teléfono de la persona para poder enviarle el acceso.', 'error')
+        return redirect(url_for('admin.usuarios'))
+
+    if u.debe_cambiar_password and u.password_temporal:
+        clave = u.password_temporal           # reusar la pendiente
+    else:
+        clave = _password_temporal()          # generar una nueva valida
+        u.set_password(clave)
+        u.debe_cambiar_password = True
+        u.password_temporal = clave
+        db.session.commit()
+
+    app_url = current_app.config.get('APP_URL', '')
+    negocio = get_ajustes().nombre_negocio
+    mensaje = _mensaje_bienvenida(u, clave, app_url, negocio)
+    return redirect(f'https://wa.me/{u.wa_numero}?text={quote(mensaje)}')
 
 
 @admin_bp.route('/usuarios/nuevo', methods=['GET', 'POST'])
