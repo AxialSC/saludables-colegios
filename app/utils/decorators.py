@@ -25,3 +25,13 @@ def super_admin_requerido(f):
             abort(403)
         return f(*args, **kwargs)
     return wrapper
+
+
+def revendedora_requerido(f):
+    """Solo REVENDEDORA. Es el portal propio de cada revendedora (v0.18)."""
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.es_revendedora:
+            abort(403)
+        return f(*args, **kwargs)
+    return wrapper

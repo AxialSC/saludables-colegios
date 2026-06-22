@@ -1,0 +1,113 @@
+{% extends 'revendedora/base_revendedora.html' %}
+
+{% block seccion %}Mi cartera{% endblock %}
+{% block titulo %}Mis clientes{% endblock %}
+
+{% block contenido %}
+<div class="cl">
+  <form method="GET" class="cl-bar">
+    <input type="text" name="q" value="{{ q }}" placeholder="Buscar por nombre, DNI/CUIT o teléfono…" class="cl-search">
+    <button type="submit" class="cl-find">Buscar</button>
+    <a href="{{ url_for('revendedora.cliente_nuevo') }}" class="cl-new">+ Nuevo cliente</a>
+  </form>
+
+  <div class="cl-card">
+    <div class="cl-card-head">Mis clientes · {{ total }} en total</div>
+    {% if lista %}
+    <div class="cl-scroll">
+    <table class="cl-tabla">
+      <thead>
+        <tr><th>Cliente</th><th>Contacto</th><th>Estado</th><th class="cl-th-acc">Acciones</th></tr>
+      </thead>
+      <tbody>
+        {% for c in lista %}
+        <tr class="{% if not c.activo %}is-off{% endif %}">
+          <td>
+            <div class="cl-name">{{ c.nombre_completo }}</div>
+            {% if c.dni_cuit %}<div class="cl-meta">DNI/CUIT {{ c.dni_cuit }}</div>{% endif %}
+            {% if c.localidad %}<div class="cl-meta">{{ c.localidad }}</div>{% endif %}
+          </td>
+          <td class="cl-contacto">
+            {% if c.telefono %}<div>{{ c.telefono }}</div>{% endif %}
+            {% if c.email %}<div class="cl-mail">{{ c.email }}</div>{% endif %}
+            {% if not c.telefono and not c.email %}<span class="cl-na">—</span>{% endif %}
+          </td>
+          <td>
+            {% if c.activo %}<span class="cl-est act">Activo</span>
+            {% else %}<span class="cl-est ina">Inactivo</span>{% endif %}
+          </td>
+          <td class="cl-acc">
+            <div class="cl-btns">
+              <a href="{{ url_for('revendedora.cliente_editar', cid=c.id) }}" class="cl-b">Editar</a>
+              <form method="POST" action="{{ url_for('revendedora.cliente_activo', cid=c.id) }}" class="cl-inline"
+                    onsubmit="return confirm('¿{{ 'Desactivar' if c.activo else 'Activar' }} a {{ c.nombre_completo }}?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="cl-b {% if c.activo %}danger{% else %}okk{% endif %}">
+                  {{ 'Desactivar' if c.activo else 'Activar' }}</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+    <div class="cl-empty">
+      <p>{% if q %}No hay clientes con ese filtro.{% else %}Todavía no cargaste clientes. ¡Empezá con el primero!{% endif %}</p>
+      <a href="{{ url_for('revendedora.cliente_nuevo') }}" class="cl-new">+ Nuevo cliente</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+  .cl { --carbon:#1A1A1A; --bronce:#8B6F47; --oro:#C2A05B; --crema:#F4F1EC; --crema2:#FAF8F4;
+        --linea:#E7E0D4; --linea2:#F0EBE1; --verde:#2F7048; --rojo:#A4443B; font-size:14px; }
+  .cl-bar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:18px; }
+  .cl-search { flex:1 1 280px; padding:9px 13px; border:1px solid var(--linea); border-radius:8px;
+               font-size:14px; font-family:inherit; background:#fff; outline:none; }
+  .cl-search:focus { border-color:var(--bronce); box-shadow:0 0 0 3px rgba(139,111,71,.12); }
+  .cl-find { padding:9px 16px; border:1px solid var(--linea); background:#fff; border-radius:8px;
+             font-size:13.5px; font-weight:600; color:#4a4538; cursor:pointer; font-family:inherit; }
+  .cl-find:hover { background:var(--crema); }
+  .cl-new { background:var(--carbon); color:#fff; text-decoration:none; padding:9px 17px; border-radius:8px;
+            font-size:13.5px; font-weight:600; white-space:nowrap; margin-left:auto; }
+  .cl-new:hover { background:var(--bronce); }
+  .cl-card { background:#fff; border:1px solid var(--linea); border-radius:12px; overflow:hidden;
+             box-shadow:0 1px 2px rgba(26,26,26,.04); }
+  .cl-card-head { background:var(--carbon); color:var(--oro); padding:13px 20px; font-size:12px;
+                  font-weight:700; letter-spacing:.13em; text-transform:uppercase; }
+  .cl-scroll { overflow-x:auto; }
+  .cl-tabla { width:100%; border-collapse:collapse; min-width:640px; }
+  .cl-tabla thead th { text-align:left; padding:12px 18px; font-size:11px; font-weight:700;
+        letter-spacing:.11em; text-transform:uppercase; color:var(--bronce);
+        background:var(--crema2); border-bottom:1px solid var(--linea); }
+  .cl-th-acc { text-align:right; }
+  .cl-tabla tbody td { padding:14px 18px; border-bottom:1px solid var(--linea2); vertical-align:middle; }
+  .cl-tabla tbody tr:last-child td { border-bottom:none; }
+  .cl-tabla tbody tr:hover { background:var(--crema2); }
+  .cl-tabla tr.is-off { opacity:.5; }
+  .cl-name { font-size:14.5px; font-weight:600; color:var(--carbon); }
+  .cl-meta { font-size:12px; color:#9a8f7e; margin-top:2px; }
+  .cl-contacto { font-size:13px; color:#5a5345; }
+  .cl-mail { color:#9a8f7e; font-size:12px; }
+  .cl-na { color:#c5bcab; }
+  .cl-est { display:inline-block; font-size:11px; font-weight:700; letter-spacing:.06em;
+            text-transform:uppercase; padding:3px 9px; border-radius:5px; border:1px solid; }
+  .cl-est.act { color:var(--verde); background:#EEF6F0; border-color:#CFE3D6; }
+  .cl-est.ina { color:var(--rojo); background:#FBEDEB; border-color:#EBCFCB; }
+  .cl-acc { text-align:right; }
+  .cl-btns { display:inline-flex; gap:6px; justify-content:flex-end; }
+  .cl-inline { display:inline; }
+  .cl-b { display:inline-flex; align-items:center; font-size:12.5px; font-weight:600; font-family:inherit;
+          padding:6px 12px; border-radius:6px; border:1px solid var(--linea); background:#fff; color:#4a4538;
+          cursor:pointer; text-decoration:none; transition:all .12s; white-space:nowrap; }
+  .cl-b:hover { background:var(--crema); border-color:#d8cfbe; }
+  .cl-b.danger { color:var(--rojo); } .cl-b.danger:hover { background:#FBEDEB; border-color:#EBCFCB; }
+  .cl-b.okk { color:var(--verde); } .cl-b.okk:hover { background:#EEF6F0; border-color:#CFE3D6; }
+  .cl-empty { padding:48px 20px; text-align:center; color:#9a8f7e; }
+  .cl-empty p { margin:0 0 16px; }
+  @media (max-width:680px){ .cl-new { margin-left:0; } }
+</style>
+{% endblock %}

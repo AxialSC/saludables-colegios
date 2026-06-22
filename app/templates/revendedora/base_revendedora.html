@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<div class="admin-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="marca">{{ app_nombre }}</div>
+      <div class="sub">Portal Revendedora</div>
+    </div>
+
+    <nav class="nav">
+      <a href="{{ url_for('revendedora.dashboard') }}"
+         class="{% if request.endpoint == 'revendedora.dashboard' %}activo{% endif %}">Inicio</a>
+      <a href="{{ url_for('revendedora.clientes') }}"
+         class="{% if 'cliente' in request.endpoint %}activo{% endif %}">📇 Mis clientes</a>
+      <a href="{{ url_for('cliente.catalogo') }}" target="_blank">Ver tienda ↗</a>
+      <a href="#" class="disabled">🛒 Mis ventas <span class="badge-soon">pronto</span></a>
+      <a href="#" class="disabled">📣 Mis redes <span class="badge-soon">pronto</span></a>
+    </nav>
+
+    <div class="user-box">
+      <div class="user-id">
+        <div class="user-avatar">{{ current_user.nombre[0]|upper }}</div>
+        <div class="user-meta">
+          <div class="nombre">{{ current_user.nombre }}</div>
+          <div class="rol">Revendedora</div>
+        </div>
+      </div>
+      <a href="{{ url_for('auth.logout') }}" class="btn-salir">
+        <span class="btn-salir-ic">⎋</span> Cerrar sesión
+      </a>
+    </div>
+  </aside>
+
+  <!-- Contenido -->
+  <div class="contenido">
+    <div class="topbar">
+      <div class="tit-mini">{% block seccion %}Mi portal{% endblock %}</div>
+      <h1>{% block titulo %}Inicio{% endblock %}</h1>
+    </div>
+
+    <div class="main-area">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <ul class="flashes">
+            {% for category, message in messages %}
+              <li class="flash {{ category }}">{{ message }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      {% endwith %}
+
+      {% block contenido %}{% endblock %}
+    </div>
+
+    <footer class="footer-app">
+      <span>Saludables · Portal Revendedora — AXIAL SECURITY</span>
+      <span>v{{ app_version }}</span>
+    </footer>
+  </div>
+
+</div>
+{% endblock %}

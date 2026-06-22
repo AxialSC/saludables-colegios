@@ -1,0 +1,96 @@
+{% extends 'revendedora/base_revendedora.html' %}
+
+{% block seccion %}Mi portal{% endblock %}
+{% block titulo %}Hola, {{ current_user.nombre }} 👋{% endblock %}
+
+{% block contenido %}
+<div class="rv">
+
+  <!-- Tarjetas resumen -->
+  <div class="rv-cards">
+    <div class="rv-card">
+      <div class="rv-card-lab">Mis clientes</div>
+      <div class="rv-card-num">{{ n_clientes }}</div>
+      <div class="rv-card-sub">{{ n_activos }} activo(s)</div>
+    </div>
+    <div class="rv-card">
+      <div class="rv-card-lab">Mi nivel</div>
+      <div class="rv-card-num">{{ nivel.nombre }}</div>
+      <div class="rv-card-sub">Comisión {{ nivel.comision }}%</div>
+    </div>
+    <div class="rv-card rv-soon">
+      <div class="rv-card-lab">Mis ventas</div>
+      <div class="rv-card-num">—</div>
+      <div class="rv-card-sub">Próximamente</div>
+    </div>
+  </div>
+
+  <!-- Progreso de niveles -->
+  <div class="rv-panel">
+    <div class="rv-panel-head"><span class="rv-dot">◆</span> Cómo subís de nivel</div>
+    <div class="rv-panel-body">
+      <p class="rv-text">
+        Tu comisión sale de la ganancia del sistema y sube según cuánto vendas.
+        Cuando activemos el módulo de ventas, tu progreso se va a actualizar solo.
+      </p>
+      <div class="rv-niveles">
+        {% for n in niveles %}
+        <div class="rv-nivel {% if n.nombre == nivel.nombre %}on{% endif %}">
+          <div class="rv-nivel-nom">{{ n.nombre }}</div>
+          <div class="rv-nivel-com">{{ n.comision }}%</div>
+          <div class="rv-nivel-desde">
+            {% if n.desde == 0 %}desde el inicio{% else %}vendiendo ${{ '{:,.0f}'.format(n.desde).replace(',', '.') }}{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Accesos rápidos -->
+  <div class="rv-acc">
+    <a href="{{ url_for('revendedora.clientes') }}" class="rv-acc-btn">📇 Ver mis clientes</a>
+    <a href="{{ url_for('revendedora.cliente_nuevo') }}" class="rv-acc-btn primary">+ Agregar cliente</a>
+    <a href="{{ url_for('cliente.catalogo') }}" target="_blank" class="rv-acc-btn">🛍️ Ir a la tienda</a>
+  </div>
+
+</div>
+
+<style>
+  .rv { --carbon:#1A1A1A; --bronce:#8B6F47; --oro:#C2A05B; --crema:#F4F1EC; --crema2:#FAF8F4;
+        --linea:#E7E0D4; --oliva:#6B7A4F; font-size:14px; }
+  .rv-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:20px; }
+  .rv-card { background:#fff; border:1px solid var(--linea); border-radius:12px; padding:20px 22px;
+             box-shadow:0 1px 2px rgba(26,26,26,.04); }
+  .rv-card-lab { font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--bronce); }
+  .rv-card-num { font-size:34px; font-weight:700; color:var(--carbon); line-height:1.1; margin-top:6px;
+                 font-family:'Cormorant Garamond',Georgia,serif; }
+  .rv-card-sub { font-size:13px; color:#9a8f7e; margin-top:2px; }
+  .rv-card.rv-soon { opacity:.6; }
+
+  .rv-panel { background:#fff; border:1px solid var(--linea); border-radius:12px; overflow:hidden;
+              margin-bottom:20px; box-shadow:0 1px 2px rgba(26,26,26,.04); }
+  .rv-panel-head { background:var(--carbon); color:var(--oro); padding:12px 20px; font-size:12px;
+                   font-weight:700; letter-spacing:.13em; text-transform:uppercase; display:flex; align-items:center; gap:9px; }
+  .rv-panel-head .rv-dot { font-size:10px; }
+  .rv-panel-body { padding:20px; }
+  .rv-text { font-size:13.5px; color:#5a5345; margin:0 0 16px; max-width:680px; line-height:1.55; }
+  .rv-niveles { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  .rv-nivel { border:1px solid var(--linea); border-radius:10px; padding:14px 16px; text-align:center; }
+  .rv-nivel.on { border-color:var(--oliva); background:#F3F6EE; box-shadow:inset 0 0 0 1px var(--oliva); }
+  .rv-nivel-nom { font-size:14px; font-weight:700; color:var(--carbon); }
+  .rv-nivel-com { font-size:24px; font-weight:700; color:var(--oliva);
+                  font-family:'Cormorant Garamond',Georgia,serif; }
+  .rv-nivel-desde { font-size:11.5px; color:#9a8f7e; }
+
+  .rv-acc { display:flex; gap:10px; flex-wrap:wrap; }
+  .rv-acc-btn { display:inline-flex; align-items:center; gap:6px; background:#fff; border:1px solid var(--linea);
+                color:#4a4538; text-decoration:none; padding:11px 18px; border-radius:9px; font-size:14px;
+                font-weight:600; transition:all .13s; }
+  .rv-acc-btn:hover { background:var(--crema); border-color:#d8cfbe; }
+  .rv-acc-btn.primary { background:var(--carbon); color:#fff; border-color:var(--carbon); }
+  .rv-acc-btn.primary:hover { background:var(--bronce); border-color:var(--bronce); }
+
+  @media (max-width:720px){ .rv-cards, .rv-niveles { grid-template-columns:1fr; } }
+</style>
+{% endblock %}

@@ -62,9 +62,11 @@ def create_app(config_name=None):
     from .auth import auth_bp
     from .admin import admin_bp
     from .cliente import cliente_bp
+    from .revendedora import revendedora_bp
     app.register_blueprint(cliente_bp)   # tienda publica en la raiz '/'
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(revendedora_bp)   # portal de revendedoras en '/portal'
 
     # --- Manejo de errores ---
     @app.errorhandler(403)
