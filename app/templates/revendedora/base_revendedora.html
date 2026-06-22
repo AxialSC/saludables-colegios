@@ -17,7 +17,8 @@
          class="{% if 'cliente' in request.endpoint %}activo{% endif %}">📇 Mis clientes</a>
       <a href="{{ url_for('cliente.catalogo') }}" target="_blank">Ver tienda ↗</a>
       <a href="#" class="disabled">🛒 Mis ventas <span class="badge-soon">pronto</span></a>
-      <a href="#" class="disabled">📣 Mis redes <span class="badge-soon">pronto</span></a>
+      <a href="{{ url_for('revendedora.redes') }}"
+         class="{% if request.endpoint == 'revendedora.redes' %}activo{% endif %}">📣 Mis redes</a>
     </nav>
 
     <div class="user-box">

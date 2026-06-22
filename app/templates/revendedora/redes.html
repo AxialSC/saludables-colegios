@@ -1,0 +1,93 @@
+{% extends 'revendedora/base_revendedora.html' %}
+
+{% block seccion %}Mi difusión{% endblock %}
+{% block titulo %}Mis redes{% endblock %}
+
+{% block contenido %}
+<div class="rd">
+
+  {% if current_user.tiene_redes %}
+  <div class="rd-preview">
+    <div class="rd-prev-lab">Así quedan tus redes:</div>
+    <div class="rd-chips">
+      {% if current_user.instagram_url %}
+      <a href="{{ current_user.instagram_url }}" target="_blank" rel="noopener" class="rd-chip ig">Instagram ↗</a>{% endif %}
+      {% if current_user.facebook_url %}
+      <a href="{{ current_user.facebook_url }}" target="_blank" rel="noopener" class="rd-chip fb">Facebook ↗</a>{% endif %}
+      {% if current_user.tiktok_url %}
+      <a href="{{ current_user.tiktok_url }}" target="_blank" rel="noopener" class="rd-chip tk">TikTok ↗</a>{% endif %}
+      {% if current_user.whatsapp_grupo_url %}
+      <a href="{{ current_user.whatsapp_grupo_url }}" target="_blank" rel="noopener" class="rd-chip wa">Grupo WhatsApp ↗</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <form method="POST" class="rd-form" action="{{ url_for('revendedora.redes') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="rd-card">
+      <div class="rd-head"><span class="rd-dot">◆</span> Cargá tus redes</div>
+      <div class="rd-body">
+        <p class="rd-text">Pegá tu usuario o el link completo. Lo vas a poder compartir con tus clientes
+          y, más adelante, mostrarlo en tu página.</p>
+        <div class="rd-grid">
+          <label class="rd-f">
+            <span class="rd-lab">Instagram</span>
+            <input type="text" name="instagram" value="{{ current_user.instagram or '' }}" placeholder="@miusuario o link">
+          </label>
+          <label class="rd-f">
+            <span class="rd-lab">Facebook</span>
+            <input type="text" name="facebook" value="{{ current_user.facebook or '' }}" placeholder="miusuario o link">
+          </label>
+          <label class="rd-f">
+            <span class="rd-lab">TikTok</span>
+            <input type="text" name="tiktok" value="{{ current_user.tiktok or '' }}" placeholder="@miusuario o link">
+          </label>
+          <label class="rd-f">
+            <span class="rd-lab">Grupo de WhatsApp</span>
+            <input type="text" name="whatsapp_grupo" value="{{ current_user.whatsapp_grupo or '' }}" placeholder="https://chat.whatsapp.com/...">
+            <small>El link de invitación a tu grupo de difusión (donde pasás ofertas).</small>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="rd-acciones">
+      <button type="submit" class="rd-guardar">Guardar mis redes</button>
+    </div>
+  </form>
+</div>
+
+<style>
+  .rd { --carbon:#1A1A1A; --bronce:#8B6F47; --oro:#C2A05B; --crema:#F4F1EC; --linea:#E7E0D4;
+        max-width:820px; font-size:14px; }
+  .rd-preview { background:#fff; border:1px solid var(--linea); border-radius:12px; padding:16px 20px;
+                margin-bottom:18px; box-shadow:0 1px 2px rgba(26,26,26,.04); }
+  .rd-prev-lab { font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+                 color:var(--bronce); margin-bottom:10px; }
+  .rd-chips { display:flex; gap:9px; flex-wrap:wrap; }
+  .rd-chip { display:inline-flex; align-items:center; gap:5px; padding:8px 15px; border-radius:8px;
+             font-size:13px; font-weight:700; color:#fff; text-decoration:none; transition:filter .13s; }
+  .rd-chip:hover { filter:brightness(1.08); }
+  .rd-chip.ig { background:#C13584; } .rd-chip.fb { background:#1877F2; }
+  .rd-chip.tk { background:#1A1A1A; } .rd-chip.wa { background:#1FA855; }
+
+  .rd-card { background:#fff; border:1px solid var(--linea); border-radius:12px; overflow:hidden;
+             box-shadow:0 1px 2px rgba(26,26,26,.04); margin-bottom:18px; }
+  .rd-head { background:var(--carbon); color:var(--oro); padding:12px 20px; font-size:12px; font-weight:700;
+             letter-spacing:.13em; text-transform:uppercase; display:flex; align-items:center; gap:9px; }
+  .rd-head .rd-dot { font-size:10px; }
+  .rd-body { padding:20px; }
+  .rd-text { font-size:13.5px; color:#5a5345; margin:0 0 16px; line-height:1.55; max-width:640px; }
+  .rd-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px 22px; }
+  .rd-f { display:flex; flex-direction:column; gap:6px; }
+  .rd-lab { font-size:11px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:#8a8071; }
+  .rd-f small { font-size:11.5px; color:#a99f8d; }
+  .rd-f input { padding:10px 13px; border:1px solid var(--linea); border-radius:8px; font-size:14px;
+                font-family:inherit; color:var(--carbon); background:#fff; transition:border .14s, box-shadow .14s; }
+  .rd-f input:focus { outline:none; border-color:var(--bronce); box-shadow:0 0 0 3px rgba(139,111,71,.12); }
+  .rd-acciones { display:flex; justify-content:flex-end; }
+  .rd-guardar { background:var(--carbon); color:#fff; border:none; padding:12px 26px; border-radius:9px;
+                font-weight:600; cursor:pointer; font-size:14.5px; font-family:inherit; transition:background .13s; }
+  .rd-guardar:hover { background:var(--bronce); }
+  @media (max-width:640px){ .rd-grid { grid-template-columns:1fr; } }
+</style>
+{% endblock %}

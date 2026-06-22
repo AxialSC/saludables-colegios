@@ -86,6 +86,12 @@ class Usuario(UserMixin, db.Model):
     # mientras la persona todavia no entro. Se ignora cuando ya cambio la clave.
     password_temporal = db.Column(db.String(40), nullable=True)
 
+    # v0.18.1: redes de la revendedora (las carga ella en su portal)
+    instagram = db.Column(db.String(120), nullable=True)
+    facebook = db.Column(db.String(120), nullable=True)
+    tiktok = db.Column(db.String(120), nullable=True)
+    whatsapp_grupo = db.Column(db.String(200), nullable=True)   # link de grupo/difusion
+
     def set_password(self, raw):
         self.password_hash = bcrypt.generate_password_hash(raw).decode('utf-8')
 
@@ -141,6 +147,42 @@ class Usuario(UserMixin, db.Model):
     def clave_temporal_visible(self):
         """La clave temporal SOLO si la persona todavia no la cambio."""
         return self.password_temporal if self.debe_cambiar_password else None
+
+    # --- v0.18.1: links de redes listos para usar (o None si no cargo) ---
+    @staticmethod
+    def _red_url(valor, base):
+        v = (valor or '').strip()
+        if not v:
+            return None
+        if v.startswith('http://') or v.startswith('https://'):
+            return v
+        return base + v.lstrip('@/')
+
+    @property
+    def instagram_url(self):
+        return self._red_url(self.instagram, 'https://instagram.com/')
+
+    @property
+    def facebook_url(self):
+        return self._red_url(self.facebook, 'https://facebook.com/')
+
+    @property
+    def tiktok_url(self):
+        v = (self.tiktok or '').strip()
+        if not v:
+            return None
+        if v.startswith('http'):
+            return v
+        return 'https://tiktok.com/@' + v.lstrip('@/')
+
+    @property
+    def whatsapp_grupo_url(self):
+        v = (self.whatsapp_grupo or '').strip()
+        return v if v.startswith('http') else None
+
+    @property
+    def tiene_redes(self):
+        return any([self.instagram, self.facebook, self.tiktok, self.whatsapp_grupo])
 
     def __repr__(self):
         return f'<Usuario {self.usuario} ({self.rol})>'

@@ -58,6 +58,31 @@
         box-shadow: 0 6px 14px -10px rgba(0,0,0,.28); }
     .t-sticky .t-header { position: static; border-bottom: none; }
     .t-solapas { margin: 0 auto; padding: 12px 18px 14px; }
+    /* v0.18.1 · Carrusel central: flechas + puntitos (control manual) */
+    #bnCentral { position: relative; }
+    .bn-arrow {
+        position: absolute; top: 50%; transform: translateY(-50%);
+        width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer;
+        background: rgba(26,26,26,.45); color: #fff; font-size: 26px; line-height: 1;
+        display: flex; align-items: center; justify-content: center; z-index: 6;
+        transition: background .15s;
+    }
+    .bn-arrow:hover { background: rgba(26,26,26,.72); }
+    .bn-prev { left: 12px; }
+    .bn-next { right: 12px; }
+    .bn-dots {
+        position: absolute; left: 0; right: 0; bottom: 12px; z-index: 6;
+        display: flex; justify-content: center; gap: 8px;
+    }
+    .bn-dot {
+        width: 9px; height: 9px; border-radius: 50%; border: none; cursor: pointer; padding: 0;
+        background: rgba(255,255,255,.55); transition: background .15s, transform .15s;
+    }
+    .bn-dot:hover { background: rgba(255,255,255,.85); }
+    .bn-dot.on { background: #fff; transform: scale(1.25); }
+    @media (max-width: 520px) {
+        .bn-arrow { width: 34px; height: 34px; font-size: 22px; }
+    }
     </style>
 </head>
 <body>
@@ -123,6 +148,15 @@
     </div>
     {% endif %}
     {% endfor %}
+    {% if bn['CENTRAL']|length > 1 %}
+    <button type="button" class="bn-arrow bn-prev" id="bnPrev" aria-label="Banner anterior">‹</button>
+    <button type="button" class="bn-arrow bn-next" id="bnNext" aria-label="Banner siguiente">›</button>
+    <div class="bn-dots" id="bnDots">
+        {% for b in bn['CENTRAL'] %}
+        <button type="button" class="bn-dot {% if loop.first %}on{% endif %}" data-i="{{ loop.index0 }}" aria-label="Ir al banner {{ loop.index }}"></button>
+        {% endfor %}
+    </div>
+    {% endif %}
 </div>
 {% endif %}
 
@@ -326,21 +360,37 @@
         if (localStorage.getItem('salu_vista') === 'lista') setVista('lista');
     } catch (e) {}
 
-    // v0.14 · carrusel central: rota cada 2s, se frena al pasar el mouse
+    // v0.18.1 · carrusel central: auto + flechas + puntitos (control manual)
     (function () {
         var c = document.getElementById('bnCentral');
         if (!c) return;
         var sl = c.querySelectorAll('.bn-slide');
         if (sl.length < 2) return;
-        var i = 0, pausa = false;
+        var dots = c.querySelectorAll('.bn-dot');
+        var i = 0, pausa = false, timer = null;
+        function mostrar(n) {
+            sl[i].classList.remove('on');
+            if (dots[i]) dots[i].classList.remove('on');
+            i = (n + sl.length) % sl.length;
+            sl[i].classList.add('on');
+            if (dots[i]) dots[i].classList.add('on');
+        }
+        function arrancar() {
+            clearTimeout(timer);
+            timer = setInterval(function () { if (!pausa) mostrar(i + 1); }, 4000);
+        }
         c.addEventListener('mouseenter', function () { pausa = true; });
         c.addEventListener('mouseleave', function () { pausa = false; });
-        setInterval(function () {
-            if (pausa) return;
-            sl[i].classList.remove('on');
-            i = (i + 1) % sl.length;
-            sl[i].classList.add('on');
-        }, 2000);
+        var prev = document.getElementById('bnPrev');
+        var next = document.getElementById('bnNext');
+        if (prev) prev.addEventListener('click', function (e) { e.preventDefault(); mostrar(i - 1); arrancar(); });
+        if (next) next.addEventListener('click', function (e) { e.preventDefault(); mostrar(i + 1); arrancar(); });
+        dots.forEach(function (d) {
+            d.addEventListener('click', function (e) {
+                e.preventDefault(); mostrar(parseInt(d.getAttribute('data-i'), 10)); arrancar();
+            });
+        });
+        arrancar();
     })();
 
     // v0.14 · banners laterales: rotan cada 4s

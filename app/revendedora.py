@@ -143,3 +143,19 @@ def cliente_activo(cid):
     flash(f'Cliente "{c.nombre_completo}" ' + ('activado' if c.activo else 'desactivado') + '.',
           'success')
     return redirect(url_for('revendedora.clientes'))
+
+
+# ----- v0.18.1: Mis redes -----
+@revendedora_bp.route('/redes', methods=['GET', 'POST'])
+@revendedora_requerido
+def redes():
+    if request.method == 'POST':
+        g = request.form.get
+        current_user.instagram = (g('instagram') or '').strip() or None
+        current_user.facebook = (g('facebook') or '').strip() or None
+        current_user.tiktok = (g('tiktok') or '').strip() or None
+        current_user.whatsapp_grupo = (g('whatsapp_grupo') or '').strip() or None
+        db.session.commit()
+        flash('Tus redes se guardaron ✓', 'success')
+        return redirect(url_for('revendedora.redes'))
+    return render_template('revendedora/redes.html')
