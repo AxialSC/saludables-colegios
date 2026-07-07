@@ -55,6 +55,7 @@ def create_app(config_name=None):
             app_version=app.config.get('APP_VERSION', ''),
             app_nombre=app.config.get('APP_NOMBRE', ''),
             app_subtitulo=app.config.get('APP_SUBTITULO', ''),
+            redes=app.config.get('REDES', {}),
             now=ahora_argentina().replace(tzinfo=None),
         )
 

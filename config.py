@@ -16,13 +16,25 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.18.1'
+    APP_VERSION = '0.18.2'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 
     # URL publica del sistema (se usa en el mensaje de bienvenida por WhatsApp).
     # Si tu dominio es otro, cambialo aca.
     APP_URL = 'https://saludablespilar.pythonanywhere.com/'
+
+    # --- v0.18.2: Redes del NEGOCIO (para el "Seguinos en" de la tienda) ---
+    # Completá solo las que tengas; las vacías no se muestran.
+    # Pegá el link completo (https://...).
+    REDES = {
+        'instagram': '',
+        'facebook': '',
+        'youtube': '',
+        'tiktok': '',
+        'linkedin': '',
+        'whatsapp_canal': '',   # link del canal de WhatsApp (botón "Sumate al canal")
+    }
 
     # Base de datos (SQLite en instance/)
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'instance', 'saludables.db')
