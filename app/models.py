@@ -12,6 +12,8 @@ v0.16.0 -> Usuario: PERFIL COMPLETO (DNI, nacimiento, contacto, datos bancarios
            para pago de comisiones). Base para el modulo de Revendedores (Etapa 2).
 v0.16.1 -> Usuario: + CUIT y + clave temporal reenviable por WhatsApp.
 v0.17.0 -> Cliente: base de clientes (cimiento del CRM de revendedoras).
+v0.18.3 -> Suscriptor (C2): alta voluntaria desde la tienda publica, para que
+           Juliana le mande ofertas antes que a nadie (WhatsApp/email).
 """
 from flask_login import UserMixin
 
@@ -753,3 +755,52 @@ class Cliente(db.Model):
 
     def __repr__(self):
         return f'<Cliente {self.nombre_completo}>'
+
+
+# ============================================================================
+#  v0.18.3 — SUSCRIPTORES (C2: alta voluntaria desde la tienda publica)
+# ============================================================================
+
+class Suscriptor(db.Model):
+    """
+    Persona que se anoto desde la tienda publica para recibir las ofertas antes
+    que nadie (v0.18.3, C2). No requiere cuenta de usuario ni login: es un simple
+    registro de contacto que Juliana consulta y exporta (CSV) para avisar por
+    WhatsApp/email cuando sale una oferta nueva.
+
+    'dia_nacimiento' / 'mes_nacimiento' -> SOLO dia y mes (sin año, por privacidad
+    en un formulario publico). Sirve para saludos/ofertas de cumpleaños a futuro.
+
+    Regla AXIAL: desactivar, nunca borrar (activo=False si se da de baja).
+    """
+    __tablename__ = 'suscriptores'
+
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(120), nullable=False)
+    apellido = db.Column(db.String(120), nullable=True)
+    dni_cuit = db.Column(db.String(15), nullable=True)
+    email = db.Column(db.String(120), nullable=True)
+    whatsapp = db.Column(db.String(30), nullable=True)
+
+    dia_nacimiento = db.Column(db.Integer, nullable=True)    # 1-31
+    mes_nacimiento = db.Column(db.Integer, nullable=True)    # 1-12
+
+    acepta_notificaciones = db.Column(db.Boolean, nullable=False, default=True)
+    activo = db.Column(db.Boolean, nullable=False, default=True)
+
+    creado = db.Column(db.DateTime, default=_ahora, index=True)
+    ip_origen = db.Column(db.String(45), nullable=True)
+
+    @property
+    def nombre_completo(self):
+        return f'{self.nombre} {self.apellido}'.strip() if self.apellido else self.nombre
+
+    @property
+    def cumple_etiqueta(self):
+        """Devuelve 'DD/MM' o '—' si no cargo cumpleaños."""
+        if not self.dia_nacimiento or not self.mes_nacimiento:
+            return '—'
+        return f'{self.dia_nacimiento:02d}/{self.mes_nacimiento:02d}'
+
+    def __repr__(self):
+        return f'<Suscriptor {self.nombre_completo}>'

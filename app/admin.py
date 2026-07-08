@@ -11,6 +11,8 @@ v0.14.1 -> FOOD COST (placeholder): pestaña (solo super admin) que deja lista l
 v0.16.0 -> USUARIOS: ABM completo (solo super admin) con perfil de la persona
            (DNI, nacimiento, contacto, datos bancarios para comisiones). Crear /
            editar / activar-desactivar / resetear contrasena. Tope de 5 admins.
+v0.18.3 -> SUSCRIPTORES (C2): panel para que Juliana/admins consulten y exporten
+           (CSV) a quienes se anotaron desde la tienda para recibir ofertas.
 """
 import os
 import secrets
@@ -30,7 +32,7 @@ from .models import (Producto, Pedido, Cobro, ModificacionPedido, ItemPedido,
                      Oferta, Cotizacion, CotizacionItem, TipoCotizacion,
                      EstadoCotizacion, generar_numero_cotizacion,
                      Banner, ZonaBanner, DestinoBanner,
-                     Usuario, Rol, FormaPagoComision, Cliente)
+                     Usuario, Rol, FormaPagoComision, Cliente, Suscriptor)
 from .services import aplicar_importacion
 from .utils.decorators import admin_requerido, super_admin_requerido
 from .utils.import_planilla import leer_planilla
@@ -1369,6 +1371,70 @@ def cliente_activo(cid):
     flash(f'Cliente "{c.nombre_completo}" ' + ('activado' if c.activo else 'desactivado') + '.',
           'success')
     return redirect(url_for('admin.clientes'))
+
+
+# ======================= SUSCRIPTORES (v0.18.3 · C2) =======================
+# Lista de personas que se anotaron desde la tienda para recibir ofertas antes
+# que nadie. Nivel de acceso: admin_requerido (igual que Clientes) — Juliana y
+# las administradoras pueden verla y exportarla. No se borra: se da de baja.
+
+@admin_bp.route('/suscriptores')
+@admin_requerido
+def suscriptores():
+    """Lista de suscriptores, con búsqueda simple."""
+    q = (request.args.get('q') or '').strip()
+    stmt = Suscriptor.query
+    if q:
+        like = f'%{q}%'
+        stmt = stmt.filter(or_(Suscriptor.nombre.ilike(like),
+                               Suscriptor.apellido.ilike(like),
+                               Suscriptor.email.ilike(like),
+                               Suscriptor.whatsapp.ilike(like)))
+    lista = stmt.order_by(Suscriptor.activo.desc(), Suscriptor.creado.desc()).all()
+    total = Suscriptor.query.count()
+    activos = Suscriptor.query.filter_by(activo=True).count()
+    return render_template('admin/suscriptores.html', lista=lista, q=q,
+                           total=total, activos=activos)
+
+
+@admin_bp.route('/suscriptores/<int:sid>/activo', methods=['POST'])
+@admin_requerido
+def suscriptor_activo(sid):
+    """Da de alta/baja a un suscriptor (no se borra nunca, regla AXIAL)."""
+    s = Suscriptor.query.get_or_404(sid)
+    s.activo = not s.activo
+    db.session.commit()
+    flash(f'Suscriptor "{s.nombre_completo}" ' + ('activado' if s.activo else 'dado de baja') + '.',
+          'success')
+    return redirect(url_for('admin.suscriptores'))
+
+
+@admin_bp.route('/suscriptores/exportar.csv')
+@admin_requerido
+def suscriptores_exportar():
+    """Exporta CSV de los suscriptores ACTIVOS, para que Juliana mande las ofertas."""
+    import csv
+    import io
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(['Nombre', 'Apellido', 'DNI/CUIT', 'Email', 'WhatsApp',
+                     'Cumpleaños (DD/MM)', 'Acepta notificaciones', 'Alta'])
+    lista = Suscriptor.query.filter_by(activo=True).order_by(Suscriptor.creado.desc()).all()
+    for s in lista:
+        cumple = s.cumple_etiqueta if s.cumple_etiqueta != '—' else ''
+        writer.writerow([
+            s.nombre, s.apellido or '', s.dni_cuit or '', s.email or '',
+            s.whatsapp or '', cumple,
+            'Si' if s.acepta_notificaciones else 'No',
+            s.creado.strftime('%d/%m/%Y') if s.creado else '',
+        ])
+
+    salida = buf.getvalue()
+    marca = _ahora().strftime('%Y%m%d_%H%M')
+    return Response(salida, mimetype='text/csv', headers={
+        'Content-Disposition': f'attachment; filename="suscriptores_{marca}.csv"'
+    })
 
 
 # ======================= AJUSTES =======================

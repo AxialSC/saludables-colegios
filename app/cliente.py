@@ -13,6 +13,8 @@ v0.12.0 -> solapa OFERTAS: muestra productos en oferta (precio tachado + precio
            profundidad): aunque el front mande otro precio, manda el real.
 v0.14.0 -> BANNERS: el catalogo recibe los banners activos (central + laterales)
            y arma a donde lleva cada uno (busqueda / solapa / WhatsApp).
+v0.18.3 -> C2: ruta POST /suscribirse (alta de suscriptores desde la home, con
+           honeypot anti-bot). No requiere login.
 """
 import json
 from urllib.parse import quote
@@ -24,7 +26,7 @@ from sqlalchemy import select, or_, func
 from .extensions import db
 from .models import (Producto, Pedido, ItemPedido, Oferta, get_ajustes,
                      generar_numero_pedido, EstadoPedido, CategoriaProducto,
-                     Banner, ZonaBanner, DestinoBanner)
+                     Banner, ZonaBanner, DestinoBanner, Suscriptor)
 from .utils.validaciones import validar_cuit, limpiar_cuit
 from .utils.timezone import ahora_argentina
 from . import pricing
@@ -346,3 +348,61 @@ def pedido_pdf(token):
     return Response(pdf, mimetype='application/pdf', headers={
         'Content-Disposition': f'inline; filename="Pedido_{pedido.numero}.pdf"'
     })
+
+
+# ============================================================================
+#  v0.18.3 — C2: alta de suscriptores (form publico en la home)
+# ============================================================================
+
+@cliente_bp.route('/suscribirse', methods=['POST'])
+def suscribirse():
+    """
+    Alta voluntaria de un suscriptor desde el form de la home. Sin login.
+    Defensa anti-bot: honeypot ('web') — campo oculto que un humano nunca
+    completa. Si viene con contenido, se descarta el envio en silencio (no le
+    decimos nada al bot, para no darle pistas).
+    """
+    if (request.form.get('web') or '').strip():
+        return redirect(url_for('cliente.catalogo'))
+
+    nombre = (request.form.get('sus_nombre') or '').strip()
+    apellido = (request.form.get('sus_apellido') or '').strip() or None
+    dni_cuit = (request.form.get('sus_dni_cuit') or '').strip() or None
+    email = (request.form.get('sus_email') or '').strip() or None
+    whatsapp = (request.form.get('sus_whatsapp') or '').strip() or None
+    acepta = request.form.get('sus_acepta') == 'on'
+
+    # Cumpleaños: solo dia/mes, formato 'DD/MM' (sin año, por privacidad)
+    dia = mes = None
+    cumple = (request.form.get('sus_cumple') or '').strip()
+    if cumple and '/' in cumple:
+        try:
+            d_str, m_str = cumple.split('/', 1)
+            d, m = int(d_str), int(m_str)
+            if 1 <= d <= 31 and 1 <= m <= 12:
+                dia, mes = d, m
+        except (ValueError, TypeError):
+            pass
+
+    if not nombre or not (email or whatsapp):
+        flash('Para sumarte necesitamos tu nombre y al menos un email o WhatsApp.', 'error')
+        return redirect(url_for('cliente.catalogo'))
+
+    xff = request.headers.get('X-Forwarded-For', '')
+    ip = xff.split(',')[0].strip() if xff else (request.remote_addr or '')
+
+    try:
+        db.session.add(Suscriptor(
+            nombre=nombre, apellido=apellido, dni_cuit=dni_cuit,
+            email=email, whatsapp=whatsapp,
+            dia_nacimiento=dia, mes_nacimiento=mes,
+            acepta_notificaciones=acepta, activo=True, ip_origen=ip,
+        ))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        flash('Hubo un problema al guardarte. Probá de nuevo en un ratito.', 'error')
+        return redirect(url_for('cliente.catalogo'))
+
+    flash('¡Listo! Ya te sumaste para recibir las ofertas antes que nadie 🎉', 'success')
+    return redirect(url_for('cliente.catalogo'))

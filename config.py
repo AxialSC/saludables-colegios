@@ -4,6 +4,8 @@ AXIAL SECURITY · Ivan Abrigo
 
 La version se cambia A MANO aca (regla AXIAL). El footer la toma automaticamente
 desde el context_processor en app/__init__.py.
+
+v0.18.3 -> C2: alta de suscriptores (form publico + panel admin + export CSV).
 """
 import os
 
@@ -16,7 +18,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.18.2'
+    APP_VERSION = '0.18.3'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 
@@ -25,15 +27,15 @@ class Config:
     APP_URL = 'https://saludablespilar.pythonanywhere.com/'
 
     # --- v0.18.2: Redes del NEGOCIO (para el "Seguinos en" de la tienda) ---
-    # Completá solo las que tengas; las vacías no se muestran.
-    # Pegá el link completo (https://...).
+    # Completa solo las que tengas; las vacias no se muestran.
+    # Pega el link completo (https://...).
     REDES = {
         'instagram': '',
         'facebook': '',
         'youtube': '',
         'tiktok': '',
         'linkedin': '',
-        'whatsapp_canal': '',   # link del canal de WhatsApp (botón "Sumate al canal")
+        'whatsapp_canal': '',   # link del canal de WhatsApp (boton "Sumate al canal")
     }
 
     # Base de datos (SQLite en instance/)

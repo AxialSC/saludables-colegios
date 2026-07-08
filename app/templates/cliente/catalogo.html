@@ -104,6 +104,28 @@
         transition: background .15s, color .15s; }
     .ft-redes-ic a:hover { background: #C2A05B; color: #1A1A1A; }
     .ft-redes-ic svg { width: 19px; height: 19px; fill: currentColor; }
+    /* v0.18.3 · C2: Sumate para recibir ofertas (antes del footer) */
+    .t-suscribir { background: #1A1A1A; color: #F4F1EC; margin-top: 40px; }
+    .t-suscribir-inner { max-width: 640px; margin: 0 auto; padding: 38px 18px; text-align: center; }
+    .t-suscribir h3 { font-size: 1.15rem; margin: 0 0 8px; letter-spacing: .01em; }
+    .t-suscribir p { color: #cfcabf; font-size: 0.85rem; margin: 0 0 20px; }
+    .t-sus-form { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+    .t-sus-form input[type=text], .t-sus-form input[type=email] {
+        flex: 1 1 190px; padding: 10px 12px; border-radius: 8px; border: 1px solid #3a3a3a;
+        background: #242424; color: #F4F1EC; font-size: 0.85rem;
+    }
+    .t-sus-form input::placeholder { color: #8b8b8b; }
+    .t-sus-form input:focus { outline: none; border-color: #C2A05B; }
+    .t-sus-check {
+        flex: 1 1 100%; font-size: 0.8rem; color: #cfcabf; display: flex;
+        align-items: center; gap: 8px; justify-content: center;
+    }
+    .t-sus-form button {
+        flex: 1 1 140px; background: #C2A05B; color: #1A1A1A; border: none; border-radius: 8px;
+        padding: 11px 16px; font-weight: 700; cursor: pointer; font-size: 0.85rem;
+    }
+    .t-sus-form button:hover { filter: brightness(1.08); }
+    .t-sus-honeypot { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
     </style>
 </head>
 <body>
@@ -231,6 +253,30 @@
 <div id="resultados">
     {% include 'cliente/_grid.html' %}
 </div>
+
+<!-- v0.18.3 · C2: Sumate para recibir ofertas antes que nadie -->
+<section class="t-suscribir">
+    <div class="t-suscribir-inner">
+        <h3>📬 ¿Querés recibir las ofertas antes que nadie?</h3>
+        <p>Dejanos tus datos y te avisamos primero por WhatsApp o email cuando sale una oferta nueva.</p>
+        <form method="POST" action="{{ url_for('cliente.suscribirse') }}" class="t-sus-form">
+            <!-- Honeypot anti-bot: campo oculto, un humano nunca lo completa -->
+            <input type="text" name="web" value="" autocomplete="off" tabindex="-1"
+                   class="t-sus-honeypot" aria-hidden="true">
+
+            <input type="text" name="sus_nombre" placeholder="Nombre *" required>
+            <input type="text" name="sus_apellido" placeholder="Apellido">
+            <input type="email" name="sus_email" placeholder="Email">
+            <input type="text" name="sus_whatsapp" placeholder="WhatsApp">
+            <input type="text" name="sus_cumple" placeholder="Cumpleaños (DD/MM)" maxlength="5">
+            <label class="t-sus-check">
+                <input type="checkbox" name="sus_acepta" checked>
+                Quiero recibir ofertas y novedades
+            </label>
+            <button type="submit">Sumarme</button>
+        </form>
+    </div>
+</section>
 
 <footer class="ft">
     <div class="ft-inner">
