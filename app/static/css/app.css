@@ -173,6 +173,9 @@ a { color: inherit; text-decoration: none; }
     position: sticky;
     top: 0;
     height: 100vh;
+    overflow-y: auto;   /* v0.18.3.1 · si el menu crece (ej: Suscriptores) y no
+                           entra en la pantalla, scrollea DENTRO del sidebar en
+                           vez de cortarse o empujar la caja de usuario. */
 }
 .sidebar .brand { padding: 26px 24px; border-bottom: 1px solid #2e2e2e; }
 .sidebar .brand .marca { font-size: 1.15rem; color: var(--crema); }
