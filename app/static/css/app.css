@@ -173,19 +173,31 @@ a { color: inherit; text-decoration: none; }
     position: sticky;
     top: 0;
     height: 100vh;
-    overflow-y: auto;   /* v0.18.3.1 · si el menu crece (ej: Suscriptores) y no
-                           entra en la pantalla, scrollea DENTRO del sidebar en
-                           vez de cortarse o empujar la caja de usuario. */
+    overflow: hidden;   /* v0.19.3 · el sidebar NO scrollea: la marca y la caja de
+                           usuario quedan siempre fijas y visibles. */
 }
-.sidebar .brand { padding: 26px 24px; border-bottom: 1px solid #2e2e2e; }
+.sidebar .brand { padding: 20px 24px; border-bottom: 1px solid #2e2e2e; flex-shrink: 0; }
 .sidebar .brand .marca { font-size: 1.15rem; color: var(--crema); }
 .sidebar .brand .sub { font-size: 0.62rem; color: var(--text-soft); letter-spacing: 0.16em; text-transform: uppercase; margin-top: 6px; }
 
-.nav { flex: 1; padding: 16px 0; }
+/* v0.19.3 · La lista de pestañas se compacta sola: los items reparten el espacio
+   disponible (flex) en vez de tener alto fijo. Si agregamos pestañas nuevas, se
+   ajustan solas sin generar scroll. Si aun asi no entran (pantalla muy baja),
+   recien ahi scrollea SOLO la lista, nunca la marca ni el usuario. */
+.nav {
+    flex: 1; min-height: 0;
+    padding: 8px 0;
+    display: flex; flex-direction: column;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
 .nav a {
-    display: block;
-    padding: 12px 24px;
-    font-size: 0.85rem;
+    display: flex; align-items: center;
+    flex: 1 1 auto;
+    min-height: 34px;
+    max-height: 44px;
+    padding: 6px 24px;
+    font-size: 0.83rem;
     color: #cfcabf;
     border-left: 3px solid transparent;
     transition: all 0.15s ease;
@@ -199,11 +211,16 @@ a { color: inherit; text-decoration: none; }
     padding: 2px 6px; border-radius: 5px; margin-left: 6px; text-transform: uppercase;
 }
 
-/* ---- Caja de usuario + cerrar sesion (v0.13: avatar + boton prolijo) ---- */
-.sidebar .user-box { padding: 18px 20px 20px; border-top: 1px solid #2e2e2e; }
-.sidebar .user-id { display: flex; align-items: center; gap: 11px; margin-bottom: 14px; }
+/* ---- Caja de usuario + cerrar sesion (v0.13: avatar + boton prolijo) ----
+   v0.19.3: flex-shrink:0 -> queda SIEMPRE fija abajo, nunca se corta ni la
+   empujan las pestañas. */
+.sidebar .user-box {
+    padding: 14px 20px 16px; border-top: 1px solid #2e2e2e;
+    flex-shrink: 0;
+}
+.sidebar .user-id { display: flex; align-items: center; gap: 11px; margin-bottom: 11px; }
 .sidebar .user-avatar {
-    width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+    width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
     background: var(--bronce); color: #fff;
     display: flex; align-items: center; justify-content: center;
     font-size: 1rem; font-weight: 700;

@@ -177,23 +177,26 @@
 .lv-flash.error { border-left-color: var(--danger) !important; color: var(--danger) !important; }
 .lv-flash.warning { border-left-color: var(--warning) !important; color: #9a6200 !important; }
 
-/* Franja negra inferior, full width */
+/* Franja negra inferior, full width.
+   v0.19.3 · EN COLUMNA y centrada (como Lofty), no en fila horizontal. */
 .lv-footer {
-    background: var(--carbon); padding: 22px 40px; flex-shrink: 0;
-    display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
-    gap: 18px; text-align: center;
+    background: var(--carbon); padding: 26px 40px 30px; flex-shrink: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 9px; text-align: center;
 }
 .lv-footer-marca {
-    font-size: 0.85rem; letter-spacing: 0.26em; text-transform: uppercase; color: var(--bronce);
+    font-size: 0.9rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--bronce);
     font-family: Georgia, 'Times New Roman', serif;
 }
 .lv-footer-sub {
-    font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: #8a8378;
+    font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase; color: #8a8378;
+    font-weight: 600;
 }
 .lv-pill {
+    margin-top: 4px;
     font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase;
     color: var(--bronce); border: 1px solid var(--bronce);
-    padding: 7px 18px; border-radius: 999px; font-weight: 600;
+    padding: 8px 22px; border-radius: 999px; font-weight: 600;
 }
 
 /* Pantallas bajas o celular: dejamos que scrollee normal (mejor que apretujar
