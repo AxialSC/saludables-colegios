@@ -36,7 +36,7 @@ from .models import (Producto, Pedido, Cobro, ModificacionPedido, ItemPedido,
                      EstadoCotizacion, generar_numero_cotizacion,
                      Banner, ZonaBanner, DestinoBanner,
                      Usuario, Rol, FormaPagoComision, Cliente, Suscriptor,
-                     Factura, FacturaItem)
+                     Factura, FacturaItem, Importacion, ImportacionItem)
 from .food_cost_parser import parsear_factura_pdf
 from .services import aplicar_importacion
 from .utils.decorators import admin_requerido, super_admin_requerido
@@ -87,6 +87,13 @@ def _forzar_cambio_password():
         return redirect(url_for('auth.cambiar_password'))
 
 
+# Alerta de precios desactualizados (v0.20.0). Argentina: los precios se mueven
+# rapido y no tenemos acceso a la base del mayorista -> el sistema le recuerda a
+# Ivan pedirle el Excel nuevo a la vendedora.
+DIAS_AVISO_PRECIOS = 15      # aviso amarillo
+DIAS_ALERTA_PRECIOS = 20     # alerta roja
+
+
 @admin_bp.route('/')
 @admin_requerido
 def dashboard():
@@ -108,7 +115,29 @@ def dashboard():
         'pedidos_pendientes': Pedido.query.filter_by(estado=EstadoPedido.PENDIENTE).count(),
         'ventas_mes': float(ventas_mes),
     }
-    return render_template('admin/dashboard.html', stats=stats)
+
+    # --- v0.20.0: control de precios ---
+    ultima_imp = Importacion.query.order_by(Importacion.creado.desc()).first()
+    dias_precios = None
+    nivel_precios = 'ok'      # ok | aviso | alerta | nunca
+    if ultima_imp and ultima_imp.creado:
+        dias_precios = (_ahora() - ultima_imp.creado).days
+        if dias_precios >= DIAS_ALERTA_PRECIOS:
+            nivel_precios = 'alerta'
+        elif dias_precios >= DIAS_AVISO_PRECIOS:
+            nivel_precios = 'aviso'
+    else:
+        nivel_precios = 'nunca'
+
+    ultima_factura = Factura.query.order_by(Factura.subida_en.desc()).first()
+    n_suscriptores = Suscriptor.query.filter_by(activo=True).count()
+
+    return render_template('admin/dashboard.html', stats=stats,
+                           ultima_imp=ultima_imp, dias_precios=dias_precios,
+                           nivel_precios=nivel_precios,
+                           dias_aviso=DIAS_AVISO_PRECIOS,
+                           ultima_factura=ultima_factura,
+                           n_suscriptores=n_suscriptores)
 
 
 # ======================= PEDIDOS (CRM) =======================
@@ -1623,7 +1652,7 @@ def importar():
 
         try:
             productos, resumen = leer_planilla(ruta)
-            res = aplicar_importacion(productos)
+            res = aplicar_importacion(productos, archivo=nombre, usuario=current_user.nombre)
         except ValueError as e:
             flash(f'No se pudo importar: {e}', 'error')
             return redirect(url_for('admin.importar'))
@@ -1643,6 +1672,60 @@ def importar():
             + (f' · {res["fuera_de_lista"]} fuera de la última lista'
                if res['fuera_de_lista'] else ''),
             'success')
-        return redirect(url_for('admin.catalogo'))
+
+        # v0.20.0: resumen de lo que cambió de precio + link al detalle
+        if res['subieron'] or res['bajaron']:
+            partes = []
+            if res['subieron']:
+                partes.append(f'{res["subieron"]} subieron')
+            if res['bajaron']:
+                partes.append(f'{res["bajaron"]} bajaron')
+            msg = 'Cambios de precio: ' + ' · '.join(partes)
+            if res['variacion_promedio'] is not None:
+                signo = '+' if res['variacion_promedio'] > 0 else ''
+                msg += f' · Variación promedio {signo}{res["variacion_promedio"]}%'
+            flash(msg, 'warning')
+
+        return redirect(url_for('admin.importacion_detalle', iid=res['importacion_id']))
 
     return render_template('admin/importar.html')
+
+
+# ======================= HISTORIAL DE PRECIOS (v0.20.0) =======================
+# Cada planilla importada queda registrada con su resumen y el detalle de que
+# producto subio o bajo. Es el control de precios del mayorista: sin acceso a la
+# base de Torres, esta es la unica forma de saber que cambio y cuando.
+
+@admin_bp.route('/precios')
+@admin_requerido
+def importaciones():
+    """Historial de todas las planillas importadas."""
+    lista = Importacion.query.order_by(Importacion.creado.desc()).all()
+    return render_template('admin/importaciones.html', lista=lista)
+
+
+@admin_bp.route('/precios/<int:iid>')
+@admin_requerido
+def importacion_detalle(iid):
+    """Detalle de una importación: qué producto subió/bajó, ordenado por mayor suba."""
+    imp = Importacion.query.get_or_404(iid)
+    filtro = (request.args.get('f') or 'cambios').strip()   # cambios | subieron | bajaron | nuevos
+
+    stmt = ImportacionItem.query.filter_by(importacion_id=iid)
+    if filtro == 'subieron':
+        stmt = stmt.filter(ImportacionItem.es_nuevo.is_(False),
+                           ImportacionItem.variacion_pct > 0)
+    elif filtro == 'bajaron':
+        stmt = stmt.filter(ImportacionItem.es_nuevo.is_(False),
+                           ImportacionItem.variacion_pct < 0)
+    elif filtro == 'nuevos':
+        stmt = stmt.filter(ImportacionItem.es_nuevo.is_(True))
+    else:
+        filtro = 'cambios'
+        stmt = stmt.filter(ImportacionItem.es_nuevo.is_(False))
+
+    # Mayor suba primero (lo que más te duele, arriba)
+    items = stmt.order_by(ImportacionItem.variacion_pct.desc().nullslast()).all()
+
+    return render_template('admin/importacion_detalle.html', imp=imp,
+                           items=items, filtro=filtro)

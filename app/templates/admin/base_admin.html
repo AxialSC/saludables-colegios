@@ -29,6 +29,8 @@
                class="{% if 'suscriptor' in request.endpoint %}activo{% endif %}">📩 Suscriptores</a>
             <a href="{{ url_for('admin.ajustes') }}"
                class="{% if request.endpoint == 'admin.ajustes' %}activo{% endif %}">Ajustes y precios</a>
+            <a href="{{ url_for('admin.importaciones') }}"
+               class="{% if 'importacion' in request.endpoint %}activo{% endif %}">📈 Historial de precios</a>
             {% if current_user.es_super_admin %}
             <a href="{{ url_for('admin.importar') }}"
                class="{% if request.endpoint == 'admin.importar' %}activo{% endif %}">Importar planilla</a>
@@ -42,7 +44,6 @@
                class="{% if 'food_cost' in request.endpoint %}activo{% endif %}">📊 Food Cost</a>
             {% endif %}
             <a href="{{ url_for('cliente.catalogo') }}" target="_blank">Ver tienda ↗</a>
-            <a href="#" class="disabled">Reportes <span class="badge-soon">v0.7</span></a>
             {% if current_user.es_super_admin %}
             <a href="{{ url_for('admin.usuarios') }}"
                class="{% if 'usuario' in request.endpoint %}activo{% endif %}">👥 Usuarios</a>

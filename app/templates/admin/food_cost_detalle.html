@@ -14,18 +14,27 @@
   }
   .fcd-resumen div { font-size: 0.72rem; color: #888; letter-spacing: .06em; text-transform: uppercase; }
   .fcd-resumen b { display: block; font-size: 1.1rem; margin-top: 3px; color: var(--text-dark); font-weight: 700; }
-  .fcd-tabla { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .fcd-tabla {
+    width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.86rem;
+    background: #fff; border: 1px solid var(--divider); border-radius: var(--radius);
+    overflow: hidden;
+  }
   .fcd-tabla th {
     text-align: left; background: var(--carbon); color: var(--bronce);
-    padding: 10px 12px; font-size: 0.7rem; letter-spacing: .06em; text-transform: uppercase;
+    padding: 12px 14px; font-size: 0.68rem; letter-spacing: .1em; text-transform: uppercase;
+    font-weight: 600;
   }
-  .fcd-tabla td { padding: 10px 12px; border-bottom: 1px solid var(--divider); }
-  .fcd-tabla tr:nth-child(even) td { background: #FAF8F4; }
+  /* v0.20.0 · borde CONTINUO (border-top en la celda, no border-bottom cortado)
+     y sin rayas alternadas: se veia un corte feo al final de cada linea. */
+  .fcd-tabla td { padding: 12px 14px; border-top: 1px solid var(--divider); }
+  .fcd-tabla tbody tr:hover td { background: #FAF8F4; }
+  .fcd-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .fcd-acc { text-align: right; white-space: nowrap; }
   .fcd-subio { color: #c62828; font-weight: 700; }
   .fcd-bajo { color: #2e7d32; font-weight: 700; }
   .fcd-sin { color: #999; font-style: italic; }
   .fcd-btn-mini {
-    padding: 5px 11px; border-radius: 6px; border: 1px solid var(--divider); background: #fff;
+    padding: 6px 12px; border-radius: 6px; border: 1px solid var(--divider); background: #fff;
     font-size: 0.75rem; font-weight: 700; cursor: pointer;
   }
   .fcd-btn-mini:hover { border-color: var(--bronce); color: var(--bronce); }
@@ -53,11 +62,11 @@
       <tr>
         <th>Código</th>
         <th>Descripción</th>
-        <th>Unid.</th>
-        <th>Costo factura</th>
-        <th>Costo actual</th>
-        <th>Variación</th>
-        <th></th>
+        <th class="fcd-num">Unid.</th>
+        <th class="fcd-num">Costo factura</th>
+        <th class="fcd-num">Costo actual</th>
+        <th class="fcd-num">Variación</th>
+        <th class="fcd-acc"></th>
       </tr>
     </thead>
     <tbody>
@@ -65,16 +74,16 @@
       <tr>
         <td>{{ it.codigo }}</td>
         <td>{{ it.descripcion }}</td>
-        <td>{{ it.unidades }}</td>
-        <td>{{ it.costo_unitario|pesos }}</td>
-        <td>
+        <td class="fcd-num">{{ it.unidades|int }}</td>
+        <td class="fcd-num">{{ it.costo_unitario|pesos }}</td>
+        <td class="fcd-num">
           {% if it.producto %}
             {{ it.costo_neto_anterior|pesos if it.costo_neto_anterior else '—' }}
           {% else %}
             <span class="fcd-sin">sin vincular</span>
           {% endif %}
         </td>
-        <td>
+        <td class="fcd-num">
           {% if it.variacion_pct is not none %}
             <span class="{{ 'fcd-subio' if it.variacion_pct > 0 else 'fcd-bajo' }}">
               {{ '+' if it.variacion_pct > 0 else '' }}{{ it.variacion_pct }}%
@@ -83,7 +92,7 @@
             —
           {% endif %}
         </td>
-        <td>
+        <td class="fcd-acc">
           {% if it.producto %}
             {% if it.actualizado %}
               <span class="fcd-ok">✓ Actualizado</span>

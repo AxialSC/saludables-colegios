@@ -1,0 +1,67 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Historial de precios · {{ app_nombre }}{% endblock %}
+{% block seccion %}Control de precios{% endblock %}
+{% block titulo %}📈 Historial de precios{% endblock %}
+
+{% block contenido %}
+<style>
+    .hp-intro { color: var(--text-soft); font-size: 0.88rem; margin-bottom: 20px; max-width: 720px; }
+    .hp-tabla { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.86rem;
+        background: #fff; border: 1px solid var(--divider); border-radius: var(--radius); overflow: hidden; }
+    .hp-tabla th {
+        text-align: left; background: var(--carbon); color: var(--bronce);
+        padding: 12px 14px; font-size: 0.68rem; letter-spacing: .1em; text-transform: uppercase;
+        font-weight: 600;
+    }
+    .hp-tabla td { padding: 13px 14px; border-top: 1px solid var(--divider); }
+    .hp-tabla tbody tr:hover td { background: #FAF8F4; }
+    .hp-sube { color: var(--danger); font-weight: 700; }
+    .hp-baja { color: var(--success); font-weight: 700; }
+    .hp-link { color: var(--bronce); font-weight: 700; }
+    .hp-link:hover { text-decoration: underline; }
+    .hp-vacio { text-align: center; color: var(--text-soft); padding: 40px; }
+</style>
+
+<p class="hp-intro">
+    Cada vez que importás una planilla del mayorista, el sistema compara los precios nuevos
+    contra los que tenías y guarda el detalle. Así podés controlar qué te subió Torres y cuándo,
+    aunque no tengas acceso a su base.
+</p>
+
+<table class="hp-tabla">
+    <thead>
+        <tr>
+            <th>Fecha</th>
+            <th>Archivo</th>
+            <th>Subieron</th>
+            <th>Bajaron</th>
+            <th>Nuevos</th>
+            <th>Var. promedio</th>
+            <th>Catálogo</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for i in lista %}
+        <tr>
+            <td>{{ i.creado.strftime('%d/%m/%Y %H:%M') if i.creado else '—' }}</td>
+            <td>{{ i.archivo or '—' }}</td>
+            <td><span class="hp-sube">{{ i.subieron }}</span></td>
+            <td><span class="hp-baja">{{ i.bajaron }}</span></td>
+            <td>{{ i.nuevos }}</td>
+            <td>
+                {% if i.variacion_promedio is not none %}
+                <span class="{{ 'hp-sube' if i.variacion_promedio > 0 else 'hp-baja' }}">
+                    {{ '+' if i.variacion_promedio > 0 else '' }}{{ i.variacion_promedio }}%
+                </span>
+                {% else %}—{% endif %}
+            </td>
+            <td>{{ i.total_catalogo }}</td>
+            <td><a class="hp-link" href="{{ url_for('admin.importacion_detalle', iid=i.id) }}">Ver detalle →</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="hp-vacio">Todavía no importaste ninguna planilla.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

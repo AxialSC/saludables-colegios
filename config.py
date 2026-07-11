@@ -7,8 +7,10 @@ desde el context_processor en app/__init__.py.
 
 v0.18.3 -> C2: alta de suscriptores (form publico + panel admin + export CSV).
 v0.19.0 -> Login rediseñado, estilo "El Arquitecto" (referencia: portal Lofty).
-v0.19.1 -> Food Cost real: lector de facturas PDF de Torres, cruce por codigo
-           contra el catalogo y aviso de subas de costo.
+v0.19.1 -> Food Cost real: lector de facturas PDF de Torres.
+v0.19.3 -> Fixes visuales: login sin scroll, sidebar auto-ajustable.
+v0.20.0 -> HISTORIAL DE PRECIOS: cada planilla importada queda registrada con el
+           detalle de que producto subio/bajo. Dashboard con alertas.
 """
 import os
 
@@ -21,7 +23,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.19.1'
+    APP_VERSION = '0.20.0'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 

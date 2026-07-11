@@ -4,7 +4,90 @@
 {% block titulo %}Hola, {{ current_user.nombre.split(' ')[0] }}{% endblock %}
 
 {% block contenido %}
+<style>
+    /* v0.20.0 · Boxes de control de precios */
+    .dash-alerta {
+        display: flex; align-items: center; gap: 14px;
+        padding: 16px 20px; border-radius: var(--radius); margin-bottom: 22px;
+        border: 1px solid transparent; font-size: 0.9rem;
+    }
+    .dash-alerta .ic { font-size: 1.5rem; line-height: 1; flex-shrink: 0; }
+    .dash-alerta .txt { flex: 1; }
+    .dash-alerta b { display: block; margin-bottom: 2px; }
+    .dash-alerta small { color: inherit; opacity: .85; }
+    .dash-alerta .accion {
+        flex-shrink: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: .08em;
+        text-transform: uppercase; padding: 9px 16px; border-radius: 8px;
+        background: var(--carbon); color: var(--crema);
+    }
+    .dash-alerta .accion:hover { background: #000; }
+    .dash-alerta.alerta { background: #fdeaea; border-color: #f3cccc; color: #8e2020; }
+    .dash-alerta.aviso  { background: #fff6e8; border-color: #ffe0b3; color: #8a5a00; }
+    .dash-alerta.ok     { background: #eaf5ea; border-color: #cfe8cf; color: #24632a; }
+    .dash-alerta.nunca  { background: #f0ede8; border-color: var(--divider); color: #5a5148; }
 
+    .dash-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    @media (max-width: 900px) { .dash-cols { grid-template-columns: 1fr; } }
+
+    .dash-mini { }
+    .dash-mini h3 { font-weight: 500; margin-bottom: 14px; font-size: 1.05rem; }
+    .dash-fila {
+        display: flex; justify-content: space-between; align-items: baseline;
+        padding: 9px 0; border-bottom: 1px solid var(--divider); font-size: 0.86rem;
+    }
+    .dash-fila:last-of-type { border-bottom: none; }
+    .dash-fila .k { color: var(--text-soft); }
+    .dash-fila .v { font-weight: 700; }
+    .dash-fila .v.sube { color: var(--danger); }
+    .dash-fila .v.baja { color: var(--success); }
+    .dash-link {
+        display: inline-block; margin-top: 14px; font-size: 0.78rem; font-weight: 700;
+        color: var(--bronce); letter-spacing: .04em;
+    }
+    .dash-link:hover { text-decoration: underline; }
+    .dash-vacio { color: var(--text-soft); font-size: 0.86rem; }
+</style>
+
+{# ===== ALERTA DE PRECIOS (lo primero que se ve) ===== #}
+{% if nivel_precios == 'nunca' %}
+<div class="dash-alerta nunca">
+    <span class="ic">📋</span>
+    <div class="txt">
+        <b>Todavía no importaste ninguna planilla</b>
+        <small>Cuando subas la primera lista del mayorista, el sistema va a empezar a llevarte el control de precios.</small>
+    </div>
+    <a class="accion" href="{{ url_for('admin.importar') }}">Importar</a>
+</div>
+{% elif nivel_precios == 'alerta' %}
+<div class="dash-alerta alerta">
+    <span class="ic">🔴</span>
+    <div class="txt">
+        <b>Hace {{ dias_precios }} días que no actualizás los precios</b>
+        <small>Pedile la lista nueva a tu vendedora de Torres. Con los precios viejos podés estar vendiendo por debajo de tu margen real.</small>
+    </div>
+    <a class="accion" href="{{ url_for('admin.importar') }}">Importar planilla</a>
+</div>
+{% elif nivel_precios == 'aviso' %}
+<div class="dash-alerta aviso">
+    <span class="ic">🟡</span>
+    <div class="txt">
+        <b>Pasaron {{ dias_precios }} días desde la última lista</b>
+        <small>Ya conviene pedirle el Excel actualizado a tu vendedora.</small>
+    </div>
+    <a class="accion" href="{{ url_for('admin.importar') }}">Importar planilla</a>
+</div>
+{% else %}
+<div class="dash-alerta ok">
+    <span class="ic">🟢</span>
+    <div class="txt">
+        <b>Precios al día</b>
+        <small>Última lista importada hace {{ dias_precios }} día(s). Te aviso a los {{ dias_aviso }} días.</small>
+    </div>
+    <a class="accion" href="{{ url_for('admin.importaciones') }}">Ver historial</a>
+</div>
+{% endif %}
+
+{# ===== KPIs ===== #}
 <div class="stats-grid">
     <div class="stat-card dark">
         <div class="label">Productos en catálogo</div>
@@ -19,18 +102,85 @@
         <div class="valor">{{ stats.pedidos_pendientes }}</div>
     </div>
     <div class="stat-card">
+        <div class="label">Suscriptores</div>
+        <div class="valor">{{ n_suscriptores }}</div>
+    </div>
+    <div class="stat-card">
         <div class="label">Ventas del mes</div>
-        <div class="valor">${{ stats.ventas_mes }}</div>
+        <div class="valor">{{ stats.ventas_mes|pesos }}</div>
     </div>
 </div>
 
-<div class="panel">
-    <h3>Sistema iniciado correctamente ✦</h3>
-    <p>
-        Esta es la base del sistema (v{{ app_version }}). El catálogo, el importador de planillas,
-        los clientes y los pedidos se van a ir habilitando en las próximas versiones.
-        Por ahora ya tenés login seguro, roles y la identidad visual lista.
-    </p>
-</div>
+{# ===== DOS PANELES: última lista + última factura ===== #}
+<div class="dash-cols">
 
+    <div class="panel dash-mini">
+        <h3>📈 Última lista importada</h3>
+        {% if ultima_imp %}
+        <div class="dash-fila">
+            <span class="k">Fecha</span>
+            <span class="v">{{ ultima_imp.creado.strftime('%d/%m/%Y') }}</span>
+        </div>
+        <div class="dash-fila">
+            <span class="k">Subieron de precio</span>
+            <span class="v sube">{{ ultima_imp.subieron }}</span>
+        </div>
+        <div class="dash-fila">
+            <span class="k">Bajaron de precio</span>
+            <span class="v baja">{{ ultima_imp.bajaron }}</span>
+        </div>
+        <div class="dash-fila">
+            <span class="k">Sin cambios</span>
+            <span class="v">{{ ultima_imp.sin_cambio }}</span>
+        </div>
+        <div class="dash-fila">
+            <span class="k">Productos nuevos</span>
+            <span class="v">{{ ultima_imp.nuevos }}</span>
+        </div>
+        {% if ultima_imp.variacion_promedio is not none %}
+        <div class="dash-fila">
+            <span class="k">Variación promedio</span>
+            <span class="v {{ 'sube' if ultima_imp.variacion_promedio > 0 else 'baja' }}">
+                {{ '+' if ultima_imp.variacion_promedio > 0 else '' }}{{ ultima_imp.variacion_promedio }}%
+            </span>
+        </div>
+        {% endif %}
+        <a class="dash-link" href="{{ url_for('admin.importacion_detalle', iid=ultima_imp.id) }}">
+            Ver qué cambió →
+        </a>
+        {% else %}
+        <p class="dash-vacio">Todavía no importaste ninguna planilla.</p>
+        {% endif %}
+    </div>
+
+    <div class="panel dash-mini">
+        <h3>🧾 Última factura de Torres</h3>
+        {% if ultima_factura %}
+        <div class="dash-fila">
+            <span class="k">N° Factura</span>
+            <span class="v">{{ ultima_factura.numero }}</span>
+        </div>
+        <div class="dash-fila">
+            <span class="k">Fecha</span>
+            <span class="v">{{ ultima_factura.fecha.strftime('%d/%m/%Y') if ultima_factura.fecha else '—' }}</span>
+        </div>
+        <div class="dash-fila">
+            <span class="k">Total</span>
+            <span class="v">{{ ultima_factura.total|pesos if ultima_factura.total else '—' }}</span>
+        </div>
+        <div class="dash-fila">
+            <span class="k">Renglones leídos</span>
+            <span class="v">{{ ultima_factura.items|length }}</span>
+        </div>
+        <a class="dash-link" href="{{ url_for('admin.food_cost_detalle', fid=ultima_factura.id) }}">
+            Ver comparación de costos →
+        </a>
+        {% else %}
+        <p class="dash-vacio">Todavía no cargaste ninguna factura.
+            <a class="dash-link" href="{{ url_for('admin.food_cost') }}">Subir una →</a>
+        </p>
+        {% endif %}
+    </div>
+
+</div>
 {% endblock %}

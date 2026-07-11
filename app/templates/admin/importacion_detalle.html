@@ -1,0 +1,107 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Cambios de precio · {{ app_nombre }}{% endblock %}
+{% block seccion %}Control de precios{% endblock %}
+{% block titulo %}📈 Lista del {{ imp.creado.strftime('%d/%m/%Y') if imp.creado else '—' }}{% endblock %}
+
+{% block contenido %}
+<style>
+    .id-volver { display: inline-block; margin-bottom: 16px; font-size: 0.82rem;
+        color: var(--bronce); font-weight: 700; }
+    .id-volver:hover { text-decoration: underline; }
+    .id-resumen {
+        background: #fff; border: 1px solid var(--divider); border-radius: var(--radius);
+        padding: 20px 26px; margin-bottom: 20px; display: flex; gap: 36px; flex-wrap: wrap;
+        box-shadow: var(--shadow);
+    }
+    .id-resumen div { font-size: 0.66rem; color: var(--text-soft); letter-spacing: .12em; text-transform: uppercase; }
+    .id-resumen b { display: block; font-size: 1.35rem; margin-top: 5px; color: var(--text-dark); font-weight: 700; }
+    .id-resumen b.sube { color: var(--danger); }
+    .id-resumen b.baja { color: var(--success); }
+
+    .id-filtros { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .id-filtro {
+        font-size: 0.78rem; font-weight: 700; padding: 8px 16px; border-radius: 8px;
+        background: #fff; border: 1px solid var(--divider); color: var(--text-dark);
+    }
+    .id-filtro:hover { border-color: var(--bronce); }
+    .id-filtro.activo { background: var(--carbon); color: var(--crema); border-color: var(--carbon); }
+
+    .id-tabla { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.86rem;
+        background: #fff; border: 1px solid var(--divider); border-radius: var(--radius); overflow: hidden; }
+    .id-tabla th {
+        text-align: left; background: var(--carbon); color: var(--bronce);
+        padding: 12px 14px; font-size: 0.68rem; letter-spacing: .1em; text-transform: uppercase;
+        font-weight: 600; position: sticky; top: 0;
+    }
+    .id-tabla td { padding: 12px 14px; border-top: 1px solid var(--divider); }
+    .id-tabla tbody tr:hover td { background: #FAF8F4; }
+    .id-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .id-sube { color: var(--danger); font-weight: 700; }
+    .id-baja { color: var(--success); font-weight: 700; }
+    .id-nuevo {
+        display: inline-block; background: var(--bronce); color: #fff; font-size: 0.62rem;
+        font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+        padding: 3px 9px; border-radius: 20px;
+    }
+    .id-vacio { text-align: center; color: var(--text-soft); padding: 40px; }
+</style>
+
+<a class="id-volver" href="{{ url_for('admin.importaciones') }}">← Volver al historial</a>
+
+<div class="id-resumen">
+    <div>Subieron<b class="sube">{{ imp.subieron }}</b></div>
+    <div>Bajaron<b class="baja">{{ imp.bajaron }}</b></div>
+    <div>Sin cambios<b>{{ imp.sin_cambio }}</b></div>
+    <div>Nuevos<b>{{ imp.nuevos }}</b></div>
+    <div>Fuera de lista<b>{{ imp.fuera_de_lista }}</b></div>
+    {% if imp.variacion_promedio is not none %}
+    <div>Variación promedio<b class="{{ 'sube' if imp.variacion_promedio > 0 else 'baja' }}">
+        {{ '+' if imp.variacion_promedio > 0 else '' }}{{ imp.variacion_promedio }}%</b></div>
+    {% endif %}
+</div>
+
+<div class="id-filtros">
+    <a class="id-filtro {% if filtro == 'cambios' %}activo{% endif %}"
+       href="{{ url_for('admin.importacion_detalle', iid=imp.id, f='cambios') }}">Todos los cambios</a>
+    <a class="id-filtro {% if filtro == 'subieron' %}activo{% endif %}"
+       href="{{ url_for('admin.importacion_detalle', iid=imp.id, f='subieron') }}">🔺 Subieron ({{ imp.subieron }})</a>
+    <a class="id-filtro {% if filtro == 'bajaron' %}activo{% endif %}"
+       href="{{ url_for('admin.importacion_detalle', iid=imp.id, f='bajaron') }}">🔻 Bajaron ({{ imp.bajaron }})</a>
+    <a class="id-filtro {% if filtro == 'nuevos' %}activo{% endif %}"
+       href="{{ url_for('admin.importacion_detalle', iid=imp.id, f='nuevos') }}">✨ Nuevos ({{ imp.nuevos }})</a>
+</div>
+
+<table class="id-tabla">
+    <thead>
+        <tr>
+            <th>Código</th>
+            <th>Producto</th>
+            <th class="id-num">Costo anterior</th>
+            <th class="id-num">Costo nuevo</th>
+            <th class="id-num">Variación</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for it in items %}
+        <tr>
+            <td>{{ it.codigo }}</td>
+            <td>{{ it.nombre }}</td>
+            <td class="id-num">
+                {% if it.es_nuevo %}<span class="id-nuevo">Nuevo</span>
+                {% else %}{{ it.costo_anterior|pesos }}{% endif %}
+            </td>
+            <td class="id-num">{{ it.costo_nuevo|pesos }}</td>
+            <td class="id-num">
+                {% if it.variacion_pct is not none %}
+                <span class="{{ 'id-sube' if it.variacion_pct > 0 else 'id-baja' }}">
+                    {{ '+' if it.variacion_pct > 0 else '' }}{{ it.variacion_pct }}%
+                </span>
+                {% else %}—{% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="id-vacio">No hay productos en este filtro.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

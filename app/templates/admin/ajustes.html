@@ -4,76 +4,125 @@
 {% block titulo %}Ajustes y precios{% endblock %}
 
 {% block contenido %}
+<style>
+    /* v0.20.0 · 2 columnas: aprovecha el ancho y entra todo sin scroll */
+    .aj-cols { display: grid; grid-template-columns: 1.25fr 1fr; gap: 20px; align-items: start; }
+    @media (max-width: 980px) { .aj-cols { grid-template-columns: 1fr; } }
 
-<div class="panel" style="max-width: 680px;">
-    <h3>Cómo se calculan tus precios</h3>
-    <p style="margin-bottom: 22px;">
-        El precio que ve el cliente sale de: <b>costo ÷ (1 − margen)</b> y después se le suma el
-        IVA del 21%. El margen es <b>sobre la venta</b>: si ponés 30%, de cada $100 que paga el
-        cliente, $30 son tu ganancia. El sistema <b>nunca</b> deja vender por debajo del margen mínimo.
-    </p>
+    .aj-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+    .aj-grid .campo.full { grid-column: 1 / -1; }
+    .aj-nota { color: var(--text-soft); font-size: 0.85rem; line-height: 1.55; margin-bottom: 20px; }
 
-    <form method="POST" action="{{ url_for('admin.ajustes') }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    .aj-ej-valor {
+        font-size: 1.6rem; font-weight: 800; color: #6b5638; margin: 6px 0 4px;
+        letter-spacing: -.01em;
+    }
+    .aj-ej-detalle { font-size: 0.78rem; color: var(--text-soft); line-height: 1.6; }
+    .aj-ej-fila {
+        display: flex; justify-content: space-between; padding: 8px 0;
+        border-bottom: 1px solid var(--divider); font-size: 0.84rem;
+    }
+    .aj-ej-fila:last-child { border-bottom: none; }
+    .aj-ej-fila .v { font-weight: 700; }
+    .aj-tip {
+        margin-top: 16px; padding: 12px 14px; border-radius: 9px;
+        background: #FBF4E6; border: 1px solid #E8D9B0; color: #7a5b1e;
+        font-size: 0.8rem; line-height: 1.5;
+    }
+</style>
 
-        <div class="campo">
-            <label for="markup_general">Markup general de la web (%)</label>
-            <input type="number" step="0.5" min="20" id="markup_general" name="markup_general"
-                   value="{{ '%.1f'|format(aj.markup_general|float) }}">
-        </div>
+<div class="aj-cols">
 
-        <div class="campo">
-            <label for="markup_minimo">Margen mínimo — piso de seguridad (%)</label>
-            <input type="number" step="0.5" min="20" id="markup_minimo" name="markup_minimo"
-                   value="{{ '%.1f'|format(aj.markup_minimo|float) }}">
-        </div>
+    <!-- Columna izquierda: el formulario -->
+    <div class="panel">
+        <h3>Cómo se calculan tus precios</h3>
+        <p class="aj-nota">
+            El precio que ve el cliente sale de <b>costo ÷ (1 − margen)</b>, y después se le suma el
+            IVA del 21%. El margen es <b>sobre la venta</b>: si ponés 30%, de cada $100 que paga el
+            cliente, $30 son tu ganancia. El sistema <b>nunca</b> deja vender por debajo del margen mínimo.
+        </p>
 
-        <div style="display:flex; gap:14px;">
-            <div class="campo" style="flex:1;">
-                <label for="desc_x5">Descuento por 5 unidades (%)</label>
-                <input type="number" step="0.5" min="0" id="desc_x5" name="desc_x5"
-                       value="{{ '%.1f'|format(aj.desc_x5|float) }}">
+        <form method="POST" action="{{ url_for('admin.ajustes') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="aj-grid">
+                <div class="campo">
+                    <label for="markup_general">Markup general (%)</label>
+                    <input type="number" step="0.5" min="20" id="markup_general" name="markup_general"
+                           value="{{ '%.1f'|format(aj.markup_general|float) }}">
+                </div>
+
+                <div class="campo">
+                    <label for="markup_minimo">Margen mínimo — piso (%)</label>
+                    <input type="number" step="0.5" min="20" id="markup_minimo" name="markup_minimo"
+                           value="{{ '%.1f'|format(aj.markup_minimo|float) }}">
+                </div>
+
+                <div class="campo">
+                    <label for="desc_x5">Descuento x5 unidades (%)</label>
+                    <input type="number" step="0.5" min="0" id="desc_x5" name="desc_x5"
+                           value="{{ '%.1f'|format(aj.desc_x5|float) }}">
+                </div>
+
+                <div class="campo">
+                    <label for="desc_x10">Descuento x10 unidades (%)</label>
+                    <input type="number" step="0.5" min="0" id="desc_x10" name="desc_x10"
+                           value="{{ '%.1f'|format(aj.desc_x10|float) }}">
+                </div>
+
+                <div class="campo full">
+                    <label for="minimo_compra">Compra mínima del carrito (con IVA, $)</label>
+                    <input type="number" step="100" min="0" id="minimo_compra" name="minimo_compra"
+                           value="{{ '%.0f'|format(aj.minimo_compra|float) }}">
+                </div>
+
+                <div class="campo">
+                    <label for="whatsapp">WhatsApp de Juliana</label>
+                    <input type="text" id="whatsapp" name="whatsapp" value="{{ aj.whatsapp }}"
+                           placeholder="5491171352560">
+                </div>
+
+                <div class="campo">
+                    <label for="nombre_negocio">Nombre del negocio</label>
+                    <input type="text" id="nombre_negocio" name="nombre_negocio" value="{{ aj.nombre_negocio }}">
+                </div>
             </div>
-            <div class="campo" style="flex:1;">
-                <label for="desc_x10">Descuento por 10 unidades (%)</label>
-                <input type="number" step="0.5" min="0" id="desc_x10" name="desc_x10"
-                       value="{{ '%.1f'|format(aj.desc_x10|float) }}">
-            </div>
+
+            <button type="submit" class="btn btn-bronce btn-block" style="margin-top:8px;">Guardar ajustes</button>
+        </form>
+    </div>
+
+    <!-- Columna derecha: ejemplo en vivo -->
+    <div class="panel">
+        <h3>Ejemplo en vivo</h3>
+        <p class="aj-nota" style="margin-bottom:14px;">
+            Con tu markup actual de <b>{{ '%.0f'|format(aj.markup_general|float) }}%</b>,
+            un producto que te cuesta <b>$100</b> sin IVA:
+        </p>
+
+        {% set neta = 100 / (1 - (aj.markup_general|float)/100) %}
+        <div class="aj-ej-valor">${{ '%.2f'|format(neta * 1.21) }}</div>
+        <div class="aj-ej-detalle" style="margin-bottom:16px;">precio final que paga el cliente</div>
+
+        <div class="aj-ej-fila">
+            <span>Tu costo</span><span class="v">$100,00</span>
+        </div>
+        <div class="aj-ej-fila">
+            <span>Venta neta</span><span class="v">${{ '%.2f'|format(neta) }}</span>
+        </div>
+        <div class="aj-ej-fila">
+            <span>IVA 21%</span><span class="v">${{ '%.2f'|format(neta * 0.21) }}</span>
+        </div>
+        <div class="aj-ej-fila">
+            <span>Ganancia limpia</span>
+            <span class="v" style="color:var(--success);">${{ '%.2f'|format(neta - 100) }}</span>
         </div>
 
-        <div class="campo">
-            <label for="minimo_compra">Compra mínima del carrito (con IVA, $)</label>
-            <input type="number" step="100" min="0" id="minimo_compra" name="minimo_compra"
-                   value="{{ '%.0f'|format(aj.minimo_compra|float) }}">
+        <div class="aj-tip">
+            💡 Los precios del catálogo se recalculan solos al guardar. El piso del <b>10%</b>
+            de las ofertas es fijo y no se toca desde acá: es tu red de seguridad.
         </div>
+    </div>
 
-        <div class="campo">
-            <label for="whatsapp">WhatsApp de Juliana (sin +, ej 5491171352560)</label>
-            <input type="text" id="whatsapp" name="whatsapp" value="{{ aj.whatsapp }}">
-        </div>
-
-        <div class="campo">
-            <label for="nombre_negocio">Nombre del negocio (se muestra en la tienda)</label>
-            <input type="text" id="nombre_negocio" name="nombre_negocio" value="{{ aj.nombre_negocio }}">
-        </div>
-
-        <button type="submit" class="btn btn-bronce btn-block">Guardar ajustes</button>
-    </form>
 </div>
-
-<div class="panel" style="max-width: 680px; margin-top: 18px;">
-    <h3>Ejemplo en vivo</h3>
-    <p style="font-size:0.85rem;">
-        Con tu markup actual de <b>{{ '%.0f'|format(aj.markup_general|float) }}%</b>,
-        un producto que te cuesta <b>$100</b> sin IVA se vende a:
-    </p>
-    {% set neta = 100 / (1 - (aj.markup_general|float)/100) %}
-    <p style="font-size:1.1rem; font-weight:800; color:#6b5638;">
-        ${{ '%.2f'|format(neta * 1.21) }} final
-        <span style="font-size:0.75rem; color:var(--text-soft); font-weight:400;">
-            (venta neta ${{ '%.2f'|format(neta) }} + IVA · ganancia limpia ${{ '%.2f'|format(neta - 100) }})
-        </span>
-    </p>
-</div>
-
 {% endblock %}

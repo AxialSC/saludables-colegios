@@ -885,3 +885,70 @@ class FacturaItem(db.Model):
 
     def __repr__(self):
         return f'<FacturaItem {self.codigo} factura={self.factura_id}>'
+
+
+# ============================================================================
+#  v0.20.0 — HISTORIAL DE IMPORTACIONES (control de precios del mayorista)
+# ============================================================================
+
+class Importacion(db.Model):
+    """
+    Registro de cada planilla del mayorista importada (v0.20.0).
+
+    Sin acceso a la base de Torres, esta es la unica forma de saber QUE cambio
+    y CUANDO. Guarda el resumen (cuantos subieron / bajaron / nuevos) y, en
+    ImportacionItem, el detalle producto por producto.
+
+    No se borra nunca: es el historial de precios del negocio.
+    """
+    __tablename__ = 'importaciones'
+
+    id = db.Column(db.Integer, primary_key=True)
+    archivo = db.Column(db.String(255), nullable=True)     # nombre del Excel subido
+    creado = db.Column(db.DateTime, default=_ahora, index=True)
+    creado_por = db.Column(db.String(80), nullable=True)
+
+    # Resumen de lo que paso en esta importacion
+    nuevos = db.Column(db.Integer, nullable=False, default=0)
+    actualizados = db.Column(db.Integer, nullable=False, default=0)
+    subieron = db.Column(db.Integer, nullable=False, default=0)
+    bajaron = db.Column(db.Integer, nullable=False, default=0)
+    sin_cambio = db.Column(db.Integer, nullable=False, default=0)
+    fuera_de_lista = db.Column(db.Integer, nullable=False, default=0)
+    total_catalogo = db.Column(db.Integer, nullable=False, default=0)
+
+    # Variacion promedio (%) de los productos que CAMBIARON de precio
+    variacion_promedio = db.Column(db.Numeric(6, 2), nullable=True)
+
+    items = db.relationship('ImportacionItem', backref='importacion',
+                            cascade='all, delete-orphan', lazy='select')
+
+    @property
+    def cambiaron(self):
+        return (self.subieron or 0) + (self.bajaron or 0)
+
+    def __repr__(self):
+        return f'<Importacion {self.id} {self.creado}>'
+
+
+class ImportacionItem(db.Model):
+    """
+    Detalle de UN producto dentro de una importacion: que costo tenia antes y
+    que costo trajo la planilla nueva. Solo se guardan los que CAMBIARON de
+    precio o son NUEVOS (no tiene sentido guardar 1600 filas iguales).
+    """
+    __tablename__ = 'importacion_items'
+
+    id = db.Column(db.Integer, primary_key=True)
+    importacion_id = db.Column(db.Integer, db.ForeignKey('importaciones.id'),
+                               nullable=False, index=True)
+
+    codigo = db.Column(db.String(40), nullable=False, index=True)
+    nombre = db.Column(db.String(255), nullable=False)
+    costo_anterior = db.Column(db.Numeric(12, 3), nullable=True)   # None si es nuevo
+    costo_nuevo = db.Column(db.Numeric(12, 3), nullable=False)
+    variacion_pct = db.Column(db.Numeric(7, 2), nullable=True)     # None si es nuevo
+    es_nuevo = db.Column(db.Boolean, nullable=False, default=False)
+
+    def __repr__(self):
+        return f'<ImportacionItem {self.codigo}>'
