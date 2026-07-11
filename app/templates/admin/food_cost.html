@@ -4,73 +4,64 @@
 {% block titulo %}📊 Food Cost{% endblock %}
 
 {% block contenido %}
-<div class="fc-wrap">
-  <div class="fc-card">
-    <div class="fc-emoji">🧾</div>
-    <h2>Food Cost — en preparación</h2>
-    <p class="fc-lead">
-      Esta sección va a leer las <strong>facturas PDF de Torres</strong> y armar el
-      control tipo “almacenero”: cuánto compraste, cuánto te sale cada producto y
-      cuánto subió la mercadería respecto del costo cargado en el catálogo.
-    </p>
-
-    <div class="fc-pendiente">
-      ⏳ <strong>Esperando la primera factura de muestra</strong> para diseñar el lector
-      sobre el formato real (sin inventar nada).
-    </div>
-
-    <div class="fc-pasos">
-      <h3>Qué va a hacer cuando esté lista</h3>
-      <ul>
-        <li>Subís el PDF de la factura de Torres desde acá.</li>
-        <li>El sistema lee número de factura, fecha, neto, IVA, IIBB y total.</li>
-        <li>Cruza cada renglón con su producto por código (los 1654 son de Torres).</li>
-        <li>Te muestra cuánto subió cada producto y, si querés, actualiza el costo.</li>
-      </ul>
-    </div>
-
-    <div class="fc-nota">
-      Versión actual del sistema: <strong>v{{ app_version }}</strong> ·
-      Food Cost se libera como <strong>v0.15.0</strong> cuando lo probemos con una factura real.
-    </div>
-  </div>
-</div>
-
 <style>
-  .fc-wrap { max-width: 720px; }
-  .fc-card {
-    background: #ffffff;
-    border: 1px solid var(--admin-divider, #E0DAD0);
-    border-radius: 14px;
-    padding: 32px 34px;
-    box-shadow: 0 6px 24px rgba(26, 26, 26, .06);
+  .fc-wrap { max-width: 900px; }
+  .fc-upload {
+    background: #fff; border: 1px solid var(--divider); border-radius: 14px;
+    padding: 26px 30px; margin-bottom: 26px; box-shadow: 0 6px 24px rgba(26,26,26,.06);
   }
-  .fc-emoji { font-size: 42px; line-height: 1; margin-bottom: 6px; }
-  .fc-card h2 { margin: 0 0 10px; color: var(--admin-carbon, #1A1A1A); }
-  .fc-lead { color: #555; line-height: 1.6; margin: 0; }
-  .fc-pendiente {
-    margin: 22px 0;
-    padding: 14px 16px;
-    border-radius: 10px;
-    background: #FBF4E6;
-    border: 1px solid #E8D9B0;
-    color: #7a5b1e;
-    line-height: 1.5;
+  .fc-upload h2 { margin: 0 0 6px; font-size: 1.2rem; font-weight: 600; }
+  .fc-upload p { color: #666; font-size: 0.85rem; margin-bottom: 16px; }
+  .fc-upload-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .fc-upload input[type=file] { flex: 1 1 260px; }
+  .fc-tabla { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .fc-tabla th {
+    text-align: left; background: var(--carbon); color: var(--bronce);
+    padding: 10px 12px; font-size: 0.7rem; letter-spacing: .06em; text-transform: uppercase;
   }
-  .fc-pasos h3 {
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: .14em;
-    color: var(--admin-bronce, #8B6F47);
-    margin: 24px 0 10px;
-  }
-  .fc-pasos ul { margin: 0; padding-left: 20px; color: #444; line-height: 1.9; }
-  .fc-nota {
-    margin-top: 26px;
-    padding-top: 16px;
-    border-top: 1px dashed var(--admin-divider, #E0DAD0);
-    font-size: 13px;
-    color: #888;
-  }
+  .fc-tabla td { padding: 10px 12px; border-bottom: 1px solid var(--divider); }
+  .fc-tabla tr:nth-child(even) td { background: #FAF8F4; }
+  .fc-vacio { text-align: center; color: #999; padding: 30px; }
+  .fc-link { color: var(--bronce); font-weight: 700; }
 </style>
+
+<div class="fc-wrap">
+  <div class="fc-upload">
+    <h2>🧾 Subir factura de Torres</h2>
+    <p>Subí el PDF de la factura y el sistema la lee sola, la cruza con tu catálogo
+       por código, y te avisa si algún costo subió respecto a lo que tenés cargado.</p>
+    <form method="POST" enctype="multipart/form-data" class="fc-upload-row">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="file" name="factura_pdf" accept="application/pdf" required>
+      <button type="submit" class="btn btn-carbon">Leer factura</button>
+    </form>
+  </div>
+
+  <table class="fc-tabla">
+    <thead>
+      <tr>
+        <th>N° Factura</th>
+        <th>Fecha</th>
+        <th>Proveedor</th>
+        <th>Total</th>
+        <th>Subida</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for f in facturas %}
+      <tr>
+        <td>{{ f.numero }}</td>
+        <td>{{ f.fecha.strftime('%d/%m/%Y') if f.fecha else '—' }}</td>
+        <td>{{ f.proveedor }}</td>
+        <td>{{ f.total|pesos if f.total else '—' }}</td>
+        <td>{{ f.subida_en.strftime('%d/%m/%Y %H:%M') if f.subida_en else '—' }}</td>
+        <td><a class="fc-link" href="{{ url_for('admin.food_cost_detalle', fid=f.id) }}">Ver detalle →</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="fc-vacio">Todavía no subiste ninguna factura.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endblock %}

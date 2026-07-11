@@ -14,6 +14,8 @@ v0.16.1 -> Usuario: + CUIT y + clave temporal reenviable por WhatsApp.
 v0.17.0 -> Cliente: base de clientes (cimiento del CRM de revendedoras).
 v0.18.3 -> Suscriptor (C2): alta voluntaria desde la tienda publica, para que
            Juliana le mande ofertas antes que a nadie (WhatsApp/email).
+v0.19.1 -> Factura / FacturaItem (Food Cost): facturas PDF de Torres subidas,
+           cruzadas por codigo contra el catalogo para detectar subas de costo.
 """
 from flask_login import UserMixin
 
@@ -804,3 +806,82 @@ class Suscriptor(db.Model):
 
     def __repr__(self):
         return f'<Suscriptor {self.nombre_completo}>'
+
+
+# ============================================================================
+#  v0.19.1 — FOOD COST: facturas PDF de Torres subidas + cruce contra catalogo
+# ============================================================================
+
+class Factura(db.Model):
+    """
+    Factura de compra (proveedor Torres) subida en PDF y leida automaticamente
+    (v0.19.1). Guarda el encabezado; los renglones van en FacturaItem.
+    No se borra nunca: queda como historial de auditoria de compras.
+    """
+    __tablename__ = 'facturas'
+
+    id = db.Column(db.Integer, primary_key=True)
+    numero = db.Column(db.String(30), nullable=False, unique=True, index=True)  # ej A00012-00553289
+    proveedor = db.Column(db.String(120), nullable=False, default='S.TORRES Y CIA S.A.')
+    fecha = db.Column(db.Date, nullable=True)
+
+    subtotal = db.Column(db.Numeric(12, 2), nullable=True)
+    iva = db.Column(db.Numeric(12, 2), nullable=True)
+    reg_especiales = db.Column(db.Numeric(12, 2), nullable=True)
+    total = db.Column(db.Numeric(12, 2), nullable=True)
+
+    # Renglones de la factura que el parser no pudo interpretar (ej: percepciones
+    # o impuestos que no son productos). Se guardan separados por salto de linea,
+    # nunca se descartan en silencio.
+    no_reconocidas = db.Column(db.Text, nullable=True)
+
+    subida_en = db.Column(db.DateTime, default=_ahora, index=True)
+    subida_por = db.Column(db.String(80), nullable=True)
+
+    items = db.relationship('FacturaItem', backref='factura',
+                            cascade='all, delete-orphan', lazy='selectin')
+
+    @property
+    def no_reconocidas_lista(self):
+        return [l for l in (self.no_reconocidas or '').split('\n') if l.strip()]
+
+    def __repr__(self):
+        return f'<Factura {self.numero}>'
+
+
+class FacturaItem(db.Model):
+    """
+    Renglon de una factura de Torres. Si 'codigo' matchea un Producto del
+    catalogo, queda vinculado (producto_id) y se guarda un snapshot del
+    costo_neto que tenia ANTES (costo_neto_anterior), para poder mostrar la
+    variacion. Si Ivan aplica el nuevo costo, 'actualizado' pasa a True.
+    """
+    __tablename__ = 'factura_items'
+
+    id = db.Column(db.Integer, primary_key=True)
+    factura_id = db.Column(db.Integer, db.ForeignKey('facturas.id'), nullable=False)
+
+    codigo = db.Column(db.String(40), nullable=False, index=True)
+    descripcion = db.Column(db.String(255), nullable=False)
+    unidades = db.Column(db.Numeric(10, 2), nullable=False, default=0)
+    sugerido = db.Column(db.Numeric(12, 2), nullable=True)          # precio sugerido de venta (Torres)
+    costo_unitario = db.Column(db.Numeric(12, 3), nullable=False)   # "Unit." de la factura, neto
+    importe = db.Column(db.Numeric(12, 2), nullable=True)
+
+    producto_id = db.Column(db.Integer, db.ForeignKey('productos.id'), nullable=True)
+    costo_neto_anterior = db.Column(db.Numeric(12, 3), nullable=True)  # snapshot antes de actualizar
+    actualizado = db.Column(db.Boolean, nullable=False, default=False)
+
+    producto = db.relationship('Producto', lazy='joined')
+
+    @property
+    def variacion_pct(self):
+        """% de variacion del costo de la factura vs el costo_neto que tenia cargado."""
+        if not self.costo_neto_anterior or float(self.costo_neto_anterior) <= 0:
+            return None
+        anterior = float(self.costo_neto_anterior)
+        nuevo = float(self.costo_unitario)
+        return round((nuevo - anterior) / anterior * 100, 1)
+
+    def __repr__(self):
+        return f'<FacturaItem {self.codigo} factura={self.factura_id}>'

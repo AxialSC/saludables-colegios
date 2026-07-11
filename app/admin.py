@@ -13,6 +13,9 @@ v0.16.0 -> USUARIOS: ABM completo (solo super admin) con perfil de la persona
            editar / activar-desactivar / resetear contrasena. Tope de 5 admins.
 v0.18.3 -> SUSCRIPTORES (C2): panel para que Juliana/admins consulten y exporten
            (CSV) a quienes se anotaron desde la tienda para recibir ofertas.
+v0.19.1 -> FOOD COST real: sube factura PDF de Torres, la lee sola, cruza por
+           codigo contra el catalogo y avisa que costos subieron. Reemplaza el
+           placeholder de v0.14.1.
 """
 import os
 import secrets
@@ -32,7 +35,9 @@ from .models import (Producto, Pedido, Cobro, ModificacionPedido, ItemPedido,
                      Oferta, Cotizacion, CotizacionItem, TipoCotizacion,
                      EstadoCotizacion, generar_numero_cotizacion,
                      Banner, ZonaBanner, DestinoBanner,
-                     Usuario, Rol, FormaPagoComision, Cliente, Suscriptor)
+                     Usuario, Rol, FormaPagoComision, Cliente, Suscriptor,
+                     Factura, FacturaItem)
+from .food_cost_parser import parsear_factura_pdf
 from .services import aplicar_importacion
 from .utils.decorators import admin_requerido, super_admin_requerido
 from .utils.import_planilla import leer_planilla
@@ -1004,17 +1009,134 @@ def banner_activo(bid):
     return redirect(url_for('admin.banners'))
 
 
-# ======================= FOOD COST (v0.15 · en preparacion) =======================
-# Placeholder de la futura seccion de Control de Compras / Food Cost.
-# Deja la pestaña en el menu (solo super admin) lista para cuando tengamos la
-# primera factura de muestra de Torres. NO toca la base de datos: es solo una
-# pantalla informativa. El motor real (lectura de PDF + tablas) llega en v0.15.0.
+# ======================= FOOD COST (v0.19.1 · lector real de facturas Torres) =======================
+# Sube el PDF de una factura de Torres, la lee automaticamente (app/food_cost_parser.py),
+# cruza cada renglon por codigo contra el catalogo, y muestra si el costo subio.
+# Ivan aplica cada actualizacion de costo a mano (boton por producto): el sistema
+# NUNCA pisa un costo_neto solo.
 
-@admin_bp.route('/food-cost')
+EXTENSIONES_FACTURA = ('.pdf',)
+
+
+def _parse_fecha_factura(s):
+    """Convierte 'DD/MM/AAAA' (como viene en la factura de Torres) a date."""
+    if not s:
+        return None
+    try:
+        return _dt.strptime(s, '%d/%m/%Y').date()
+    except ValueError:
+        return None
+
+
+@admin_bp.route('/food-cost', methods=['GET', 'POST'])
 @super_admin_requerido
 def food_cost():
-    """Placeholder de Food Cost. Esperando la primera factura de Torres."""
-    return render_template('admin/food_cost.html')
+    """Sube y lista las facturas de Torres leidas."""
+    if request.method == 'POST':
+        archivo = request.files.get('factura_pdf')
+        if not archivo or not archivo.filename:
+            flash('No seleccionaste ningún archivo.', 'error')
+            return redirect(url_for('admin.food_cost'))
+
+        nombre = secure_filename(archivo.filename)
+        ext = os.path.splitext(nombre)[1].lower()
+        if ext not in EXTENSIONES_FACTURA:
+            flash('Formato inválido. Subí un archivo PDF.', 'error')
+            return redirect(url_for('admin.food_cost'))
+
+        tmp_dir = tempfile.gettempdir()
+        ruta_tmp = os.path.join(tmp_dir, nombre)
+        archivo.save(ruta_tmp)
+
+        try:
+            datos = parsear_factura_pdf(ruta_tmp)
+        except ValueError as e:
+            flash(f'No pude leer la factura: {e}', 'error')
+            return redirect(url_for('admin.food_cost'))
+        except Exception as e:
+            flash(f'Error inesperado al leer el PDF: {e}', 'error')
+            return redirect(url_for('admin.food_cost'))
+        finally:
+            try:
+                os.remove(ruta_tmp)
+            except OSError:
+                pass
+
+        if Factura.query.filter_by(numero=datos['numero']).first():
+            flash(f'La factura {datos["numero"]} ya había sido cargada antes. '
+                  f'No se volvió a procesar (para no duplicar).', 'warning')
+            return redirect(url_for('admin.food_cost'))
+
+        try:
+            factura = Factura(
+                numero=datos['numero'],
+                proveedor='S.TORRES Y CIA S.A.',
+                fecha=_parse_fecha_factura(datos['fecha']),
+                subtotal=datos['subtotal'] or None, iva=datos['iva'] or None,
+                reg_especiales=datos['reg_especiales'] or None, total=datos['total'] or None,
+                no_reconocidas='\n'.join(datos['no_reconocidas']) or None,
+                subida_por=current_user.nombre,
+            )
+            db.session.add(factura)
+            db.session.flush()
+
+            vinculados = 0
+            sin_vincular = 0
+            for it in datos['items']:
+                producto = Producto.query.filter_by(codigo=it['codigo']).first()
+                db.session.add(FacturaItem(
+                    factura_id=factura.id,
+                    codigo=it['codigo'], descripcion=it['descripcion'],
+                    unidades=it['unidades'], sugerido=it['sugerido'] or None,
+                    costo_unitario=it['unitario'], importe=it['importe'] or None,
+                    producto_id=(producto.id if producto else None),
+                    costo_neto_anterior=(producto.costo_neto if producto else None),
+                ))
+                if producto:
+                    vinculados += 1
+                else:
+                    sin_vincular += 1
+
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            flash('Hubo un problema al guardar la factura. Probá de nuevo.', 'error')
+            return redirect(url_for('admin.food_cost'))
+
+        msg = f'Factura {factura.numero} cargada ✓ · {vinculados} producto(s) vinculado(s)'
+        if sin_vincular:
+            msg += f' · {sin_vincular} sin vincular (código no encontrado en el catálogo)'
+        if datos['no_reconocidas']:
+            msg += f' · {len(datos["no_reconocidas"])} línea(s) no se pudieron leer (revisalas en el detalle)'
+        flash(msg, 'success')
+        return redirect(url_for('admin.food_cost_detalle', fid=factura.id))
+
+    facturas = Factura.query.order_by(Factura.subida_en.desc()).all()
+    return render_template('admin/food_cost.html', facturas=facturas)
+
+
+@admin_bp.route('/food-cost/<int:fid>')
+@super_admin_requerido
+def food_cost_detalle(fid):
+    """Detalle de una factura: renglones, variación de costo por producto."""
+    factura = Factura.query.get_or_404(fid)
+    return render_template('admin/food_cost_detalle.html', factura=factura)
+
+
+@admin_bp.route('/food-cost/<int:fid>/item/<int:iid>/actualizar', methods=['POST'])
+@super_admin_requerido
+def food_cost_item_actualizar(fid, iid):
+    """Aplica el nuevo costo de la factura al producto del catálogo (uno por uno, a mano)."""
+    item = FacturaItem.query.filter_by(id=iid, factura_id=fid).first_or_404()
+    if item.producto is None:
+        flash('Este renglón no está vinculado a ningún producto del catálogo.', 'error')
+        return redirect(url_for('admin.food_cost_detalle', fid=fid))
+
+    item.producto.costo_neto = item.costo_unitario
+    item.actualizado = True
+    db.session.commit()
+    flash(f'Costo de "{item.producto.nombre}" actualizado a partir de la factura ✓', 'success')
+    return redirect(url_for('admin.food_cost_detalle', fid=fid))
 
 
 # ======================= USUARIOS (v0.16 · solo super admin) =======================

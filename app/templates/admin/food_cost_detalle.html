@@ -1,0 +1,119 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block seccion %}Control de compras{% endblock %}
+{% block titulo %}📊 Factura {{ factura.numero }}{% endblock %}
+
+{% block contenido %}
+<style>
+  .fcd-wrap { max-width: 1000px; }
+  .fcd-volver { display: inline-block; margin-bottom: 16px; font-size: 0.82rem;
+      color: var(--bronce); font-weight: 700; }
+  .fcd-resumen {
+    background: #fff; border: 1px solid var(--divider); border-radius: 14px;
+    padding: 20px 26px; margin-bottom: 22px; display: flex; gap: 34px; flex-wrap: wrap;
+  }
+  .fcd-resumen div { font-size: 0.72rem; color: #888; letter-spacing: .06em; text-transform: uppercase; }
+  .fcd-resumen b { display: block; font-size: 1.1rem; margin-top: 3px; color: var(--text-dark); font-weight: 700; }
+  .fcd-tabla { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .fcd-tabla th {
+    text-align: left; background: var(--carbon); color: var(--bronce);
+    padding: 10px 12px; font-size: 0.7rem; letter-spacing: .06em; text-transform: uppercase;
+  }
+  .fcd-tabla td { padding: 10px 12px; border-bottom: 1px solid var(--divider); }
+  .fcd-tabla tr:nth-child(even) td { background: #FAF8F4; }
+  .fcd-subio { color: #c62828; font-weight: 700; }
+  .fcd-bajo { color: #2e7d32; font-weight: 700; }
+  .fcd-sin { color: #999; font-style: italic; }
+  .fcd-btn-mini {
+    padding: 5px 11px; border-radius: 6px; border: 1px solid var(--divider); background: #fff;
+    font-size: 0.75rem; font-weight: 700; cursor: pointer;
+  }
+  .fcd-btn-mini:hover { border-color: var(--bronce); color: var(--bronce); }
+  .fcd-ok { color: #2e7d32; font-size: 0.78rem; font-weight: 700; }
+  .fcd-noreconocidas {
+    margin-top: 20px; padding: 14px 16px; border-radius: 10px;
+    background: #FBF4E6; border: 1px solid #E8D9B0; color: #7a5b1e; font-size: 0.82rem;
+  }
+  .fcd-noreconocidas ul { margin: 8px 0 0 20px; }
+</style>
+
+<div class="fcd-wrap">
+  <a class="fcd-volver" href="{{ url_for('admin.food_cost') }}">← Volver a Food Cost</a>
+
+  <div class="fcd-resumen">
+    <div>N° Factura<b>{{ factura.numero }}</b></div>
+    <div>Fecha<b>{{ factura.fecha.strftime('%d/%m/%Y') if factura.fecha else '—' }}</b></div>
+    <div>Subtotal<b>{{ factura.subtotal|pesos if factura.subtotal else '—' }}</b></div>
+    <div>IVA 21%<b>{{ factura.iva|pesos if factura.iva else '—' }}</b></div>
+    <div>Total<b>{{ factura.total|pesos if factura.total else '—' }}</b></div>
+  </div>
+
+  <table class="fcd-tabla">
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Descripción</th>
+        <th>Unid.</th>
+        <th>Costo factura</th>
+        <th>Costo actual</th>
+        <th>Variación</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in factura.items %}
+      <tr>
+        <td>{{ it.codigo }}</td>
+        <td>{{ it.descripcion }}</td>
+        <td>{{ it.unidades }}</td>
+        <td>{{ it.costo_unitario|pesos }}</td>
+        <td>
+          {% if it.producto %}
+            {{ it.costo_neto_anterior|pesos if it.costo_neto_anterior else '—' }}
+          {% else %}
+            <span class="fcd-sin">sin vincular</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if it.variacion_pct is not none %}
+            <span class="{{ 'fcd-subio' if it.variacion_pct > 0 else 'fcd-bajo' }}">
+              {{ '+' if it.variacion_pct > 0 else '' }}{{ it.variacion_pct }}%
+            </span>
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td>
+          {% if it.producto %}
+            {% if it.actualizado %}
+              <span class="fcd-ok">✓ Actualizado</span>
+            {% else %}
+              <form method="POST" action="{{ url_for('admin.food_cost_item_actualizar', fid=factura.id, iid=it.id) }}"
+                    onsubmit="return confirm('¿Actualizar el costo de {{ it.descripcion }} a {{ it.costo_unitario|pesos }}?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="fcd-btn-mini">Actualizar costo</button>
+              </form>
+            {% endif %}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if factura.no_reconocidas_lista %}
+  <div class="fcd-noreconocidas">
+    ⚠️ Hubo {{ factura.no_reconocidas_lista|length }} línea(s) de la factura que no se
+    pudieron interpretar (por ejemplo, percepciones o impuestos que no son productos).
+    Revisalas a mano si hace falta:
+    <ul>
+      {% for l in factura.no_reconocidas_lista %}
+      <li>{{ l }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
