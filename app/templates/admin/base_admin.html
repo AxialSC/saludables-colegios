@@ -58,6 +58,17 @@
                     <div class="rol">{{ current_user.rol_etiqueta }}</div>
                 </div>
             </div>
+
+            {# v0.20.1 · Barra de sesion: se vacia con la inactividad y se
+               recarga sola al mover el mouse o tocar el teclado. #}
+            <div class="sesion-box" id="sesionBox">
+                <div class="sesion-barra"><span id="sesionFill"></span></div>
+                <div class="sesion-txt">
+                    <span>Sesión</span>
+                    <b id="sesionReloj">--:--</b>
+                </div>
+            </div>
+
             <a href="{{ url_for('auth.logout') }}" class="btn-salir">
                 <span class="btn-salir-ic">⎋</span> Cerrar sesión
             </a>
@@ -92,4 +103,66 @@
     </div>
 
 </div>
+
+{# ===================================================================
+   v0.20.1 · AUTO-LOGOUT POR INACTIVIDAD
+   El contador arranca en SESION_MIN minutos y baja solo. CUALQUIER
+   actividad (mouse, teclado, scroll, touch) lo reinicia al maximo.
+   Cuando llega a cero, manda a /logout-inactividad (mensaje propio).
+   Los minutos se configuran en config.py -> SESION_TIMEOUT_MIN.
+   =================================================================== #}
+<script>
+(function () {
+    var TOTAL   = {{ config.SESION_TIMEOUT_MIN|default(2) }} * 60;   // segundos
+    var AVISO   = {{ config.SESION_AVISO_SEG|default(30) }};         // avisar en los ultimos N seg
+    var URL_OUT = "{{ url_for('auth.logout_inactividad') }}";
+
+    var fill  = document.getElementById('sesionFill');
+    var reloj = document.getElementById('sesionReloj');
+    var box   = document.getElementById('sesionBox');
+    if (!fill || !reloj || !box) return;
+
+    var restan = TOTAL;
+    var muerto = false;
+
+    function pintar() {
+        var pct = Math.max(0, (restan / TOTAL) * 100);
+        fill.style.width = pct + '%';
+
+        var m = Math.floor(restan / 60);
+        var s = restan % 60;
+        reloj.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+
+        if (restan <= AVISO) { box.classList.add('por-vencer'); }
+        else { box.classList.remove('por-vencer'); }
+    }
+
+    function reiniciar() {
+        if (muerto) return;
+        restan = TOTAL;
+        pintar();
+    }
+
+    function tick() {
+        if (muerto) return;
+        restan -= 1;
+        if (restan <= 0) {
+            muerto = true;
+            pintar();
+            window.location.href = URL_OUT;
+            return;
+        }
+        pintar();
+    }
+
+    // Cualquier señal de vida reinicia el contador
+    ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click']
+        .forEach(function (ev) {
+            document.addEventListener(ev, reiniciar, { passive: true });
+        });
+
+    pintar();
+    setInterval(tick, 1000);
+})();
+</script>
 {% endblock %}

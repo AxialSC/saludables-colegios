@@ -5,6 +5,11 @@ Login / Logout / Cambio de contrasena obligatorio en primer ingreso.
 v0.18.0 -> tras loguear, cada rol va a SU lugar:
            revendedora -> su portal (revendedora.dashboard)
            admin/super -> el panel (admin.dashboard)
+v0.20.1 -> AUTO-LOGOUT por inactividad: ruta /logout-inactividad, que cierra la
+           sesion con un mensaje distinto al del logout manual (asi la persona
+           entiende POR QUE la sacaron). El contador vive en el front
+           (base_admin.html) y se reinicia con cualquier actividad del mouse
+           o el teclado.
 """
 from flask import (Blueprint, render_template, request, redirect,
                    url_for, flash)
@@ -77,4 +82,23 @@ def cambiar_password():
 def logout():
     logout_user()
     flash('Sesion cerrada.', 'success')
+    return redirect(url_for('auth.login'))
+
+
+# ---------------------------------------------------------------------------
+# v0.20.1 — Cierre de sesion por INACTIVIDAD
+# ---------------------------------------------------------------------------
+# Ruta separada del logout normal a proposito: el mensaje es distinto, para que
+# la persona entienda que no la echaron por error, sino por seguridad.
+# El contador lo lleva el navegador (ver base_admin.html); esta ruta solo cierra
+# la sesion del lado del servidor.
+# No usa @login_required: si la sesion ya vencio del lado de Flask, igual queremos
+# redirigir con el mensaje (y no tirar un error feo).
+
+@auth_bp.route('/logout-inactividad')
+def logout_inactividad():
+    if current_user.is_authenticated:
+        logout_user()
+    flash('Cerramos tu sesion por inactividad, para proteger tus datos. '
+          'Volve a ingresar para seguir trabajando.', 'warning')
     return redirect(url_for('auth.login'))

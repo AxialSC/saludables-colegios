@@ -245,6 +245,34 @@ a { color: inherit; text-decoration: none; }
 .sidebar .btn-salir:hover { background: var(--danger); border-color: var(--danger); color: #fff; }
 .sidebar .btn-salir-ic { font-size: 0.95rem; line-height: 1; }
 
+/* ---- v0.20.1 · Barra de sesion (auto-logout por inactividad) ---- */
+.sesion-box { margin-bottom: 12px; }
+.sesion-barra {
+    height: 3px; width: 100%; background: #2e2e2e;
+    border-radius: 999px; overflow: hidden;
+}
+.sesion-barra span {
+    display: block; height: 100%; width: 100%;
+    background: #2fbf71; border-radius: 999px;
+    transition: width 1s linear, background 0.3s ease;
+}
+.sesion-txt {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-top: 7px;
+    font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-soft);
+}
+.sesion-txt b { color: #cfcabf; font-size: 0.66rem; letter-spacing: 0.06em; font-weight: 700; }
+
+/* Ultimos segundos: se pone roja y late, para que se note */
+.sesion-box.por-vencer .sesion-barra span { background: var(--danger); }
+.sesion-box.por-vencer .sesion-txt b { color: #ff8a8a; }
+.sesion-box.por-vencer { animation: sesion-late 1s ease-in-out infinite; }
+@keyframes sesion-late {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.55; }
+}
+
 .contenido { flex: 1; display: flex; flex-direction: column; }
 .topbar {
     padding: 22px 36px;
