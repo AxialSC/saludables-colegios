@@ -39,7 +39,7 @@
             <a href="{{ url_for('admin.banners') }}"
                class="{% if 'banner' in request.endpoint %}activo{% endif %}">🖼️ Banners</a>
             <a href="{{ url_for('admin.food_cost') }}"
-               class="{% if 'food_cost' in request.endpoint %}activo{% endif %}">📊 Food Cost <span class="badge-soon">v0.15</span></a>
+               class="{% if 'food_cost' in request.endpoint %}activo{% endif %}">📊 Food Cost</a>
             {% endif %}
             <a href="{{ url_for('cliente.catalogo') }}" target="_blank">Ver tienda ↗</a>
             <a href="#" class="disabled">Reportes <span class="badge-soon">v0.7</span></a>
