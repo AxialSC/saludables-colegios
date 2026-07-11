@@ -6,6 +6,7 @@ La version se cambia A MANO aca (regla AXIAL). El footer la toma automaticamente
 desde el context_processor en app/__init__.py.
 
 v0.18.3 -> C2: alta de suscriptores (form publico + panel admin + export CSV).
+v0.19.0 -> Login rediseñado, estilo "El Arquitecto" (referencia: portal Lofty).
 """
 import os
 
@@ -18,7 +19,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.18.3'
+    APP_VERSION = '0.19.0'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 

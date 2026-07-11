@@ -7,7 +7,9 @@
     <!-- Lado carbon -->
     <div class="login-side">
         <div class="brand-top">
-            <div class="marca">{{ app_nombre }}</div>
+            <div class="lv-dash"></div>
+            <div class="eyebrow">Catálogo mayorista</div>
+            <div class="marca lv-marca">{{ app_nombre }}</div>
             <div class="sub">{{ app_subtitulo }} · AXIAL SECURITY</div>
         </div>
 
@@ -41,7 +43,6 @@
                target="_blank" rel="noopener">
                 AXIAL SECURITY <span class="wa-star">✦</span> · 2026
             </a>
-            <div class="lv-pill">v{{ app_version }} — {{ app_nombre|upper }}</div>
         </div>
     </div>
 
@@ -54,9 +55,9 @@
 
             {% with messages = get_flashed_messages(with_categories=true) %}
               {% if messages %}
-                <ul class="flashes">
+                <ul class="flashes lv-flashes">
                   {% for category, message in messages %}
-                    <li class="flash {{ category }}">{{ message }}</li>
+                    <li class="flash lv-flash {{ category }}">{{ message }}</li>
                   {% endfor %}
                 </ul>
               {% endif %}
@@ -72,7 +73,9 @@
                     <label for="password">Contraseña</label>
                     <input type="password" id="password" name="password" required>
                 </div>
-                <button type="submit" class="btn btn-carbon btn-block">Ingresar al portal</button>
+                <button type="submit" class="btn btn-carbon btn-block">
+                    <span class="btn-star">✦</span> Ingresar al portal
+                </button>
             </form>
 
             <p class="pie">¿Olvidaste tu contraseña? Contactá a tu administrador.</p>
@@ -81,22 +84,78 @@
 
 </div>
 
+<!-- Franja negra inferior, estilo "Lofty" -->
+<footer class="lv-footer">
+    <div class="lv-footer-marca">AXIAL SECURITY</div>
+    <div class="lv-footer-sub">Desarrollo propio · 2026</div>
+    <div class="lv-pill">v{{ app_version }} — {{ app_nombre|upper }}</div>
+</footer>
+
 <style>
-/* v0.9 · Footer del login: link a WhatsApp del programador + pastilla de versión */
-.login-side-bottom { display: flex; flex-direction: column; gap: 14px; }
+/* v0.9 · Footer del login: link a WhatsApp del programador */
 .foot-wa {
-    align-self: flex-start;
     font-size: 0.68rem; color: var(--text-soft);
     letter-spacing: 0.12em; text-transform: uppercase;
     transition: color 0.15s ease;
 }
 .foot-wa:hover { color: var(--bronce); }
 .foot-wa .wa-star { color: var(--bronce); margin: 0 2px; }
+
+/* v0.19.0 · Ajustes visuales tipo "El Arquitecto" (referencia: portal Lofty).
+   Todo escopado a esta pagina — no toca app.css general. */
+.lv-dash {
+    width: 34px; height: 2px; background: var(--bronce);
+    margin-bottom: 22px; opacity: .85;
+}
+.eyebrow {
+    font-size: 0.66rem; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--bronce); font-weight: 600; margin-bottom: 10px;
+}
+.lv-marca {
+    font-size: 2.3rem !important; font-weight: 600 !important;
+    letter-spacing: 0.06em !important; line-height: 1.05;
+    font-family: Georgia, 'Times New Roman', serif;
+}
+.login-side .sub { margin-top: 12px; }
+
+.login-side-bottom { display: flex; flex-direction: column; gap: 10px; }
+
+.btn-star { margin-right: 4px; }
+
+/* Flash del login con acento lateral, mas discreto que el flash general */
+.lv-flashes { list-style: none; margin-bottom: 22px; }
+.lv-flash {
+    background: transparent !important;
+    border: none !important;
+    border-left: 3px solid var(--bronce) !important;
+    padding: 8px 0 8px 14px !important;
+    color: var(--text-dark) !important;
+    font-size: 0.85rem;
+    border-radius: 0 !important;
+}
+.lv-flash.error { border-left-color: var(--danger) !important; color: var(--danger) !important; }
+.lv-flash.warning { border-left-color: var(--warning) !important; color: #9a6200 !important; }
+
+/* Franja negra inferior, full width, debajo del login partido */
+.lv-footer {
+    background: var(--carbon);
+    padding: 26px 40px;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+    gap: 18px; text-align: center;
+}
+.lv-footer-marca {
+    font-size: 0.85rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--crema);
+}
+.lv-footer-sub {
+    font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-soft);
+}
 .lv-pill {
-    align-self: flex-start;
     font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase;
     color: var(--bronce); border: 1px solid var(--bronce);
     padding: 7px 18px; border-radius: 999px; font-weight: 600;
+}
+@media (max-width: 620px) {
+    .lv-footer { padding: 20px 24px; }
 }
 </style>
 {% endblock %}
