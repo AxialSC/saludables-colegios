@@ -3,8 +3,20 @@
    No duplica diseno: las cards viven solo aca.
    v0.12 -> si it.oferta existe, la card muestra precio tachado + precio de oferta.
    v0.13 -> rediseno estilo "gondola" (foto protagonista, precio marcado, pastilla -XX%).
-            Se mantienen INTACTOS los engaches del JS (data-* y onclick del boton Agregar)
-            y el id="grid" / id="grid-meta" que usa el buscador en vivo y el toggle de vista. #}
+   v0.22.0 -> PLACEHOLDER de producto sin foto.
+              ANTES: se dibujaba la PRIMERA LETRA DEL RUBRO en un circulito verde.
+              Con cientos de productos sin foto, la tienda quedaba como un muro de
+              letras sueltas ("B", "C", "B", "G"...). Feo y sin ningun sentido.
+              AHORA: la imagen 'producto-default.png' (el isotipo, ya en gris apagado
+              y con el texto "SIN IMAGEN"). Se lee como "foto pendiente", que es lo
+              que es.
+
+   IMPORTANTE — NO TOCAR:
+     · id="grid" / id="grid-meta"  -> los usa el buscador en vivo y el toggle de vista.
+     · Los data-* y el onclick del boton Agregar -> los usa carrito.js.
+       (Se dejo el boton EXACTAMENTE como estaba, a proposito. Ver la nota de la
+        entrega: para pasarlo a icono SVG hay que ver primero carrito.js.)
+#}
 <span id="grid-meta" data-total="{{ paginacion.total }}"
       data-buscando="{{ 1 if (q or rubro_sel or cat) else 0 }}" hidden></span>
 
@@ -18,7 +30,11 @@
             {% if p.imagen %}
             <img src="{{ url_for('static', filename='img/productos/' + p.imagen) }}" alt="{{ p.nombre }}" loading="lazy">
             {% else %}
-            <span class="t-thumb-ph">{{ rubro_display(p.rubro)[0]|upper }}</span>
+            <span class="t-thumb-ph">
+                <img class="t-ph-img"
+                     src="{{ url_for('static', filename='img/producto-default.png') }}"
+                     alt="Producto sin imagen" loading="lazy">
+            </span>
             {% endif %}
         </div>
         <div class="t-body">
@@ -70,7 +86,7 @@
     <p>Volvé pronto: las ofertas se renuevan seguido. Mientras tanto, mirá todo el catálogo.</p>
     {% else %}
     <h2>No encontramos productos</h2>
-    <p>Probá con otra palabra, cambiá de solapa o tocá "Todo" para ver el catálogo completo.</p>
+    <p>Probá con otra palabra, cambiá de rubro o tocá "Todo" para ver el catálogo completo.</p>
     {% endif %}
     <a href="{{ url_for('cliente.catalogo') }}" class="t-empty-btn">Ver todo el catálogo</a>
 </div>

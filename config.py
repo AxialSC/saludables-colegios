@@ -11,11 +11,10 @@ v0.19.1 -> Food Cost real: lector de facturas PDF de Torres.
 v0.19.3 -> Fixes visuales: login sin scroll, sidebar auto-ajustable.
 v0.20.0 -> HISTORIAL DE PRECIOS + Dashboard con alertas.
 v0.20.1 -> Auto-logout por inactividad (con barra de sesion en el sidebar).
-v0.21.0 -> E0: 1) Fix del "Bad Request / CSRF token has expired".
-                2) Auto-logout REAL (server-side, no solo JavaScript).
-                3) Timer de sesion tambien en el portal de la revendedora.
-                4) Piso de ganancia de la casa (MARGEN_CASA_MINIMO), base del
-                   modulo de comisiones que viene en E2.
+v0.21.0 -> E0: Fix CSRF + auto-logout REAL + timer en el portal + MARGEN_CASA_MINIMO.
+v0.22.0 -> E1: Rediseño de la tienda (header 3 zonas + navbar), banners en grilla
+               (3 bugs corregidos), assets de marca, placeholder de producto y
+               sidebar del panel agrupado por secciones.
 """
 import os
 from datetime import timedelta
@@ -29,7 +28,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.21.0'
+    APP_VERSION = '0.22.0'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 

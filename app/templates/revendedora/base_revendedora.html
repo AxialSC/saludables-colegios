@@ -6,19 +6,29 @@
   <!-- Sidebar -->
   <aside class="sidebar">
     <div class="brand">
-      <div class="marca">{{ app_nombre }}</div>
+      <img class="brand-logo" src="{{ url_for('static', filename='img/marca/logo-blanco.png') }}"
+           alt="{{ app_nombre }}">
       <div class="sub">Portal Revendedora</div>
     </div>
 
+    {# v0.22.0 · Mismas secciones que el panel admin, para que el sistema se
+       sienta UNO SOLO y no dos productos distintos pegados con cinta. #}
     <nav class="nav">
+
+      <div class="nav-sec">Principal</div>
       <a href="{{ url_for('revendedora.dashboard') }}"
-         class="{% if request.endpoint == 'revendedora.dashboard' %}activo{% endif %}">Inicio</a>
+         class="{% if request.endpoint == 'revendedora.dashboard' %}activo{% endif %}">📊 Inicio</a>
+
+      <div class="nav-sec">Mi negocio</div>
       <a href="{{ url_for('revendedora.clientes') }}"
          class="{% if 'cliente' in request.endpoint %}activo{% endif %}">📇 Mis clientes</a>
-      <a href="{{ url_for('cliente.catalogo') }}" target="_blank">Ver tienda ↗</a>
       <a href="#" class="disabled">🛒 Mis ventas <span class="badge-soon">pronto</span></a>
+
+      <div class="nav-sec">Herramientas</div>
       <a href="{{ url_for('revendedora.redes') }}"
          class="{% if request.endpoint == 'revendedora.redes' %}activo{% endif %}">📣 Mis redes</a>
+      <a href="{{ url_for('cliente.catalogo') }}" target="_blank">🛍️ Ver tienda ↗</a>
+
     </nav>
 
     <div class="user-box">
@@ -30,9 +40,9 @@
         </div>
       </div>
 
-      {# v0.21.0 · Barra de sesion (misma que el panel admin).
-         El CSS (.sesion-box / .sesion-barra / .por-vencer) ya existe en
-         app.css desde v0.20.1: se reusa tal cual, no se duplica nada. #}
+      {# v0.21.0 · Barra de sesion (la misma del panel admin).
+         El CSS (.sesion-box / .sesion-barra / .por-vencer) ya vive en app.css:
+         se reusa tal cual, no se duplica nada. #}
       <div class="sesion-box" id="sesionBox">
         <div class="sesion-barra"><span id="sesionFill"></span></div>
         <div class="sesion-txt">
@@ -78,23 +88,15 @@
 
 {# ===================================================================
    v0.21.0 · AUTO-LOGOUT POR INACTIVIDAD (portal de la revendedora)
-   Exactamente el mismo comportamiento que el panel admin. La ruta
-   /logout-inactividad y el CSS ya existian: aca solo se reusan.
-
-   Importante: esto NO reemplaza al candado del servidor
-   (PERMANENT_SESSION_LIFETIME en config.py). Esto es la parte VISIBLE:
-   la barrita que le avisa a la revendedora que se le acaba el tiempo.
-   El "heartbeat" (latir()) es el puente entre las dos: mientras ella este
-   realmente ahi moviendo el mouse, le avisa al servidor cada 60 segundos
-   que siga manteniendo la sesion viva.
+   Identico al panel admin. La ruta /logout-inactividad y el CSS ya existian.
    =================================================================== #}
 <script>
 (function () {
-    var TOTAL   = {{ config.SESION_TIMEOUT_MIN|default(2) }} * 60;   // segundos
-    var AVISO   = {{ config.SESION_AVISO_SEG|default(30) }};         // ultimos N seg en rojo
+    var TOTAL   = {{ config.SESION_TIMEOUT_MIN|default(2) }} * 60;
+    var AVISO   = {{ config.SESION_AVISO_SEG|default(30) }};
     var URL_OUT = "{{ url_for('auth.logout_inactividad') }}";
     var URL_PING = "{{ url_for('sesion_ping') }}";
-    var PING_CADA = 60;    // segundos entre latidos (solo si hubo actividad)
+    var PING_CADA = 60;
 
     var fill  = document.getElementById('sesionFill');
     var reloj = document.getElementById('sesionReloj');
@@ -109,11 +111,9 @@
     function pintar() {
         var pct = Math.max(0, (restan / TOTAL) * 100);
         fill.style.width = pct + '%';
-
         var m = Math.floor(restan / 60);
         var s = restan % 60;
         reloj.textContent = m + ':' + (s < 10 ? '0' : '') + s;
-
         if (restan <= AVISO) { box.classList.add('por-vencer'); }
         else { box.classList.remove('por-vencer'); }
     }
@@ -129,16 +129,14 @@
         if (muerto || !hubo_actividad) return;
         hubo_actividad = false;
         fetch(URL_PING, { method: 'GET', credentials: 'same-origin', cache: 'no-store' })
-            .catch(function () { /* sin red: el servidor corta solo, no pasa nada */ });
+            .catch(function () { /* sin red: el servidor corta solo */ });
     }
 
     function tick() {
         if (muerto) return;
         restan -= 1;
-
         desde_ping += 1;
         if (desde_ping >= PING_CADA) { desde_ping = 0; latir(); }
-
         if (restan <= 0) {
             muerto = true;
             pintar();

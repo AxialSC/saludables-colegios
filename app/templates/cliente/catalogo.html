@@ -4,43 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ ajustes.nombre_negocio }} · Catálogo Mayorista Pilar</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/marca/isotipo.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/tienda.css') }}">
     <style>
-    /* v0.9.1 · Selector de orden */
-    .t-tools { display: flex; align-items: center; gap: 10px; }
-    .t-orden {
-        border: 1px solid var(--t-line); background: #fff; border-radius: 9px;
-        padding: 7px 10px; font-size: 0.75rem; font-weight: 700; color: var(--t-text);
-        cursor: pointer; outline: none;
-    }
-    .t-orden:focus { border-color: var(--t-verde); }
-    @media (max-width: 520px) {
-        .t-toolbar { flex-wrap: wrap; gap: 10px; }
-        .t-tools { width: 100%; justify-content: space-between; }
-    }
-    /* v0.9.2 · Buscador en vivo */
-    .t-search-clear { border: none; cursor: pointer; padding: 0; }
+    /* Buscador en vivo */
     #resultados { transition: opacity .12s ease; }
     #resultados.cargando { opacity: .45; }
-    /* v0.11 · Solapas (categoria unica) */
-    .t-solapas { max-width: 1180px; margin: 14px auto 0; padding: 0 18px; display: flex; gap: 8px; flex-wrap: wrap; }
-    .t-solapa {
-        font-size: 0.8rem; font-weight: 800; padding: 9px 16px; border-radius: 10px;
-        background: #fff; border: 1px solid var(--t-line); color: var(--t-text); transition: all .15s ease;
-    }
-    .t-solapa:hover { border-color: var(--t-verde); }
-    .t-solapa.activa { background: var(--t-verde); color: #fff; border-color: var(--t-verde); }
-    .t-solapa.sol-con.activa { background: var(--t-bronce); border-color: var(--t-bronce); }
-    /* v0.12 · Solapa Ofertas (destacada en rojo) */
-    .t-solapa.sol-of { color: var(--t-oferta); border-color: #efc9c9; background: #fff6f6; }
-    .t-solapa.sol-of:hover { border-color: var(--t-oferta); }
-    .t-solapa.sol-of.activa { background: var(--t-oferta); color: #fff; border-color: var(--t-oferta); }
-    /* v0.9.3 · Footer profesional */
+
+    /* Footer profesional */
     .ft { background: #1A1A1A; color: #cfcabf; margin-top: 44px; }
     .ft-inner { max-width: 1180px; margin: 0 auto; padding: 38px 18px 28px; }
     .ft-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
     @media (max-width: 720px) { .ft-cols { grid-template-columns: 1fr; gap: 22px; } }
-    .ft-marca { letter-spacing: .24em; text-transform: uppercase; color: #f4f1ec; font-size: 1.05rem; margin-bottom: 12px; }
+    .ft-logo { height: 38px; width: auto; display: block; margin-bottom: 14px; }
     .ft-col h4 { color: #f4f1ec; font-size: 0.78rem; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 13px; font-weight: 600; }
     .ft-col p { font-size: 0.82rem; line-height: 1.6; color: #a8a49b; margin-bottom: 12px; }
     .ft-col ul { list-style: none; margin: 0; padding: 0; }
@@ -53,48 +29,8 @@
     .ft-legal-txt { display: flex; flex-direction: column; gap: 4px; font-size: 0.72rem; color: #8b8b8b; }
     .ft-firma { color: #6f6f6f; letter-spacing: .06em; }
     @media (max-width: 520px) { .ft-legal { justify-content: center; text-align: center; } .ft-legal-txt { align-items: center; } }
-    /* v0.13.1 · Barra superior FIJA al scrollear (buscador + chips + solapas) */
-    .t-sticky { position: sticky; top: 0; z-index: 45; background: var(--t-card);
-        box-shadow: 0 6px 14px -10px rgba(0,0,0,.28); }
-    .t-sticky .t-header { position: static; border-bottom: none; }
-    .t-solapas { margin: 0 auto; padding: 12px 18px 14px; }
-    /* v0.18.1 · Carrusel central: flechas + puntitos (control manual) */
-    #bnCentral { position: relative; }
-    .bn-arrow {
-        position: absolute; top: 50%; transform: translateY(-50%);
-        width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer;
-        background: rgba(26,26,26,.45); color: #fff; font-size: 26px; line-height: 1;
-        display: flex; align-items: center; justify-content: center; z-index: 6;
-        transition: background .15s;
-    }
-    .bn-arrow:hover { background: rgba(26,26,26,.72); }
-    .bn-prev { left: 12px; }
-    .bn-next { right: 12px; }
-    .bn-dots {
-        position: absolute; left: 0; right: 0; bottom: 12px; z-index: 6;
-        display: flex; justify-content: center; gap: 8px;
-    }
-    .bn-dot {
-        width: 9px; height: 9px; border-radius: 50%; border: none; cursor: pointer; padding: 0;
-        background: rgba(255,255,255,.55); transition: background .15s, transform .15s;
-    }
-    .bn-dot:hover { background: rgba(255,255,255,.85); }
-    .bn-dot.on { background: #fff; transform: scale(1.25); }
-    @media (max-width: 520px) {
-        .bn-arrow { width: 34px; height: 34px; font-size: 22px; }
-    }
-    /* v0.18.2 · Barra de acceso a comerciantes (arriba de todo) */
-    .t-acceso { background: #1A1A1A; }
-    .t-acceso-inner { max-width: 1180px; margin: 0 auto; padding: 7px 18px;
-        display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
-    .t-acceso a { display: inline-flex; align-items: center; gap: 6px; font-size: 0.74rem;
-        font-weight: 700; text-decoration: none; padding: 6px 13px; border-radius: 7px; letter-spacing: .02em; }
-    .t-acc-canal { background: #1FA855; color: #fff; }
-    .t-acc-canal:hover { filter: brightness(1.08); }
-    .t-acc-com { background: transparent; color: #C2A05B; border: 1px solid #5a4d36; }
-    .t-acc-com:hover { background: #C2A05B; color: #1A1A1A; border-color: #C2A05B; }
-    @media (max-width: 520px) { .t-acceso-inner { justify-content: center; } }
-    /* v0.18.2 · Seguinos en (footer) */
+
+    /* Seguinos en (footer) */
     .ft-redes { margin-top: 16px; }
     .ft-redes-lab { display: block; font-size: 0.78rem; letter-spacing: .1em; text-transform: uppercase;
         color: #f4f1ec; margin-bottom: 10px; font-weight: 600; }
@@ -102,9 +38,10 @@
     .ft-redes-ic a { display: inline-flex; align-items: center; justify-content: center;
         width: 38px; height: 38px; border-radius: 9px; background: #2a2a2a; color: #cfcabf;
         transition: background .15s, color .15s; }
-    .ft-redes-ic a:hover { background: #C2A05B; color: #1A1A1A; }
+    .ft-redes-ic a:hover { background: #FDDA48; color: #1A1A1A; }
     .ft-redes-ic svg { width: 19px; height: 19px; fill: currentColor; }
-    /* v0.18.3 · C2: Sumate para recibir ofertas (antes del footer) */
+
+    /* C2: Sumate para recibir ofertas */
     .t-suscribir { background: #1A1A1A; color: #F4F1EC; margin-top: 40px; }
     .t-suscribir-inner { max-width: 640px; margin: 0 auto; padding: 38px 18px; text-align: center; }
     .t-suscribir h3 { font-size: 1.15rem; margin: 0 0 8px; letter-spacing: .01em; }
@@ -115,17 +52,17 @@
         background: #242424; color: #F4F1EC; font-size: 0.85rem;
     }
     .t-sus-form input::placeholder { color: #8b8b8b; }
-    .t-sus-form input:focus { outline: none; border-color: #C2A05B; }
-    .t-sus-check {
-        flex: 1 1 100%; font-size: 0.8rem; color: #cfcabf; display: flex;
-        align-items: center; gap: 8px; justify-content: center;
-    }
+    .t-sus-form input:focus { outline: none; border-color: #FDDA48; }
+    .t-sus-check { flex: 1 1 100%; font-size: 0.8rem; color: #cfcabf; display: flex;
+        align-items: center; gap: 8px; justify-content: center; }
     .t-sus-form button {
-        flex: 1 1 140px; background: #C2A05B; color: #1A1A1A; border: none; border-radius: 8px;
-        padding: 11px 16px; font-weight: 700; cursor: pointer; font-size: 0.85rem;
+        flex: 1 1 140px; background: #FDDA48; color: #1A3F2B; border: none; border-radius: 8px;
+        padding: 11px 16px; font-weight: 800; cursor: pointer; font-size: 0.85rem;
     }
-    .t-sus-form button:hover { filter: brightness(1.08); }
+    .t-sus-form button:hover { background: #E0BC2B; }
     .t-sus-honeypot { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+    /* iOS hace zoom automatico si el input tiene font-size < 16px */
+    @media (max-width: 640px) { .t-sus-form input { font-size: 16px; } }
     </style>
 </head>
 <body>
@@ -143,93 +80,147 @@
 {# Valores reutilizables para no repetir en cada link #}
 {% set o = orden if orden != 'relevancia' else none %}
 {% set c = cat or none %}
+{% set r = rubro_sel or none %}
 
+<!-- =====================================================================
+     v0.22.0 · HEADER de 3 ZONAS + NAVBAR
+     El logo baja a 42px A PROPOSITO: con 1654 productos el protagonista es
+     el BUSCADOR. El cliente no navega: BUSCA.
+     ===================================================================== -->
 <div class="t-sticky">
 <header class="t-header">
-    <div class="t-header-top">
-        <div class="t-marca">{{ ajustes.nombre_negocio }}</div>
-        <div class="t-tagline">Catálogo mayorista · Pilar, Zona Norte</div>
-    </div>
+    <div class="t-head-main">
+        <!-- ZONA 1: logo -->
+        <a class="t-logo-link" href="{{ url_for('cliente.catalogo') }}" aria-label="{{ ajustes.nombre_negocio }} — inicio">
+            <img class="t-logo-img" src="{{ url_for('static', filename='img/marca/logo.png') }}"
+                 alt="{{ ajustes.nombre_negocio }}">
+        </a>
 
-    <form method="GET" action="{{ url_for('cliente.catalogo') }}" class="t-search-wrap" id="t-search-form">
-        <input type="hidden" name="rubro" value="{{ rubro_sel }}">
-        <input type="hidden" name="orden" value="{{ orden }}" id="t-orden-hidden">
-        {% if cat %}<input type="hidden" name="cat" value="{{ cat }}">{% endif %}
-        <div class="t-search-row">
-            <input type="text" name="q" value="{{ q }}" class="t-search" id="t-search-input" autocomplete="off"
-                   placeholder="Buscá por producto, marca o código (ej: baggio, alfajor, 89012)…">
-            <button type="button" class="t-search-clear" id="t-search-clear" title="Limpiar búsqueda"
-                    style="{% if not q %}display:none;{% endif %}">✕</button>
+        <!-- ZONA 2: buscador (el protagonista) -->
+        <form method="GET" action="{{ url_for('cliente.catalogo') }}" class="t-head-search" id="t-search-form">
+            <input type="hidden" name="rubro" value="{{ rubro_sel }}" id="t-rubro-hidden">
+            <input type="hidden" name="orden" value="{{ orden }}" id="t-orden-hidden">
+            {% if cat %}<input type="hidden" name="cat" value="{{ cat }}">{% endif %}
+            <div class="t-search-row">
+                <input type="text" name="q" value="{{ q }}" class="t-search" id="t-search-input" autocomplete="off"
+                       placeholder="Buscá por producto, marca o código (ej: baggio, alfajor, 89012)…">
+                <button type="button" class="t-search-clear" id="t-search-clear" title="Limpiar búsqueda"
+                        style="{% if not q %}display:none;{% endif %}">✕</button>
+                <button type="submit" class="t-search-go" aria-label="Buscar">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5Zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14Z"/></svg>
+                </button>
+            </div>
+        </form>
+
+        <!-- ZONA 3: acciones -->
+        <div class="t-head-acciones">
+            <a class="t-head-wa" href="https://wa.me/{{ ajustes.whatsapp }}" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 3C6.5 3 2 6.85 2 11.55c0 2.06.9 3.94 2.4 5.35L3.5 21l4.4-1.42c1.2.46 2.55.72 3.95.72 5.5 0 10-3.85 10-8.55C21.75 6.85 17.5 3 12 3zm0 15.4c-1.3 0-2.55-.27-3.66-.75l-.26-.11-2.6.84.85-2.5-.17-.27a6.6 6.6 0 0 1-1.16-3.71c0-3.75 3.6-6.8 8-6.8s8 3.05 8 6.8-3.6 6.8-8 6.8z"/>
+                    <path d="M9.6 8.2c-.16-.36-.33-.37-.49-.38h-.42c-.14 0-.37.05-.57.27-.2.22-.74.72-.74 1.75s.76 2.03.86 2.17c.11.14 1.48 2.36 3.66 3.22 1.81.71 2.18.57 2.57.54.39-.04 1.27-.52 1.45-1.02.18-.5.18-.93.13-1.02-.05-.09-.2-.14-.42-.25-.22-.11-1.27-.63-1.47-.7-.2-.07-.34-.11-.49.11-.14.22-.56.7-.69.85-.13.14-.25.16-.47.05-.22-.11-.92-.34-1.76-1.08-.65-.58-1.09-1.29-1.22-1.51-.13-.22-.01-.34.1-.45.1-.1.22-.25.33-.38.11-.13.14-.22.22-.36.07-.14.04-.27-.02-.38-.05-.11-.48-1.18-.66-1.61z"/>
+                </svg>
+                <span class="t-head-wa-tx">WhatsApp</span>
+            </a>
         </div>
-    </form>
-
-    <div class="t-chips">
-        <a href="{{ url_for('cliente.catalogo', orden=o, cat=c) }}"
-           class="t-chip {% if not rubro_sel %}activo{% endif %}">Todo</a>
-        {% for real, disp in rubros %}
-        <a href="{{ url_for('cliente.catalogo', rubro=real, orden=o, cat=c) }}"
-           class="t-chip {% if real == rubro_sel %}activo{% endif %}">{{ disp }}</a>
-        {% endfor %}
     </div>
 </header>
 
-<div class="t-solapas">
-    <a href="{{ url_for('cliente.catalogo', q=q or none, rubro=rubro_sel or none, orden=o) }}"
-       class="t-solapa {% if not cat %}activa{% endif %}">Todo</a>
-    <a href="{{ url_for('cliente.catalogo', q=q or none, rubro=rubro_sel or none, orden=o, cat='ofertas') }}"
-       class="t-solapa sol-of {% if cat == 'ofertas' %}activa{% endif %}">🏷️ Ofertas{% if n_ofertas %} ({{ n_ofertas }}){% endif %}</a>
-    <a href="{{ url_for('cliente.catalogo', q=q or none, rubro=rubro_sel or none, orden=o, cat='comida') }}"
-       class="t-solapa {% if cat == 'comida' %}activa{% endif %}">🥗 Saludables</a>
-    <a href="{{ url_for('cliente.catalogo', q=q or none, rubro=rubro_sel or none, orden=o, cat='sin') }}"
-       class="t-solapa {% if cat == 'sin' %}activa{% endif %}">💧 Sin alcohol</a>
-    <a href="{{ url_for('cliente.catalogo', q=q or none, rubro=rubro_sel or none, orden=o, cat='con') }}"
-       class="t-solapa sol-con {% if cat == 'con' %}activa{% endif %}">🍷 Con alcohol</a>
-</div>
+<!-- NAVBAR: las categorías. Los RUBROS ahora viven en el desplegable de la
+     toolbar (antes eran una segunda fila de pastillas que duplicaba a esta). -->
+<nav class="t-navbar">
+    <div class="t-navbar-inner">
+        <a href="{{ url_for('cliente.catalogo', q=q or none, rubro=r, orden=o) }}"
+           class="t-nav-item {% if not cat %}activo{% endif %}">Todo</a>
+        <a href="{{ url_for('cliente.catalogo', q=q or none, rubro=r, orden=o, cat='comida') }}"
+           class="t-nav-item {% if cat == 'comida' %}activo{% endif %}">🥗 Saludables</a>
+        <a href="{{ url_for('cliente.catalogo', q=q or none, rubro=r, orden=o, cat='sin') }}"
+           class="t-nav-item {% if cat == 'sin' %}activo{% endif %}">💧 Sin alcohol</a>
+        <a href="{{ url_for('cliente.catalogo', q=q or none, rubro=r, orden=o, cat='con') }}"
+           class="t-nav-item {% if cat == 'con' %}activo{% endif %}">🍷 Con alcohol</a>
+        <a href="{{ url_for('cliente.catalogo', q=q or none, rubro=r, orden=o, cat='ofertas') }}"
+           class="t-nav-item t-nav-ofertas {% if cat == 'ofertas' %}activo{% endif %}">🏷️ Ofertas{% if n_ofertas %} ({{ n_ofertas }}){% endif %}</a>
+    </div>
+</nav>
 </div>
 
+<!-- =====================================================================
+     v0.22.0 · BANNERS — los tres en UNA grilla, dentro del flujo normal.
+     Antes los laterales eran 'position: fixed' con un 'top: 168px' hardcodeado
+     y se ocultaban abajo de 1500px (o sea: casi nunca se veían).
+     Si Juliana todavía no cargó ningún banner central, mostramos el hero de la
+     marca en vez de un hueco vacío.
+     ===================================================================== -->
 {% set bn = banners|default({}) %}
-{% if bn.get('CENTRAL') %}
-<div class="bn-central" id="bnCentral">
-    {% for b in bn['CENTRAL'] %}
-    {% if b.link %}
-    <a class="bn-slide {% if loop.first %}on{% endif %}" href="{{ b.link }}"{% if 'http' in b.link %} target="_blank" rel="noopener"{% endif %}>
-        <img src="{{ url_for('static', filename='img/banners/' + b.imagen) }}" alt="">
-    </a>
-    {% else %}
-    <div class="bn-slide {% if loop.first %}on{% endif %}">
-        <img src="{{ url_for('static', filename='img/banners/' + b.imagen) }}" alt="">
-    </div>
-    {% endif %}
-    {% endfor %}
-    {% if bn['CENTRAL']|length > 1 %}
-    <button type="button" class="bn-arrow bn-prev" id="bnPrev" aria-label="Banner anterior">‹</button>
-    <button type="button" class="bn-arrow bn-next" id="bnNext" aria-label="Banner siguiente">›</button>
-    <div class="bn-dots" id="bnDots">
-        {% for b in bn['CENTRAL'] %}
-        <button type="button" class="bn-dot {% if loop.first %}on{% endif %}" data-i="{{ loop.index0 }}" aria-label="Ir al banner {{ loop.index }}"></button>
+{% set hay_lat = bn.get('IZQ') or bn.get('DER') %}
+<div class="bn-zona {% if not hay_lat %}solo-central{% endif %}">
+
+    {% if hay_lat %}
+    <div class="bn-rail izq" data-rail>
+        {% for b in bn.get('IZQ', []) %}
+        {% set src = url_for('static', filename='img/banners/' + b.imagen) %}
+        {% if b.link %}
+        <a class="bn-rslide {% if loop.first %}on{% endif %}" href="{{ b.link }}" style="--bn-bg: url({{ src }});"{% if 'http' in b.link %} target="_blank" rel="noopener"{% endif %}>
+            <img src="{{ src }}" alt="">
+        </a>
+        {% else %}
+        <div class="bn-rslide {% if loop.first %}on{% endif %}" style="--bn-bg: url({{ src }});">
+            <img src="{{ src }}" alt="">
+        </div>
+        {% endif %}
         {% endfor %}
     </div>
     {% endif %}
-</div>
-{% endif %}
 
-{% for zona, cls in [('IZQ', 'izq'), ('DER', 'der')] %}
-{% if bn.get(zona) %}
-<div class="bn-rail {{ cls }}" data-rail>
-    {% for b in bn[zona] %}
-    {% if b.link %}
-    <a class="bn-rslide {% if loop.first %}on{% endif %}" href="{{ b.link }}"{% if 'http' in b.link %} target="_blank" rel="noopener"{% endif %}>
-        <img src="{{ url_for('static', filename='img/banners/' + b.imagen) }}" alt="">
-    </a>
-    {% else %}
-    <div class="bn-rslide {% if loop.first %}on{% endif %}">
-        <img src="{{ url_for('static', filename='img/banners/' + b.imagen) }}" alt="">
+    <div class="bn-central" id="bnCentral">
+        {% if bn.get('CENTRAL') %}
+            {% for b in bn['CENTRAL'] %}
+            {% set src = url_for('static', filename='img/banners/' + b.imagen) %}
+            {% if b.link %}
+            <a class="bn-slide {% if loop.first %}on{% endif %}" href="{{ b.link }}" style="--bn-bg: url({{ src }});"{% if 'http' in b.link %} target="_blank" rel="noopener"{% endif %}>
+                <img src="{{ src }}" alt="">
+            </a>
+            {% else %}
+            <div class="bn-slide {% if loop.first %}on{% endif %}" style="--bn-bg: url({{ src }});">
+                <img src="{{ src }}" alt="">
+            </div>
+            {% endif %}
+            {% endfor %}
+            {% if bn['CENTRAL']|length > 1 %}
+            <button type="button" class="bn-arrow bn-prev" id="bnPrev" aria-label="Banner anterior">‹</button>
+            <button type="button" class="bn-arrow bn-next" id="bnNext" aria-label="Banner siguiente">›</button>
+            <div class="bn-dots" id="bnDots">
+                {% for b in bn['CENTRAL'] %}
+                <button type="button" class="bn-dot {% if loop.first %}on{% endif %}" data-i="{{ loop.index0 }}" aria-label="Ir al banner {{ loop.index }}"></button>
+                {% endfor %}
+            </div>
+            {% endif %}
+        {% else %}
+            {# Sin banners cargados: el hero de la marca. Nunca un hueco vacío. #}
+            {% set hero = url_for('static', filename='img/marca/hero.jpg') %}
+            <div class="bn-slide on" style="--bn-bg: url({{ hero }});">
+                <img src="{{ hero }}" alt="{{ ajustes.nombre_negocio }}">
+            </div>
+        {% endif %}
+    </div>
+
+    {% if hay_lat %}
+    <div class="bn-rail der" data-rail>
+        {% for b in bn.get('DER', []) %}
+        {% set src = url_for('static', filename='img/banners/' + b.imagen) %}
+        {% if b.link %}
+        <a class="bn-rslide {% if loop.first %}on{% endif %}" href="{{ b.link }}" style="--bn-bg: url({{ src }});"{% if 'http' in b.link %} target="_blank" rel="noopener"{% endif %}>
+            <img src="{{ src }}" alt="">
+        </a>
+        {% else %}
+        <div class="bn-rslide {% if loop.first %}on{% endif %}" style="--bn-bg: url({{ src }});">
+            <img src="{{ src }}" alt="">
+        </div>
+        {% endif %}
+        {% endfor %}
     </div>
     {% endif %}
-    {% endfor %}
+
 </div>
-{% endif %}
-{% endfor %}
 
 <div class="t-aviso">
     🛒 Pedido mínimo <b>{{ ajustes.minimo_compra|pesos }}</b> · Precios finales con IVA incluido
@@ -238,6 +229,14 @@
 <div class="t-toolbar">
     <span class="t-count" id="t-count">{{ paginacion.total }} producto(s){% if q or rubro_sel or cat %} encontrados{% endif %}</span>
     <div class="t-tools">
+        {# v0.22.0 · Los RUBROS pasan de una fila de pastillas a este desplegable.
+           No se pierde ninguna función: se gana media pantalla. #}
+        <select id="rubro-select" class="t-rubro-sel" aria-label="Filtrar por rubro">
+            <option value="">Todos los rubros</option>
+            {% for real, disp in rubros %}
+            <option value="{{ real }}" {% if real == rubro_sel %}selected{% endif %}>{{ disp }}</option>
+            {% endfor %}
+        </select>
         <select id="orden-select" class="t-orden" aria-label="Ordenar productos">
             {% for clave, etiqueta in ordenes.items() %}
             <option value="{{ clave }}" {% if orden == clave %}selected{% endif %}>{{ etiqueta }}</option>
@@ -282,7 +281,8 @@
     <div class="ft-inner">
         <div class="ft-cols">
             <div class="ft-col">
-                <div class="ft-marca">{{ ajustes.nombre_negocio }}</div>
+                <img class="ft-logo" src="{{ url_for('static', filename='img/marca/logo-blanco.png') }}"
+                     alt="{{ ajustes.nombre_negocio }}">
                 <p>Distribución de productos saludables para colegios y kioscos de Pilar y Zona Norte.</p>
                 <a class="ft-wa" href="https://wa.me/{{ ajustes.whatsapp }}" target="_blank" rel="noopener">Escribinos por WhatsApp →</a>
                 {% if redes.instagram or redes.facebook or redes.youtube or redes.tiktok or redes.linkedin %}
@@ -343,7 +343,7 @@
     </div>
 </footer>
 
-<!-- Boton flotante de CONSULTAS por WhatsApp (v0.13) -->
+<!-- Boton flotante de CONSULTAS por WhatsApp -->
 <a class="wa-fab" href="https://wa.me/{{ ajustes.whatsapp }}?text={{ 'Hola! Tengo una consulta sobre el catálogo web de Saludables Pilar.'|urlencode }}"
    target="_blank" rel="noopener" aria-label="Consultas por WhatsApp">
     <span class="wa-fab-ic" aria-hidden="true">
@@ -395,8 +395,10 @@
     var RES   = document.getElementById('resultados');
     var INPUT = document.getElementById('t-search-input');
     var SEL   = document.getElementById('orden-select');
+    var RUBRO = document.getElementById('rubro-select');
     var CLEAR = document.getElementById('t-search-clear');
     var ORDEN_HIDDEN = document.getElementById('t-orden-hidden');
+    var RUBRO_HIDDEN = document.getElementById('t-rubro-hidden');
     var tmr = null, reqId = 0;
 
     function aplicarVista() {
@@ -423,6 +425,9 @@
         var params = new URLSearchParams();
         var q = INPUT.value.trim();
         if (q) params.set('q', q);
+        // v0.22.0 · el rubro ahora sale del desplegable, no de los chips
+        window.CAT.rubro = RUBRO ? RUBRO.value : window.CAT.rubro;
+        if (RUBRO_HIDDEN) RUBRO_HIDDEN.value = window.CAT.rubro || '';
         if (window.CAT.rubro) params.set('rubro', window.CAT.rubro);
         if (window.CAT.cat) params.set('cat', window.CAT.cat);
         var orden = SEL.value;
@@ -454,17 +459,18 @@
         if (ORDEN_HIDDEN) ORDEN_HIDDEN.value = SEL.value;
         actualizar();
     });
+    if (RUBRO) RUBRO.addEventListener('change', actualizar);
     CLEAR.addEventListener('click', function () {
         INPUT.value = ''; CLEAR.style.display = 'none';
         clearTimeout(tmr); actualizar(); INPUT.focus();
     });
 
-    // v0.14 · recordar la vista (grilla/lista) al cambiar de pagina
+    // recordar la vista (grilla/lista)
     try {
         if (localStorage.getItem('salu_vista') === 'lista') setVista('lista');
     } catch (e) {}
 
-    // v0.18.1 · carrusel central: auto + flechas + puntitos (control manual)
+    // carrusel central: auto + flechas + puntitos
     (function () {
         var c = document.getElementById('bnCentral');
         if (!c) return;
@@ -480,7 +486,7 @@
             if (dots[i]) dots[i].classList.add('on');
         }
         function arrancar() {
-            clearTimeout(timer);
+            clearInterval(timer);
             timer = setInterval(function () { if (!pausa) mostrar(i + 1); }, 4000);
         }
         c.addEventListener('mouseenter', function () { pausa = true; });
@@ -497,7 +503,7 @@
         arrancar();
     })();
 
-    // v0.14 · banners laterales: rotan cada 4s
+    // banners laterales: rotan cada 4s
     document.querySelectorAll('[data-rail]').forEach(function (rail) {
         var sl = rail.querySelectorAll('.bn-rslide');
         if (sl.length < 2) return;

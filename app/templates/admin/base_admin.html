@@ -6,48 +6,65 @@
     <!-- Sidebar -->
     <aside class="sidebar">
         <div class="brand">
-            <div class="marca">{{ app_nombre }}</div>
+            <img class="brand-logo" src="{{ url_for('static', filename='img/marca/logo-blanco.png') }}"
+                 alt="{{ app_nombre }}">
             <div class="sub">{{ app_subtitulo }}</div>
         </div>
 
+        {# ================================================================
+           v0.22.0 · NAV AGRUPADO POR SECCIONES.
+           Antes eran 16 pestañas seguidas, todas con el mismo peso visual: el
+           ojo tenia que leerlas TODAS cada vez para encontrar una. Ahora cada
+           bloque tiene un titulito que funciona como ancla mental:
+           "lo que busco es de ventas" -> vas derecho a ese bloque.
+           ================================================================ #}
         <nav class="nav">
+
+            <div class="nav-sec">Principal</div>
             <a href="{{ url_for('admin.dashboard') }}"
-               class="{% if request.endpoint == 'admin.dashboard' %}activo{% endif %}">Dashboard</a>
+               class="{% if request.endpoint == 'admin.dashboard' %}activo{% endif %}">📊 Dashboard</a>
             <a href="{{ url_for('admin.pedidos') }}"
-               class="{% if 'pedido' in request.endpoint %}activo{% endif %}">Pedidos</a>
-            <a href="{{ url_for('admin.catalogo') }}"
-               class="{% if request.endpoint == 'admin.catalogo' %}activo{% endif %}">Catálogo</a>
+               class="{% if 'pedido' in request.endpoint %}activo{% endif %}">🧾 Pedidos</a>
+
+            <div class="nav-sec">Ventas</div>
             <a href="{{ url_for('admin.ofertas') }}"
                class="{% if 'oferta' in request.endpoint %}activo{% endif %}">🏷️ Ofertas</a>
             <a href="{{ url_for('admin.cotizador', tipo='CUMPLE') }}"
                class="{% if 'cotizador' in (request.endpoint or '') and (request.args.get('tipo') == 'CUMPLE' or (request.view_args and request.view_args.get('tipo') == 'CUMPLE')) %}activo{% endif %}">🎉 Cumpleaños</a>
             <a href="{{ url_for('admin.cotizador', tipo='COLEGIO') }}"
                class="{% if 'cotizador' in (request.endpoint or '') and (request.args.get('tipo') == 'COLEGIO' or (request.view_args and request.view_args.get('tipo') == 'COLEGIO')) %}activo{% endif %}">🏫 Colegios</a>
+
+            <div class="nav-sec">Clientes</div>
             <a href="{{ url_for('admin.clientes') }}"
-               class="{% if 'cliente' in request.endpoint %}activo{% endif %}">📇 Clientes</a>
+               class="{% if 'cliente' in request.endpoint %}activo{% endif %}">📇 Base de clientes</a>
             <a href="{{ url_for('admin.suscriptores') }}"
                class="{% if 'suscriptor' in request.endpoint %}activo{% endif %}">📩 Suscriptores</a>
-            <a href="{{ url_for('admin.ajustes') }}"
-               class="{% if request.endpoint == 'admin.ajustes' %}activo{% endif %}">Ajustes y precios</a>
+
+            <div class="nav-sec">Catálogo</div>
+            <a href="{{ url_for('admin.catalogo') }}"
+               class="{% if request.endpoint == 'admin.catalogo' %}activo{% endif %}">📦 Productos</a>
+            <a href="{{ url_for('admin.fotos') }}"
+               class="{% if request.endpoint == 'admin.fotos' %}activo{% endif %}">📷 Fotos</a>
             <a href="{{ url_for('admin.importaciones') }}"
                class="{% if 'importacion' in request.endpoint %}activo{% endif %}">📈 Historial de precios</a>
             {% if current_user.es_super_admin %}
             <a href="{{ url_for('admin.importar') }}"
-               class="{% if request.endpoint == 'admin.importar' %}activo{% endif %}">Importar planilla</a>
-            {% endif %}
-            <a href="{{ url_for('admin.fotos') }}"
-               class="{% if request.endpoint == 'admin.fotos' %}activo{% endif %}">Fotos</a>
-            {% if current_user.es_super_admin %}
-            <a href="{{ url_for('admin.banners') }}"
-               class="{% if 'banner' in request.endpoint %}activo{% endif %}">🖼️ Banners</a>
+               class="{% if request.endpoint == 'admin.importar' %}activo{% endif %}">⬆️ Importar planilla</a>
             <a href="{{ url_for('admin.food_cost') }}"
                class="{% if 'food_cost' in request.endpoint %}activo{% endif %}">📊 Food Cost</a>
             {% endif %}
-            <a href="{{ url_for('cliente.catalogo') }}" target="_blank">Ver tienda ↗</a>
+
+            <div class="nav-sec">Sistema</div>
+            <a href="{{ url_for('admin.ajustes') }}"
+               class="{% if request.endpoint == 'admin.ajustes' %}activo{% endif %}">⚙️ Ajustes y precios</a>
             {% if current_user.es_super_admin %}
+            <a href="{{ url_for('admin.banners') }}"
+               class="{% if 'banner' in request.endpoint %}activo{% endif %}">🖼️ Banners</a>
             <a href="{{ url_for('admin.usuarios') }}"
                class="{% if 'usuario' in request.endpoint %}activo{% endif %}">👥 Usuarios</a>
             {% endif %}
+            <a href="{{ url_for('cliente.catalogo') }}" target="_blank">🛍️ Ver tienda ↗</a>
+
         </nav>
 
         <div class="user-box">
@@ -106,29 +123,22 @@
 
 {# ===================================================================
    v0.20.1 / v0.21.0 · AUTO-LOGOUT POR INACTIVIDAD
-   El contador arranca en SESION_MIN minutos y baja solo. CUALQUIER
+   El contador arranca en SESION_TIMEOUT_MIN minutos y baja solo. CUALQUIER
    actividad (mouse, teclado, scroll, touch) lo reinicia al maximo.
-   Cuando llega a cero, manda a /logout-inactividad (mensaje propio).
-   Los minutos se configuran en config.py -> SESION_TIMEOUT_MIN.
+   Cuando llega a cero, manda a /logout-inactividad.
 
-   v0.21.0 · NOVEDAD IMPORTANTE — el HEARTBEAT.
-   Antes esto era SOLO cosmetico: el servidor no se enteraba de nada, y una
-   sesion podia quedar viva para siempre si el JS no corria. Ahora la sesion
-   TAMBIEN vence en el servidor (PERMANENT_SESSION_LIFETIME).
-   Pero eso solo no alcanza: si vos estas LEYENDO una lista larga y solo moves
-   el mouse, para el servidor eso es "no hizo ningun request" -> te mataria la
-   sesion aunque estes ahi, presente.
-   El heartbeat resuelve justo eso: cada 60 segundos, SI Y SOLO SI hubo
-   actividad real desde el ultimo ping, le avisa al servidor "seguí viva".
-   Si te fuiste, no hay actividad -> no hay ping -> la sesion se muere. Correcto.
+   El HEARTBEAT (latir): cada 60 seg, SI Y SOLO SI hubo actividad real, le avisa
+   al servidor "seguí viva". Sin esto, si estas LEYENDO una lista larga y solo
+   moves el mouse, para el servidor no hubo ningun request -> te mataria la
+   sesion aunque estes ahi presente.
    =================================================================== #}
 <script>
 (function () {
     var TOTAL   = {{ config.SESION_TIMEOUT_MIN|default(2) }} * 60;   // segundos
-    var AVISO   = {{ config.SESION_AVISO_SEG|default(30) }};         // avisar en los ultimos N seg
+    var AVISO   = {{ config.SESION_AVISO_SEG|default(30) }};         // ultimos N seg en rojo
     var URL_OUT = "{{ url_for('auth.logout_inactividad') }}";
     var URL_PING = "{{ url_for('sesion_ping') }}";
-    var PING_CADA = 60;    // segundos entre latidos (solo si hubo actividad)
+    var PING_CADA = 60;
 
     var fill  = document.getElementById('sesionFill');
     var reloj = document.getElementById('sesionReloj');
@@ -137,17 +147,15 @@
 
     var restan = TOTAL;
     var muerto = false;
-    var hubo_actividad = false;   // ¿se movió algo desde el ultimo latido?
+    var hubo_actividad = false;
     var desde_ping = 0;
 
     function pintar() {
         var pct = Math.max(0, (restan / TOTAL) * 100);
         fill.style.width = pct + '%';
-
         var m = Math.floor(restan / 60);
         var s = restan % 60;
         reloj.textContent = m + ':' + (s < 10 ? '0' : '') + s;
-
         if (restan <= AVISO) { box.classList.add('por-vencer'); }
         else { box.classList.remove('por-vencer'); }
     }
@@ -155,26 +163,22 @@
     function reiniciar() {
         if (muerto) return;
         restan = TOTAL;
-        hubo_actividad = true;   // <- para que el proximo latido salga
+        hubo_actividad = true;
         pintar();
     }
 
-    // El latido: mantiene viva la sesion EN EL SERVIDOR mientras el usuario
-    // este realmente ahi. Si no hubo actividad, no manda nada (a proposito).
     function latir() {
         if (muerto || !hubo_actividad) return;
         hubo_actividad = false;
         fetch(URL_PING, { method: 'GET', credentials: 'same-origin', cache: 'no-store' })
-            .catch(function () { /* si no hay red, no pasa nada: el server corta solo */ });
+            .catch(function () { /* sin red: el servidor corta solo */ });
     }
 
     function tick() {
         if (muerto) return;
         restan -= 1;
-
         desde_ping += 1;
         if (desde_ping >= PING_CADA) { desde_ping = 0; latir(); }
-
         if (restan <= 0) {
             muerto = true;
             pintar();
@@ -184,7 +188,6 @@
         pintar();
     }
 
-    // Cualquier señal de vida reinicia el contador
     ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click']
         .forEach(function (ev) {
             document.addEventListener(ev, reiniciar, { passive: true });
