@@ -29,6 +29,18 @@
           <div class="rol">Revendedora</div>
         </div>
       </div>
+
+      {# v0.21.0 · Barra de sesion (misma que el panel admin).
+         El CSS (.sesion-box / .sesion-barra / .por-vencer) ya existe en
+         app.css desde v0.20.1: se reusa tal cual, no se duplica nada. #}
+      <div class="sesion-box" id="sesionBox">
+        <div class="sesion-barra"><span id="sesionFill"></span></div>
+        <div class="sesion-txt">
+          <span>Sesión</span>
+          <b id="sesionReloj">--:--</b>
+        </div>
+      </div>
+
       <a href="{{ url_for('auth.logout') }}" class="btn-salir">
         <span class="btn-salir-ic">⎋</span> Cerrar sesión
       </a>
@@ -63,4 +75,86 @@
   </div>
 
 </div>
+
+{# ===================================================================
+   v0.21.0 · AUTO-LOGOUT POR INACTIVIDAD (portal de la revendedora)
+   Exactamente el mismo comportamiento que el panel admin. La ruta
+   /logout-inactividad y el CSS ya existian: aca solo se reusan.
+
+   Importante: esto NO reemplaza al candado del servidor
+   (PERMANENT_SESSION_LIFETIME en config.py). Esto es la parte VISIBLE:
+   la barrita que le avisa a la revendedora que se le acaba el tiempo.
+   El "heartbeat" (latir()) es el puente entre las dos: mientras ella este
+   realmente ahi moviendo el mouse, le avisa al servidor cada 60 segundos
+   que siga manteniendo la sesion viva.
+   =================================================================== #}
+<script>
+(function () {
+    var TOTAL   = {{ config.SESION_TIMEOUT_MIN|default(2) }} * 60;   // segundos
+    var AVISO   = {{ config.SESION_AVISO_SEG|default(30) }};         // ultimos N seg en rojo
+    var URL_OUT = "{{ url_for('auth.logout_inactividad') }}";
+    var URL_PING = "{{ url_for('sesion_ping') }}";
+    var PING_CADA = 60;    // segundos entre latidos (solo si hubo actividad)
+
+    var fill  = document.getElementById('sesionFill');
+    var reloj = document.getElementById('sesionReloj');
+    var box   = document.getElementById('sesionBox');
+    if (!fill || !reloj || !box) return;
+
+    var restan = TOTAL;
+    var muerto = false;
+    var hubo_actividad = false;
+    var desde_ping = 0;
+
+    function pintar() {
+        var pct = Math.max(0, (restan / TOTAL) * 100);
+        fill.style.width = pct + '%';
+
+        var m = Math.floor(restan / 60);
+        var s = restan % 60;
+        reloj.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+
+        if (restan <= AVISO) { box.classList.add('por-vencer'); }
+        else { box.classList.remove('por-vencer'); }
+    }
+
+    function reiniciar() {
+        if (muerto) return;
+        restan = TOTAL;
+        hubo_actividad = true;
+        pintar();
+    }
+
+    function latir() {
+        if (muerto || !hubo_actividad) return;
+        hubo_actividad = false;
+        fetch(URL_PING, { method: 'GET', credentials: 'same-origin', cache: 'no-store' })
+            .catch(function () { /* sin red: el servidor corta solo, no pasa nada */ });
+    }
+
+    function tick() {
+        if (muerto) return;
+        restan -= 1;
+
+        desde_ping += 1;
+        if (desde_ping >= PING_CADA) { desde_ping = 0; latir(); }
+
+        if (restan <= 0) {
+            muerto = true;
+            pintar();
+            window.location.href = URL_OUT;
+            return;
+        }
+        pintar();
+    }
+
+    ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click']
+        .forEach(function (ev) {
+            document.addEventListener(ev, reiniciar, { passive: true });
+        });
+
+    pintar();
+    setInterval(tick, 1000);
+})();
+</script>
 {% endblock %}

@@ -1,9 +1,19 @@
 """
 app/__init__.py — Application Factory del Sistema Saludables.
 AXIAL SECURITY · Ivan Abrigo
+
+v0.21.0 -> E0:
+  1) Manejador de CSRFError: se acabo el "Bad Request / The CSRF token has
+     expired" crudo. Ahora avisa lindo y manda a donde corresponde.
+  2) Sesion PERMANENTE + auto-logout REAL en el servidor (no solo JavaScript).
+  3) Ruta /sesion/ping: el "heartbeat" que manda el navegador cuando hay
+     actividad real, para mantener sincronizado el reloj del servidor con la
+     barrita que ve el usuario.
 """
 import os
-from flask import Flask, render_template, redirect, url_for
+from flask import (Flask, render_template, redirect, url_for, session,
+                   flash, request)
+from flask_wtf.csrf import CSRFError
 
 from config import config
 from .extensions import db, bcrypt, login_manager, csrf
@@ -58,6 +68,67 @@ def create_app(config_name=None):
             redes=app.config.get('REDES', {}),
             now=ahora_argentina().replace(tzinfo=None),
         )
+
+    # ======================================================================
+    #  v0.21.0 · SESION CON VENCIMIENTO REAL (server-side)
+    # ======================================================================
+    # Flask, por defecto, usa cookies de sesion "de navegador": duran hasta que
+    # se cierra el navegador y NO tienen vencimiento por inactividad. Marcando
+    # la sesion como 'permanent', pasa a regir PERMANENT_SESSION_LIFETIME
+    # (config.py) y la cookie SE VENCE SOLA por inactividad.
+    #
+    # ¿Por que importa? Porque el auto-logout de v0.20.1 era SOLO JavaScript.
+    # Cualquiera que cerrara la solapa (o tocara la consola del navegador) se
+    # quedaba con la sesion viva. Ahora el que decide es el SERVIDOR.
+    #
+    # Con SESSION_REFRESH_EACH_REQUEST=True, cada request valida renueva el
+    # plazo. El "heartbeat" de abajo es lo que hace que mover el mouse tambien
+    # cuente como actividad para el servidor, no solo para la barrita.
+    @app.before_request
+    def _sesion_permanente():
+        session.permanent = True
+
+    @app.route('/sesion/ping')
+    def sesion_ping():
+        """
+        Heartbeat de sesion. El navegador lo llama cada tanto MIENTRAS HAYA
+        ACTIVIDAD REAL del usuario (mouse, teclado, scroll, touch).
+
+        No devuelve nada (204 = "todo bien, sin contenido"). Su unico efecto es
+        ser un request valido, y por lo tanto renovar la cookie de sesion.
+
+        Si el usuario se fue a tomar un cafe, el navegador NO llama a esta ruta,
+        la cookie no se renueva, y la sesion se muere sola. Que es justo lo que
+        queremos.
+
+        Es GET a proposito: los GET no llevan token CSRF, asi que este ping nunca
+        puede fallar por un token vencido (seria ironico, justamente).
+        """
+        return ('', 204)
+
+    # ======================================================================
+    #  v0.21.0 · CSRF VENCIDO -> mensaje humano, no "Bad Request"
+    # ======================================================================
+    @app.errorhandler(CSRFError)
+    def err_csrf(e):
+        """
+        Atrapa el token CSRF vencido/invalido y, en vez de la pantalla cruda de
+        'Bad Request' en Times New Roman, devuelve al usuario a donde tiene que
+        estar, con un mensaje que se entiende.
+
+        Ojo con el detalle: si el que falla es un formulario de la TIENDA PUBLICA
+        (ej: el form de suscriptores), mandarlo al login seria un desproposito
+        -- esa persona no tiene cuenta ni la necesita. A esos los devolvemos al
+        catalogo.
+        """
+        if request.blueprint == 'cliente':
+            flash('El formulario venció por seguridad. Completalo de nuevo, por favor.',
+                  'error')
+            return redirect(url_for('cliente.catalogo')), 302
+
+        flash('Tu sesión venció por seguridad. Ingresá de nuevo para continuar.',
+              'warning')
+        return redirect(url_for('auth.login')), 302
 
     # --- Blueprints ---
     from .auth import auth_bp

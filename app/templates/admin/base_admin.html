@@ -105,17 +105,30 @@
 </div>
 
 {# ===================================================================
-   v0.20.1 · AUTO-LOGOUT POR INACTIVIDAD
+   v0.20.1 / v0.21.0 · AUTO-LOGOUT POR INACTIVIDAD
    El contador arranca en SESION_MIN minutos y baja solo. CUALQUIER
    actividad (mouse, teclado, scroll, touch) lo reinicia al maximo.
    Cuando llega a cero, manda a /logout-inactividad (mensaje propio).
    Los minutos se configuran en config.py -> SESION_TIMEOUT_MIN.
+
+   v0.21.0 · NOVEDAD IMPORTANTE — el HEARTBEAT.
+   Antes esto era SOLO cosmetico: el servidor no se enteraba de nada, y una
+   sesion podia quedar viva para siempre si el JS no corria. Ahora la sesion
+   TAMBIEN vence en el servidor (PERMANENT_SESSION_LIFETIME).
+   Pero eso solo no alcanza: si vos estas LEYENDO una lista larga y solo moves
+   el mouse, para el servidor eso es "no hizo ningun request" -> te mataria la
+   sesion aunque estes ahi, presente.
+   El heartbeat resuelve justo eso: cada 60 segundos, SI Y SOLO SI hubo
+   actividad real desde el ultimo ping, le avisa al servidor "seguí viva".
+   Si te fuiste, no hay actividad -> no hay ping -> la sesion se muere. Correcto.
    =================================================================== #}
 <script>
 (function () {
     var TOTAL   = {{ config.SESION_TIMEOUT_MIN|default(2) }} * 60;   // segundos
     var AVISO   = {{ config.SESION_AVISO_SEG|default(30) }};         // avisar en los ultimos N seg
     var URL_OUT = "{{ url_for('auth.logout_inactividad') }}";
+    var URL_PING = "{{ url_for('sesion_ping') }}";
+    var PING_CADA = 60;    // segundos entre latidos (solo si hubo actividad)
 
     var fill  = document.getElementById('sesionFill');
     var reloj = document.getElementById('sesionReloj');
@@ -124,6 +137,8 @@
 
     var restan = TOTAL;
     var muerto = false;
+    var hubo_actividad = false;   // ¿se movió algo desde el ultimo latido?
+    var desde_ping = 0;
 
     function pintar() {
         var pct = Math.max(0, (restan / TOTAL) * 100);
@@ -140,12 +155,26 @@
     function reiniciar() {
         if (muerto) return;
         restan = TOTAL;
+        hubo_actividad = true;   // <- para que el proximo latido salga
         pintar();
+    }
+
+    // El latido: mantiene viva la sesion EN EL SERVIDOR mientras el usuario
+    // este realmente ahi. Si no hubo actividad, no manda nada (a proposito).
+    function latir() {
+        if (muerto || !hubo_actividad) return;
+        hubo_actividad = false;
+        fetch(URL_PING, { method: 'GET', credentials: 'same-origin', cache: 'no-store' })
+            .catch(function () { /* si no hay red, no pasa nada: el server corta solo */ });
     }
 
     function tick() {
         if (muerto) return;
         restan -= 1;
+
+        desde_ping += 1;
+        if (desde_ping >= PING_CADA) { desde_ping = 0; latir(); }
+
         if (restan <= 0) {
             muerto = true;
             pintar();
