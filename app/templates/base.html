@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ app_nombre }}{% endblock %}</title>
+
+    {# v0.22.1 · Favicon de la marca (el isotipo). Este base.html lo heredan el
+       panel admin, el login y el portal de la revendedora, asi que con ponerlo
+       aca una sola vez, aparece en TODAS las solapas del sistema.
+       La tienda publica (catalogo.html) NO hereda de este archivo: ahi el
+       favicon va declarado por separado en su propio <head>. #}
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/marca/isotipo.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/marca/isotipo.png') }}">
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 </head>
 <body>

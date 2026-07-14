@@ -15,6 +15,9 @@ v0.21.0 -> E0: Fix CSRF + auto-logout REAL + timer en el portal + MARGEN_CASA_MI
 v0.22.0 -> E1: Rediseño de la tienda (header 3 zonas + navbar), banners en grilla
                (3 bugs corregidos), assets de marca, placeholder de producto y
                sidebar del panel agrupado por secciones.
+v0.22.1 -> E1 (cierre): favicon en todo el sistema, boton Agregar con icono SVG
+               (el emoji se pintaba distinto en cada telefono) y micro-feedback
+               tactil al agregar al carrito.
 """
 import os
 from datetime import timedelta
@@ -28,7 +31,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.22.0'
+    APP_VERSION = '0.22.1'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 

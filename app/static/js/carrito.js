@@ -9,6 +9,15 @@
    - v0.12: si el producto está en OFERTA, usa el precio de oferta (plano,
      sin escalón). El precio igual se revalida en el backend al confirmar.
    - Mínimo de compra: el botón de pedido se bloquea hasta llegar.
+
+   v0.22.1 -> MICRO-FEEDBACK TÁCTIL al agregar.
+     En una computadora, el :hover del botón ya te confirma que estás tocando
+     algo. En un CELULAR NO EXISTE EL HOVER: el usuario toca "Agregar" y, si no
+     mira el numerito del carrito allá abajo, no tiene NINGUNA señal de que el
+     toque funcionó -> vuelve a tocar -> agrega el producto dos veces.
+     Este "latido" de 300ms (clase .t-add-ok, ya definida en tienda.css) es la
+     ÚNICA confirmación visual inmediata que tiene alguien desde el teléfono.
+     Es una línea de código y evita pedidos duplicados.
    ===================================================================== */
 (function () {
   const KEY = 'carrito_saludables_v1';
@@ -55,6 +64,15 @@
     return { total, items };
   }
 
+  // v0.22.1 · El "latido" del boton al agregar (ver nota de arriba).
+  // OJO: solo agrega y saca una CLASE. NUNCA toca el contenido del boton, para
+  // no borrarle el icono SVG que trae desde _grid.html.
+  function latido(btn) {
+    if (!btn || !btn.classList) return;
+    btn.classList.add('t-add-ok');
+    setTimeout(function () { btn.classList.remove('t-add-ok'); }, 300);
+  }
+
   // --- Acciones (globales para los onclick) ---
   window.agregarAlCarrito = function (btn) {
     const d = btn.dataset;
@@ -70,7 +88,8 @@
         qty: 1
       };
     }
-    guardar(); render(); toast(esOferta ? '🏷️ Oferta agregada al carrito' : 'Agregado al carrito');
+    guardar(); render(); latido(btn);
+    toast(esOferta ? '🏷️ Oferta agregada al carrito' : 'Agregado al carrito');
   };
 
   window.cambiarCant = function (cod, delta) {
