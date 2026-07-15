@@ -44,6 +44,25 @@
         🏆 Llegaste al <b>nivel máximo</b>. Cobrás la comisión más alta: {{ '%.0f'|format(nivel.comision) }}%.
       </p>
       {% endif %}
+
+      {# v0.26.0 · Estado de permanencia del nivel #}
+      {% if estado_nivel %}
+        {% if estado_nivel.en_gracia %}
+        <div class="rv-perm gracia">
+          🛡️ Tu nivel <b>{{ estado_nivel.nivel.nombre }}</b> está asegurado hasta el
+          <b>{{ estado_nivel.gracia_hasta.strftime('%d/%m/%Y') }}</b>. Después, para mantenerlo
+          hay que vender al menos {{ config.COMISION_PISO_MENSUAL|pesos }} por mes.
+        </div>
+        {% elif estado_nivel.bajo %}
+        <div class="rv-perm bajo">
+          ⚠️ {{ estado_nivel.motivo }}
+        </div>
+        {% else %}
+        <div class="rv-perm ok">
+          ✓ {{ estado_nivel.motivo }}
+        </div>
+        {% endif %}
+      {% endif %}
       <div class="rv-niveles">
         {% for n in niveles %}
         <div class="rv-nivel {% if n.nombre == nivel.nombre %}on{% endif %}">
@@ -151,6 +170,11 @@
   .rv-acc-btn.primary { background:var(--carbon); color:#fff; border-color:var(--carbon); }
   .rv-acc-btn.primary:hover { background:var(--bronce); border-color:var(--bronce); }
 
+  .rv-perm { font-size:12.5px; line-height:1.6; padding:11px 14px; border-radius:9px;
+    margin:14px 0 0; border:1px solid transparent; }
+  .rv-perm.gracia { background:#f0f5fb; border-color:#c9ddf0; color:#2b5a8a; }
+  .rv-perm.ok { background:#f3f6ee; border-color:#d5e3c4; color:#4a6b2e; }
+  .rv-perm.bajo { background:#fffaf2; border-color:#e8c98a; color:#8a5a00; }
   @media (max-width:980px){ .rv-cards { grid-template-columns:repeat(2,1fr); } }
   @media (max-width:640px){ .rv-cards, .rv-niveles { grid-template-columns:1fr; } }
 </style>

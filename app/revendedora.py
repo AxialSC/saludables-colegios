@@ -98,8 +98,11 @@ def dashboard():
     n_activos = mis.filter_by(activo=True).count()
 
     # v0.24.0 · Numeros REALES (antes era un placeholder)
+    # v0.26.0 · Ademas, al entrar se REVISA y actualiza el nivel (regla de
+    # permanencia). Sin cron: el nivel se pone al dia justo cuando ella entra.
     vendido = comisiones.vendido_neto(current_user.id)
-    nivel = comisiones.nivel_por_vendido(vendido)
+    estado_nivel = comisiones.revisar_y_actualizar_nivel(current_user.id)
+    nivel = estado_nivel['nivel'] if estado_nivel else comisiones.nivel_por_vendido(vendido)
     siguiente, falta = comisiones.falta_para_subir(vendido)
 
     ventas = Pedido.query.filter_by(revendedora_id=current_user.id)
@@ -116,6 +119,7 @@ def dashboard():
     return render_template('revendedora/dashboard.html',
                            n_clientes=n_clientes, n_activos=n_activos,
                            nivel=nivel, niveles=comisiones.niveles(),
+                           estado_nivel=estado_nivel,
                            vendido=vendido, siguiente=siguiente, falta=falta,
                            n_pendientes=n_pendientes, n_aprobadas=n_aprobadas,
                            comision_total=comision_total,

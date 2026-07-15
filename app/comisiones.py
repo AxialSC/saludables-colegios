@@ -89,7 +89,11 @@ def vendido_neto(revendedora_id):
 
 
 def nivel_por_vendido(vendido):
-    """El escalon que corresponde a X pesos netos vendidos."""
+    """
+    El nivel que se GANA con X pesos netos acumulados (de por vida).
+    Esto es el 'techo': lo mas alto que la revendedora llego a merecer.
+    Que lo MANTENGA o no es otra cosa (ver nivel_de).
+    """
     actual = niveles()[0]
     for n in niveles():
         if vendido >= n['desde']:
@@ -97,9 +101,228 @@ def nivel_por_vendido(vendido):
     return actual
 
 
+def _idx(clave):
+    """Posicion de un nivel en la escalera (0=Inicial, 1=Plata, 2=Oro)."""
+    for i, n in enumerate(niveles()):
+        if n['clave'] == clave:
+            return i
+    return 0
+
+
+def _por_idx(i):
+    ns = niveles()
+    i = max(0, min(i, len(ns) - 1))
+    return ns[i]
+
+
+# ============================================================================
+#  v0.26.0 · MOTOR DE PERMANENCIA (regla mixta, sin cron)
+# ============================================================================
+#
+#  Como PythonAnywhere free no tiene tareas programadas, el nivel NO se
+#  actualiza solo a medianoche: se CALCULA en el momento en que alguien lo
+#  consulta (cuando Nadia entra o arma un pedido). Lo que importa es que sea
+#  correcto en el instante en que se usa para una comision, y eso se garantiza
+#  llamando a nivel_de() justo antes de cada calculo.
+#
+#  La regla (confirmada por Ivan):
+#    1. Un nivel se GANA por ventas netas acumuladas de por vida.
+#    2. Al alcanzarlo, se asegura COMISION_MESES_GRACIA meses: no baja pase lo
+#       que pase.
+#    3. Pasada la gracia, cada mes CERRADO se exige COMISION_PISO_MENSUAL de
+#       venta neta. El primer mes que no llega -> baja UN escalon y arranca una
+#       gracia nueva en el nivel de abajo.
+#
+#  IMPORTANTE: esto solo cambia el nivel para las ventas NUEVAS. Las comisiones
+#  ya aprobadas quedaron congeladas (Pattern 1) y no se recalculan jamas.
+
+from datetime import date
+
+from sqlalchemy import extract
+
+
+def _sumar_meses(d, meses):
+    """
+    Suma 'meses' a una fecha, sin depender de dateutil.
+
+    ¿Por que no uso dateutil.relativedelta? Porque en PythonAnywhere con Python
+    3.13 sin virtualenv una libreria puede no estar instalada (ya paso con
+    pdfplumber). Sumar meses a mano es trivial y no arrastra ninguna dependencia.
+
+    Maneja bien el corte de fin de mes: 31/01 + 1 mes = 28/02 (no explota).
+    """
+    m = d.month - 1 + meses
+    anio = d.year + m // 12
+    mes = m % 12 + 1
+    # Ultimo dia valido de ese mes destino
+    if mes == 12:
+        dia_max = 31
+    else:
+        dia_max = (date(anio, mes + 1, 1) - date(anio, mes, 1)).days
+    dia = min(d.day, dia_max)
+    return date(anio, mes, dia)
+
+
+def _meses_gracia():
+    return int(current_app.config.get('COMISION_MESES_GRACIA', 6))
+
+
+def _piso_mensual():
+    return float(current_app.config.get('COMISION_PISO_MENSUAL', 2_000_000))
+
+
+def _hoy():
+    from .utils.timezone import ahora_argentina
+    return ahora_argentina().date()
+
+
+def _neto_del_mes(revendedora_id, anio, mes):
+    """Venta neta aprobada de una revendedora en un mes calendario puntual."""
+    total = db.session.query(
+        func.coalesce(func.sum(Pedido.neto_total), 0)
+    ).filter(
+        Pedido.revendedora_id == revendedora_id,
+        Pedido.estado.in_(EstadoPedido.CUENTAN_COMISION),
+        extract('year', Pedido.aprobado_en) == anio,
+        extract('month', Pedido.aprobado_en) == mes,
+    ).scalar()
+    return float(total or 0)
+
+
+def _primer_dia(d):
+    return d.replace(day=1)
+
+
+def estado_nivel(revendedora_id, alcanzado_en=None):
+    """
+    Devuelve el estado COMPLETO del nivel de una revendedora, aplicando la regla
+    de permanencia. Es la funcion central de E5.
+
+    'alcanzado_en' = fecha (date) en que la revendedora alcanzo por ultima vez
+    un nivel (o su fecha de alta). Sale de Usuario.nivel_desde (lo agrega la
+    migracion). Si es None, se usa la fecha de creacion del usuario.
+
+    Devuelve un dict con:
+        nivel        -> el nivel ACTIVO hoy (dict de niveles())
+        ganado       -> el nivel que merece por acumulado (el techo)
+        en_gracia    -> bool: si todavia esta en los 6 meses asegurados
+        gracia_hasta -> date en que se le vence la gracia
+        bajo         -> bool: si bajo de escalon por no cumplir el piso
+        motivo       -> texto explicativo para mostrarle
+    """
+    vendido = vendido_neto(revendedora_id)
+    ganado = nivel_por_vendido(vendido)
+
+    if alcanzado_en is None:
+        u = db.session.get(Usuario, revendedora_id)
+        alcanzado_en = (u.creado.date() if u and u.creado else _hoy())
+
+    hoy = _hoy()
+    gracia_hasta = _sumar_meses(alcanzado_en, _meses_gracia())
+    en_gracia = hoy < gracia_hasta
+
+    # Si esta en gracia, tiene asegurado el nivel que GANO. Punto.
+    if en_gracia:
+        return {
+            'nivel': ganado, 'ganado': ganado,
+            'en_gracia': True, 'gracia_hasta': gracia_hasta,
+            'bajo': False,
+            'motivo': f'Nivel asegurado hasta el {gracia_hasta.strftime("%d/%m/%Y")}.',
+        }
+
+    # Pasada la gracia: se revisa el ULTIMO mes calendario cerrado.
+    # (el mes en curso no cuenta: todavia lo puede levantar)
+    primer_dia_mes_actual = _primer_dia(hoy)
+    ultimo_cerrado = _sumar_meses(primer_dia_mes_actual, -1)
+    neto_mes = _neto_del_mes(revendedora_id, ultimo_cerrado.year, ultimo_cerrado.month)
+
+    piso = _piso_mensual()
+    if neto_mes >= piso or ganado['clave'] == niveles()[0]['clave']:
+        # Cumplio el piso (o ya esta en el nivel mas bajo, no puede caer mas)
+        return {
+            'nivel': ganado, 'ganado': ganado,
+            'en_gracia': False, 'gracia_hasta': gracia_hasta,
+            'bajo': False,
+            'motivo': (f'Nivel mantenido: vendiste {_fmt(neto_mes)} el mes pasado '
+                       f'(mínimo {_fmt(piso)}).') if ganado['clave'] != niveles()[0]['clave']
+                      else 'Nivel base.',
+        }
+
+    # No llego al piso -> baja UN escalon
+    bajo_nivel = _por_idx(_idx(ganado['clave']) - 1)
+    return {
+        'nivel': bajo_nivel, 'ganado': ganado,
+        'en_gracia': False, 'gracia_hasta': gracia_hasta,
+        'bajo': True,
+        'motivo': (f'Bajaste a {bajo_nivel["nombre"]}: el mes pasado vendiste '
+                   f'{_fmt(neto_mes)}, por debajo del mínimo de {_fmt(piso)}. '
+                   f'Recuperá {ganado["nombre"]} vendiendo más este mes.'),
+    }
+
+
+def _fmt(v):
+    s = f'{float(v):,.0f}'.replace(',', '.')
+    return '$' + s
+
+
 def nivel_de(revendedora_id):
-    """El escalon en el que esta HOY una revendedora."""
-    return nivel_por_vendido(vendido_neto(revendedora_id))
+    """
+    El nivel ACTIVO hoy de una revendedora, YA con la regla de permanencia
+    aplicada. Este es el que se usa para calcular comisiones de ventas nuevas.
+
+    Ojo: usa Usuario.nivel_desde si existe (la columna que agrega la migracion
+    v0.26.0). Si la columna todavia no esta (base sin migrar), cae con elegancia
+    al comportamiento viejo (nivel por acumulado), sin romper nada.
+    """
+    u = db.session.get(Usuario, revendedora_id)
+    alcanzado = getattr(u, 'nivel_desde', None) if u else None
+    if alcanzado is None and u is not None:
+        alcanzado = u.creado.date() if u.creado else None
+    try:
+        return estado_nivel(revendedora_id, alcanzado)['nivel']
+    except Exception:
+        # Cinturon y tiradores: si algo falla (ej: columna inexistente en una
+        # base sin migrar), no se cae el sistema; se usa el nivel por acumulado.
+        return nivel_por_vendido(vendido_neto(revendedora_id))
+
+
+def revisar_y_actualizar_nivel(revendedora_id):
+    """
+    Consulta el estado y, si el nivel activo CAMBIO respecto de lo guardado,
+    persiste el cambio y resetea el reloj de gracia.
+
+    Se llama al entrar al portal (dashboard) y al armar un pedido. Asi el nivel
+    'se actualiza solo' sin necesidad de cron: la proxima venta ya usa el nivel
+    correcto.
+
+    Devuelve el estado_nivel completo (para mostrarlo en el dashboard).
+    """
+    u = db.session.get(Usuario, revendedora_id)
+    if u is None:
+        return None
+
+    alcanzado = getattr(u, 'nivel_desde', None)
+    if alcanzado is None:
+        alcanzado = u.creado.date() if u.creado else _hoy()
+
+    est = estado_nivel(revendedora_id, alcanzado)
+
+    # Guardar el nivel activo actual si cambio
+    nivel_guardado = getattr(u, 'nivel_actual', None)
+    nivel_nuevo = est['nivel']['clave']
+
+    if nivel_guardado != nivel_nuevo and hasattr(u, 'nivel_actual'):
+        u.nivel_actual = nivel_nuevo
+        # Si SUBIO (gano un nivel nuevo), reseteamos el reloj de gracia a hoy.
+        # Si BAJO, tambien: arranca gracia nueva en el nivel de abajo.
+        if hasattr(u, 'nivel_desde'):
+            u.nivel_desde = _hoy()
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+    return est
 
 
 def falta_para_subir(vendido):

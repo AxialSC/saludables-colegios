@@ -118,6 +118,12 @@ class Usuario(UserMixin, db.Model):
     tiktok = db.Column(db.String(120), nullable=True)
     whatsapp_grupo = db.Column(db.String(200), nullable=True)   # link de grupo/difusion
 
+    # v0.26.0 · Motor de niveles (E5). 'nivel_actual' es el escalon ACTIVO
+    # (INICIAL/PLATA/ORO); 'nivel_desde' es la fecha en que lo alcanzo por ultima
+    # vez, y de ahi se cuenta la gracia de 6 meses. Los llena comisiones.py.
+    nivel_actual = db.Column(db.String(20), nullable=True)
+    nivel_desde = db.Column(db.Date, nullable=True)
+
     def set_password(self, raw):
         self.password_hash = bcrypt.generate_password_hash(raw).decode('utf-8')
 

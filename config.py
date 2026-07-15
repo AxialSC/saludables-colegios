@@ -42,7 +42,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.25.0'
+    APP_VERSION = '0.26.0'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 
@@ -153,8 +153,16 @@ class Config:
     # dejan los numeros aca para no volver a tocar el config despues.
     # (PythonAnywhere free NO tiene tareas programadas: esto se calcula al
     #  consultar, nunca con un cron.)
-    COMISION_MESES_GRACIA = 6            # mantiene el nivel 6 meses
-    COMISION_PISO_MENSUAL = 2_000_000    # si no llega a esto por mes, baja a Inicial
+    # v0.26.0 · Reglas de PERMANENCIA (las aplica app/comisiones.py, sin cron).
+    # Regla mixta confirmada por Ivan:
+    #   · Al ganar/alcanzar un nivel, se asegura COMISION_MESES_GRACIA meses:
+    #     en ese lapso NO se puede bajar, venda lo que venda.
+    #   · Pasada la gracia, cada mes se exige COMISION_PISO_MENSUAL de venta neta.
+    #     El primer mes cerrado que no llega -> baja UN SOLO escalon
+    #     (Oro->Plata, Plata->Inicial), y arranca una gracia nueva en el nivel
+    #     de abajo (para que se recupere sin caer en cascada).
+    COMISION_MESES_GRACIA = 6            # meses que un nivel queda asegurado
+    COMISION_PISO_MENSUAL = 2_000_000    # venta neta minima por mes, ya sin gracia
 
     # ------------------------------------------------------------------
     # v0.18.2 · Redes del NEGOCIO (para el "Seguinos en" de la tienda)
