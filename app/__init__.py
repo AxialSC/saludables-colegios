@@ -9,6 +9,8 @@ v0.21.0 -> E0:
   3) Ruta /sesion/ping: el "heartbeat" que manda el navegador cuando hay
      actividad real, para mantener sincronizado el reloj del servidor con la
      barrita que ve el usuario.
+
+v0.25.0 -> E4: se registra el blueprint 'aprobaciones' (bandeja de Juliana).
 """
 import os
 from flask import (Flask, render_template, redirect, url_for, session,
@@ -61,12 +63,28 @@ def create_app(config_name=None):
     # --- Variables disponibles en TODOS los templates (footer con version, etc) ---
     @app.context_processor
     def inject_app_data():
+        # v0.25.0 · Contador de ventas de revendedora que esperan aprobacion.
+        # Se muestra como un globito naranja al lado de "Aprobaciones" en el
+        # sidebar. Solo se calcula si hay un admin logueado (un COUNT liviano,
+        # con indice en 'origen' y 'estado', no pesa).
+        pendientes = 0
+        try:
+            from flask_login import current_user
+            if current_user.is_authenticated and current_user.es_admin:
+                from .models import Pedido, OrigenPedido, EstadoPedido
+                pendientes = Pedido.query.filter_by(
+                    origen=OrigenPedido.REVENDEDORA,
+                    estado=EstadoPedido.PENDIENTE).count()
+        except Exception:
+            pendientes = 0
+
         return dict(
             app_version=app.config.get('APP_VERSION', ''),
             app_nombre=app.config.get('APP_NOMBRE', ''),
             app_subtitulo=app.config.get('APP_SUBTITULO', ''),
             redes=app.config.get('REDES', {}),
             now=ahora_argentina().replace(tzinfo=None),
+            pendientes_aprobacion=pendientes,
         )
 
     # ======================================================================
@@ -135,10 +153,12 @@ def create_app(config_name=None):
     from .admin import admin_bp
     from .cliente import cliente_bp
     from .revendedora import revendedora_bp
+    from .aprobaciones import aprobaciones_bp   # v0.25.0 · E4
     app.register_blueprint(cliente_bp)   # tienda publica en la raiz '/'
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(revendedora_bp)   # portal de revendedoras en '/portal'
+    app.register_blueprint(aprobaciones_bp)  # bandeja de aprobacion en '/admin/aprobaciones'
 
     # --- Manejo de errores ---
     @app.errorhandler(403)

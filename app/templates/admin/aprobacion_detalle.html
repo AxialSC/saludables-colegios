@@ -1,0 +1,351 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}{{ p.numero }} · Aprobación · {{ app_nombre }}{% endblock %}
+{% block seccion %}Ventas{% endblock %}
+{% block titulo %}Revisar {{ p.numero }}{% endblock %}
+
+{% block contenido %}
+
+<a href="{{ url_for('aprobaciones.bandeja') }}" class="ad-volver">← Volver a la bandeja</a>
+
+<!-- Estado actual -->
+{% if p.estado == 'PENDIENTE' %}
+<div class="ad-alerta e-pendiente">
+  <b>Esperando tu aprobación.</b> Llamá a Torres, confirmá el stock, y después
+  aprobá (podés ajustar cantidades si hay stock parcial) o rechazá.
+</div>
+{% elif p.esta_aprobado %}
+<div class="ad-alerta e-ok">
+  <b>✓ Venta aprobada</b> por {{ p.aprobado_por }}{% if p.aprobado_en %} el {{ p.aprobado_en|ar_datetime('%d/%m/%Y %H:%M') }}{% endif %}.
+  {% if p.estado == 'ENTREGADO' %} · Entregada.{% endif %}
+</div>
+{% elif p.estado == 'RECHAZADO' %}
+<div class="ad-alerta e-recha">
+  <b>✕ Rechazada</b> por {{ p.aprobado_por }}. <b>Motivo:</b> {{ p.rechazado_motivo }}
+</div>
+{% endif %}
+
+<div class="ad-cols">
+
+  <!-- ==================== IZQUIERDA: productos ==================== -->
+  <div>
+    <div class="panel" style="padding:0; overflow:hidden;">
+      <div class="ad-head">
+        <span>Productos ({{ p.cantidad_items }} u.)</span>
+        {% if p.estado == 'PENDIENTE' %}
+        <button type="button" class="ad-editar-btn" id="btnEditar" onclick="toggleEditar()">✏️ Editar</button>
+        {% endif %}
+      </div>
+
+      <table class="ad-tabla" id="tablaItems">
+        <tbody>
+          {% for it in items_data %}
+          <tr data-codigo="{{ it.codigo }}" data-minimo="{{ it.minimo }}"
+              data-costo="{{ it.costo }}" data-lista="{{ it.lista }}">
+            <td>
+              <div class="ad-nom">{{ it.nombre }}</div>
+              <div class="ad-cod">
+                Cód. {{ it.codigo }}
+                {% if not it.existe %}<span class="ad-sinstock">ya no está en catálogo</span>{% endif %}
+                · mín {{ it.minimo|pesos }}
+              </div>
+            </td>
+            <!-- Modo LECTURA -->
+            <td class="ad-lect ad-cant-cell">{{ it.cantidad }} u.</td>
+            <td class="ad-lect ad-money">{{ it.precio|pesos }}</td>
+            <td class="ad-lect ad-money ad-sub">{{ (it.precio * it.cantidad)|pesos }}</td>
+            <!-- Modo EDICION (oculto hasta tocar Editar) -->
+            <td class="ad-edit" style="display:none;">
+              <input type="number" min="0" value="{{ it.cantidad }}" class="ad-in-cant"
+                     onchange="recalc()">
+              <span class="ad-edit-lbl">cant.</span>
+            </td>
+            <td class="ad-edit ad-money" style="display:none;">
+              <span class="ad-pesos">$</span>
+              <input type="number" step="0.01" min="{{ it.minimo }}" value="{{ '%.2f'|format(it.precio) }}"
+                     class="ad-in-precio" onchange="recalc()">
+            </td>
+            <td class="ad-edit ad-money ad-sub-edit" style="display:none;">
+              {{ (it.precio * it.cantidad)|pesos }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div class="ad-tot">
+        <div class="ad-tot-row"><span>Neto (base comisión)</span><span id="tNeto">{{ (p.neto_total or 0)|pesos }}</span></div>
+        <div class="ad-tot-row"><span>Costo (Torres)</span><span id="tCosto">{{ (p.costo_total or 0)|pesos }}</span></div>
+        <div class="ad-tot-row grande"><span>TOTAL c/IVA</span><span id="tTotal">{{ p.total|pesos }}</span></div>
+      </div>
+    </div>
+
+    {% if p.modificaciones %}
+    <div class="panel ad-hist">
+      <div class="ad-lab">Historial de cambios</div>
+      {% for m in p.modificaciones %}
+      <div class="ad-hist-row">
+        <span>{{ m.descripcion }}</span>
+        <span class="ad-hist-meta">{{ m.hecho_por }} · {{ m.creado|ar_datetime('%d/%m %H:%M') }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ==================== DERECHA: acciones ==================== -->
+  <div class="ad-lado">
+
+    <!-- Revendedora + comisión -->
+    <div class="panel ad-comi">
+      <div class="ad-lab">Comisión de {{ p.revendedora_nombre }}</div>
+      <div class="ad-comi-num" id="cComi">{{ (p.comision_monto or 0)|pesos }}</div>
+      <div class="ad-comi-sub">
+        Nivel {{ nivel.nombre }} · <b id="cPct">{{ '%.0f'|format(p.comision_pct or nivel.comision) }}%</b> ·
+        margen casa <b id="cCasa">{{ '%.1f'|format(p.margen_casa_pct or 0) }}%</b>
+      </div>
+      <div class="ad-casa-alerta" id="casaAlerta" style="display:none;">
+        ⚠️ Por debajo del {{ '%.0f'|format(margen_casa) }}% de la casa. Subí algún precio.
+      </div>
+    </div>
+
+    <!-- Cliente -->
+    <div class="panel">
+      <div class="ad-lab">Cliente</div>
+      <div class="ad-cli-nom">{{ p.cliente_completo }}</div>
+      <div class="ad-cli-d">Doc. {{ p.cuit }}</div>
+      {% if p.whatsapp %}
+      {% set wanum = p.whatsapp|replace(' ','')|replace('-','') %}
+      <div class="ad-cli-d">
+        📱 <a href="https://wa.me/{% if not wanum.startswith('54') %}54{% endif %}{{ wanum }}"
+              target="_blank" rel="noopener" class="ad-wa-link">{{ p.whatsapp }}</a>
+      </div>
+      {% endif %}
+      <div class="ad-cli-d">{{ p.direccion }}</div>
+      <div class="ad-cli-d">{{ p.zona }}</div>
+      {% if p.observaciones %}
+      <div class="ad-obs"><b>Nota de {{ p.revendedora_nombre }}:</b> {{ p.observaciones }}</div>
+      {% endif %}
+    </div>
+
+    <!-- ACCIONES según estado -->
+    {% if p.estado == 'PENDIENTE' %}
+
+    <!-- Aprobar (con o sin edición) -->
+    <form method="POST" action="{{ url_for('aprobaciones.aprobar', pid=p.id) }}" id="formAprobar">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="items_json" id="items_json">
+      <button type="submit" class="ad-btn ad-aprobar" id="btnAprobar">✓ Aprobar venta</button>
+    </form>
+
+    <!-- Rechazar (motivo obligatorio) -->
+    <button type="button" class="ad-btn ad-rechazar-toggle" onclick="toggleRechazo()">✕ Rechazar</button>
+    <form method="POST" action="{{ url_for('aprobaciones.rechazar', pid=p.id) }}"
+          id="formRechazo" style="display:none;" class="ad-rechazo-box">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label class="ad-lab">Motivo del rechazo <small>(lo va a ver {{ p.revendedora_nombre }})</small></label>
+      <textarea name="motivo" rows="2" class="ad-motivo" required
+                placeholder="Ej: Torres no tiene stock de estos productos esta semana"></textarea>
+      <button type="submit" class="ad-btn ad-rechazar">Confirmar rechazo</button>
+    </form>
+
+    {% elif p.estado == 'CONFIRMADO' %}
+    <form method="POST" action="{{ url_for('aprobaciones.entregado', pid=p.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="ad-btn ad-entregar">📦 Marcar como entregado</button>
+    </form>
+    {% endif %}
+
+    <!-- Pagar comisión (si aplica) -->
+    {% if p.paga_comision and not p.comision_pagada %}
+    <form method="POST" action="{{ url_for('aprobaciones.pagar_comision', pid=p.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="ad-btn ad-pagar">💵 Marcar comisión como pagada</button>
+    </form>
+    {% elif p.comision_pagada %}
+    <div class="ad-pagada">✓ Comisión pagada{% if p.comision_pagada_en %} el {{ p.comision_pagada_en|ar_datetime('%d/%m/%Y') }}{% endif %}</div>
+    {% endif %}
+
+  </div>
+</div>
+
+<style>
+  .ad-volver { font-size:.8rem; color:var(--bronce); font-weight:700; display:inline-block; margin-bottom:14px; }
+  .ad-alerta { padding:13px 16px; border-radius:var(--radius); font-size:.84rem;
+    margin-bottom:18px; border:1px solid transparent; line-height:1.5; }
+  .ad-alerta.e-pendiente { background:#fffaf2; border-color:#e8c98a; color:#7a5200; }
+  .ad-alerta.e-ok { background:#f5fbf5; border-color:#bcdcbc; color:#2e7d32; }
+  .ad-alerta.e-recha { background:#fdf6f6; border-color:#f0c4c4; color:#a21b1b; }
+
+  .ad-cols { display:grid; grid-template-columns:1fr 320px; gap:18px; align-items:start; }
+  @media (max-width:980px) { .ad-cols { grid-template-columns:1fr; } }
+  .ad-lado { display:flex; flex-direction:column; gap:14px; }
+
+  .ad-head { background:var(--carbon); color:var(--gold); padding:12px 18px;
+    font-size:.68rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase;
+    display:flex; align-items:center; justify-content:space-between; }
+  .ad-editar-btn { background:transparent; border:1px solid #4a4a4a; color:var(--gold);
+    font-size:.64rem; font-weight:700; padding:4px 10px; border-radius:6px; cursor:pointer;
+    letter-spacing:.06em; }
+  .ad-editar-btn:hover { background:#2a2a2a; }
+  .ad-editar-btn.on { background:var(--gold); color:var(--carbon); border-color:var(--gold); }
+
+  .ad-tabla { width:100%; border-collapse:collapse; }
+  .ad-tabla td { padding:12px 16px; border-bottom:1px solid #f0ece4; vertical-align:middle; }
+  .ad-nom { font-size:.85rem; font-weight:600; }
+  .ad-cod { font-size:.71rem; color:var(--text-soft); margin-top:3px; }
+  .ad-sinstock { color:var(--danger); font-weight:700; }
+  .ad-cant-cell { white-space:nowrap; color:var(--text-soft); }
+  .ad-money { text-align:right; white-space:nowrap; }
+  .ad-sub { font-weight:800; }
+  .ad-in-cant { width:60px; padding:6px; border:1px solid var(--divider); border-radius:7px;
+    text-align:center; font-weight:700; font-size:.85rem; outline:none; }
+  .ad-edit-lbl { font-size:.62rem; color:var(--text-soft); margin-left:4px; }
+  .ad-pesos { color:var(--text-soft); font-size:.82rem; margin-right:3px; }
+  .ad-in-precio { width:100px; padding:6px 8px; border:1px solid var(--divider); border-radius:7px;
+    text-align:right; font-weight:700; font-size:.85rem; outline:none; }
+  .ad-in-precio.bajo { border-color:var(--danger); background:#fdeaea; }
+
+  .ad-tot { padding:14px 18px 18px; background:#faf8f4; }
+  .ad-tot-row { display:flex; justify-content:space-between; font-size:.84rem; padding:4px 0;
+    color:var(--text-soft); }
+  .ad-tot-row.grande { font-size:1.1rem; font-weight:800; color:#6b5638;
+    border-top:1px solid var(--divider); margin-top:7px; padding-top:11px; }
+
+  .ad-hist { margin-top:14px; }
+  .ad-hist-row { font-size:.78rem; padding:7px 0; border-bottom:1px solid #f4f1ea;
+    display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .ad-hist-meta { color:var(--text-soft); font-size:.7rem; }
+
+  .ad-lab { font-size:.66rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--bronce); margin-bottom:8px; }
+  .ad-lab small { font-weight:400; text-transform:none; letter-spacing:0; color:var(--text-soft); }
+
+  .ad-comi { text-align:center; border:2px solid #bcdcbc; background:#f5fbf5; }
+  .ad-comi-num { font-size:1.8rem; font-weight:800; color:#2e7d32; margin:4px 0 2px; }
+  .ad-comi-sub { font-size:.76rem; color:var(--text-soft); }
+  .ad-casa-alerta { margin-top:10px; font-size:.74rem; font-weight:700; color:var(--danger);
+    background:#fdeaea; padding:8px 10px; border-radius:8px; line-height:1.4; }
+
+  .ad-cli-nom { font-weight:700; font-size:.9rem; margin-bottom:5px; }
+  .ad-cli-d { font-size:.78rem; color:var(--text-soft); line-height:1.7; word-break:break-word; }
+  .ad-wa-link { color:#1FA855; font-weight:700; }
+  .ad-wa-link:hover { text-decoration:underline; }
+  .ad-obs { font-size:.78rem; color:#5a5345; margin-top:10px; padding-top:10px;
+    border-top:1px solid var(--divider); line-height:1.55; }
+
+  .ad-btn { width:100%; padding:14px; border:none; border-radius:var(--radius);
+    font-size:.82rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+    cursor:pointer; transition:all .15s; }
+  .ad-aprobar { background:#2e7d32; color:#fff; }
+  .ad-aprobar:hover:not(:disabled) { background:#276b2a; }
+  .ad-aprobar:disabled { background:#c8c8c0; cursor:not-allowed; }
+  .ad-rechazar-toggle { background:#fff; border:1px solid #f0c4c4; color:var(--danger); }
+  .ad-rechazar-toggle:hover { background:#fdeaea; }
+  .ad-rechazo-box { display:flex; flex-direction:column; gap:8px; padding:14px;
+    border:1px solid #f0c4c4; border-radius:var(--radius); background:#fdf6f6; }
+  .ad-motivo { width:100%; padding:10px; border:1px solid var(--divider); border-radius:8px;
+    font-size:.85rem; font-family:inherit; outline:none; resize:vertical; }
+  .ad-motivo:focus { border-color:var(--danger); }
+  .ad-rechazar { background:var(--danger); color:#fff; }
+  .ad-rechazar:hover { background:#a21b1b; }
+  .ad-entregar { background:var(--carbon); color:#fff; }
+  .ad-entregar:hover { background:var(--bronce); }
+  .ad-pagar { background:var(--bronce); color:#fff; }
+  .ad-pagar:hover { filter:brightness(1.08); }
+  .ad-pagada { text-align:center; font-size:.8rem; font-weight:700; color:#2e7d32;
+    background:#eaf5ea; padding:12px; border-radius:var(--radius); }
+
+  @media (max-width:640px) {
+    .ad-in-cant, .ad-in-precio { font-size:16px; }  /* iOS no hace zoom */
+    .ad-btn { min-height:48px; }
+  }
+</style>
+
+<script>
+(function () {
+  var IVA = 1.21;
+  var COMISION = {{ nivel.comision }};
+  var CASA_MIN = {{ margen_casa }};
+  var editando = false;
+
+  window.toggleEditar = function () {
+    editando = !editando;
+    document.getElementById('btnEditar').classList.toggle('on', editando);
+    document.querySelectorAll('.ad-lect').forEach(function (e) { e.style.display = editando ? 'none' : ''; });
+    document.querySelectorAll('.ad-edit').forEach(function (e) { e.style.display = editando ? '' : 'none'; });
+    if (editando) recalc();
+  };
+
+  window.toggleRechazo = function () {
+    var f = document.getElementById('formRechazo');
+    f.style.display = f.style.display === 'none' ? 'flex' : 'none';
+  };
+
+  function fmt(v) {
+    return '$' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  window.recalc = function () {
+    var filas = document.querySelectorAll('#tablaItems tr');
+    var total = 0, costo = 0;
+    var items = [];
+    var algunBajo = false;
+
+    filas.forEach(function (tr) {
+      var min = parseFloat(tr.dataset.minimo);
+      var cst = parseFloat(tr.dataset.costo);
+      var inC = tr.querySelector('.ad-in-cant');
+      var inP = tr.querySelector('.ad-in-precio');
+      if (!inC || !inP) return;
+
+      var cant = parseInt(inC.value, 10); if (isNaN(cant) || cant < 0) cant = 0;
+      var precio = parseFloat(inP.value); if (isNaN(precio)) precio = min;
+
+      // Marcar (pero NO forzar) si esta por debajo del minimo. El backend lo
+      // clampea igual; esto es solo aviso visual.
+      var bajo = precio < min - 0.01;
+      inP.classList.toggle('bajo', bajo);
+      if (bajo && cant > 0) algunBajo = true;
+
+      var sub = precio * cant;
+      tr.querySelector('.ad-sub-edit').textContent = fmt(sub);
+      total += sub;
+      costo += cst * cant;
+      if (cant > 0) items.push({ codigo: tr.dataset.codigo, cantidad: cant, precio: Number(precio.toFixed(2)) });
+    });
+
+    var neto = total / IVA;
+    var comision = neto * COMISION / 100;
+    var margen = neto > 0 ? (neto - costo) / neto * 100 : 0;
+    var casa = margen - COMISION;
+
+    document.getElementById('tNeto').textContent = fmt(neto);
+    document.getElementById('tCosto').textContent = fmt(costo);
+    document.getElementById('tTotal').textContent = fmt(total);
+    document.getElementById('cComi').textContent = fmt(comision);
+    document.getElementById('cCasa').textContent = casa.toFixed(1) + '%';
+
+    // Aviso del piso de la casa
+    var rompe = casa < CASA_MIN - 0.01 || algunBajo;
+    document.getElementById('casaAlerta').style.display = rompe ? 'block' : 'none';
+    var btn = document.getElementById('btnAprobar');
+    if (btn) {
+      btn.disabled = rompe;
+      btn.textContent = rompe ? 'Ajustá los precios para aprobar' : '✓ Aprobar venta';
+    }
+
+    // Cargar el JSON que se manda si se aprueba editado
+    document.getElementById('items_json').value = editando ? JSON.stringify(items) : '';
+  };
+
+  // Si se aprueba SIN entrar a editar, no mandamos items_json (el backend usa
+  // los items tal cual estan).
+  var formA = document.getElementById('formAprobar');
+  if (formA) {
+    formA.addEventListener('submit', function () {
+      if (!editando) document.getElementById('items_json').value = '';
+    });
+  }
+})();
+</script>
+{% endblock %}

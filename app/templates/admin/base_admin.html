@@ -1,6 +1,12 @@
 {% extends 'base.html' %}
 
 {% block body %}
+<style>
+  /* v0.25.0 · Contador de pendientes al lado de "Aprobaciones" */
+  .nav-badge { background:#ff9800; color:#fff; font-size:.6rem; font-weight:800;
+    border-radius:999px; padding:1px 7px; margin-left:auto; }
+  .nav a { display:flex; align-items:center; }
+</style>
 <div class="admin-layout">
 
     <!-- Sidebar -->
@@ -27,6 +33,8 @@
                class="{% if 'pedido' in request.endpoint %}activo{% endif %}">🧾 Pedidos</a>
 
             <div class="nav-sec">Ventas</div>
+            <a href="{{ url_for('aprobaciones.bandeja') }}"
+               class="{% if request.blueprint == 'aprobaciones' %}activo{% endif %}">👩‍💼 Aprobaciones{% if pendientes_aprobacion %} <span class="nav-badge">{{ pendientes_aprobacion }}</span>{% endif %}</a>
             <a href="{{ url_for('admin.ofertas') }}"
                class="{% if 'oferta' in request.endpoint %}activo{% endif %}">🏷️ Ofertas</a>
             <a href="{{ url_for('admin.cotizador', tipo='CUMPLE') }}"

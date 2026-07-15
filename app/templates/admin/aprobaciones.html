@@ -1,0 +1,141 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Aprobaciones · {{ app_nombre }}{% endblock %}
+{% block seccion %}Ventas{% endblock %}
+{% block titulo %}👩‍💼 Aprobaciones de revendedoras{% endblock %}
+
+{% block contenido %}
+
+<div class="ap-bar">
+  <div class="ap-tabs">
+    <a href="{{ url_for('aprobaciones.bandeja', estado='PENDIENTE') }}"
+       class="ap-tab {% if estado_sel == 'PENDIENTE' %}on{% endif %}">
+      ⏳ Esperando {% if n_pendientes %}<b>{{ n_pendientes }}</b>{% endif %}
+    </a>
+    <a href="{{ url_for('aprobaciones.bandeja', estado='CONFIRMADO') }}"
+       class="ap-tab {% if estado_sel == 'CONFIRMADO' %}on{% endif %}">Aprobadas</a>
+    <a href="{{ url_for('aprobaciones.bandeja', estado='ENTREGADO') }}"
+       class="ap-tab {% if estado_sel == 'ENTREGADO' %}on{% endif %}">Entregadas</a>
+    <a href="{{ url_for('aprobaciones.bandeja', estado='RECHAZADO') }}"
+       class="ap-tab {% if estado_sel == 'RECHAZADO' %}on{% endif %}">Rechazadas</a>
+    <a href="{{ url_for('aprobaciones.bandeja', estado='TODAS') }}"
+       class="ap-tab {% if estado_sel == 'TODAS' %}on{% endif %}">Todas</a>
+  </div>
+
+  {% if revendedoras %}
+  <form method="GET" class="ap-filtro-rev">
+    <input type="hidden" name="estado" value="{{ estado_sel }}">
+    <select name="rev" onchange="this.form.submit()" class="ap-sel">
+      <option value="">Todas las revendedoras</option>
+      {% for r in revendedoras %}
+      <option value="{{ r.id }}" {% if rev_sel == r.id %}selected{% endif %}>{{ r.nombre_completo }}</option>
+      {% endfor %}
+    </select>
+  </form>
+  {% endif %}
+</div>
+
+{% if not lista %}
+<div class="panel ap-vacio">
+  {% if estado_sel == 'PENDIENTE' %}
+  <div class="ap-vacio-ic">✓</div>
+  <h3>No hay ventas esperando aprobación</h3>
+  <p>Cuando una revendedora te mande un pedido, aparece acá.</p>
+  {% else %}
+  <h3>No hay ventas en este estado</h3>
+  {% endif %}
+</div>
+{% else %}
+
+<div class="panel" style="padding:0; overflow:hidden;">
+  <table class="ap-tabla">
+    <thead>
+      <tr>
+        <th>Pedido</th>
+        <th>Revendedora</th>
+        <th>Cliente</th>
+        <th>Enviado</th>
+        <th style="text-align:right;">Total</th>
+        <th style="text-align:right;">Comisión</th>
+        <th>Estado</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in lista %}
+      <tr onclick="location.href='{{ url_for('aprobaciones.detalle', pid=p.id) }}'"
+          class="{% if p.estado == 'PENDIENTE' %}ap-urgente{% endif %}">
+        <td class="ap-num">{{ p.numero }}</td>
+        <td>{{ p.revendedora_nombre }}</td>
+        <td>{{ p.cliente_completo }}</td>
+        <td class="ap-fecha">{{ (p.enviado_en or p.creado)|ar_datetime('%d/%m %H:%M') }}</td>
+        <td class="ap-money">{{ p.total|pesos }}</td>
+        <td class="ap-money ap-comi">
+          {% if p.estado == 'PENDIENTE' %}~{% endif %}{{ (p.comision_monto or 0)|pesos }}
+        </td>
+        <td><span class="ap-badge e-{{ p.estado|lower }}">{{ p.estado_etiqueta }}</span></td>
+        <td class="ap-ver">
+          {% if p.estado == 'PENDIENTE' %}
+          <span class="ap-btn-rev">Revisar →</span>
+          {% else %}→{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if estado_sel == 'PENDIENTE' %}
+<p class="ap-nota">
+  💡 La comisión marcada con <b>~</b> es una <b>estimación</b>. Se congela con el
+  porcentaje del día cuando aprobás la venta.
+</p>
+{% endif %}
+
+{% endif %}
+
+<style>
+  .ap-bar { display:flex; align-items:center; justify-content:space-between;
+    gap:14px; flex-wrap:wrap; margin-bottom:16px; }
+  .ap-tabs { display:flex; gap:7px; flex-wrap:wrap; }
+  .ap-tab { font-size:.78rem; font-weight:700; padding:9px 14px; border-radius:8px;
+    background:#fff; border:1px solid var(--divider); color:#5a5345; }
+  .ap-tab:hover { border-color:var(--bronce); }
+  .ap-tab.on { background:var(--carbon); color:#fff; border-color:var(--carbon); }
+  .ap-tab b { background:#ff9800; color:#fff; border-radius:999px; padding:1px 7px;
+    font-size:.72rem; margin-left:4px; }
+  .ap-tab.on b { background:#fff; color:var(--carbon); }
+  .ap-sel { padding:9px 12px; border:1px solid var(--divider); border-radius:8px;
+    font-size:.8rem; background:#fff; cursor:pointer; outline:none; }
+
+  .ap-vacio { text-align:center; padding:48px 26px; }
+  .ap-vacio-ic { width:52px; height:52px; margin:0 auto 14px; border-radius:50%;
+    background:#eaf5ea; color:#2e7d32; display:flex; align-items:center;
+    justify-content:center; font-size:1.5rem; font-weight:800; }
+  .ap-vacio h3 { font-weight:600; margin-bottom:6px; }
+  .ap-vacio p { color:var(--text-soft); font-size:.86rem; }
+
+  .ap-tabla { width:100%; border-collapse:collapse; font-size:.85rem; }
+  .ap-tabla thead th { background:#faf8f4; text-align:left; padding:13px 16px;
+    font-size:.66rem; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--text-soft); border-bottom:1px solid var(--divider); white-space:nowrap; }
+  .ap-tabla tbody td { padding:14px 16px; border-bottom:1px solid #f0ece4; }
+  .ap-tabla tbody tr { cursor:pointer; }
+  .ap-tabla tbody tr:hover { background:#faf8f4; }
+  .ap-tabla tbody tr.ap-urgente { background:#fffdf8; }
+  .ap-tabla tbody tr.ap-urgente:hover { background:#fff9ef; }
+  .ap-num { font-family:'Courier New',monospace; font-weight:700; color:#6b5638; white-space:nowrap; }
+  .ap-fecha { color:var(--text-soft); font-size:.78rem; white-space:nowrap; }
+  .ap-money { text-align:right; font-weight:700; white-space:nowrap; }
+  .ap-comi { color:#2e7d32; }
+  .ap-badge { font-size:.64rem; font-weight:700; padding:4px 9px; border-radius:6px;
+    text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; }
+  .e-pendiente  { background:#fff6e8; color:#9a6200; }
+  .e-confirmado { background:#eaf5ea; color:#2e7d32; }
+  .e-entregado  { background:#eaf5ea; color:#2e7d32; }
+  .e-rechazado  { background:#fdeaea; color:#c62828; }
+  .e-anulado    { background:#f0ede8; color:#8a857a; }
+  .ap-ver { text-align:right; color:var(--text-soft); font-weight:700; }
+  .ap-btn-rev { color:#9a6200; font-size:.78rem; white-space:nowrap; }
+  .ap-nota { font-size:.78rem; color:var(--text-soft); margin-top:14px; }
+</style>
+{% endblock %}

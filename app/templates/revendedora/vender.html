@@ -167,7 +167,7 @@
   .vd-ctrl { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
   .vd-cant { display:flex; align-items:center; gap:4px; }
   .vd-cant label { font-size:.64rem; color:var(--text-soft); font-weight:700; text-transform:uppercase; }
-  .vd-cant input { width:56px; padding:6px; border:1px solid var(--divider); border-radius:8px;
+  .vd-cant input { width:68px; padding:6px; border:1px solid var(--divider); border-radius:8px;
     text-align:center; font-weight:700; font-size:.85rem; outline:none; }
   .vd-presets { display:inline-flex; border:1px solid var(--divider); border-radius:9px; overflow:hidden; }
   .vd-preset { font-size:.68rem; font-weight:800; padding:6px 9px; border:none; cursor:pointer;
@@ -177,7 +177,10 @@
   .vd-preset.on { background:var(--bronce); color:#fff; }
   .vd-preset.on.max { background:#2e7d32; }
   .vd-precio { display:flex; align-items:center; gap:5px; }
-  .vd-precio input { width:104px; padding:7px 9px; border:1px solid var(--divider); border-radius:8px;
+  /* v0.25.0 · Antes width:104px fijo -> con montos de 6-7 cifras el numero se
+     cortaba. Ahora crece solo hasta un techo y nunca se desborda. */
+  .vd-precio input { width:clamp(104px, 14vw, 150px); min-width:104px; padding:7px 9px;
+    border:1px solid var(--divider); border-radius:8px;
     text-align:right; font-weight:700; font-size:.85rem; outline:none; }
   .vd-precio input.at-min { border-color:#2e7d32; background:#f5fbf5; }
   .vd-quitar { border:none; background:none; color:var(--danger); cursor:pointer; font-size:1rem; padding:0 3px; }
