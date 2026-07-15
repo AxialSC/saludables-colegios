@@ -18,6 +18,10 @@ v0.22.0 -> E1: Rediseño de la tienda (header 3 zonas + navbar), banners en gril
 v0.22.1 -> E1 (cierre): favicon en todo el sistema, boton Agregar con icono SVG
                (el emoji se pintaba distinto en cada telefono) y micro-feedback
                tactil al agregar al carrito.
+v0.23.0 -> E2: CIMIENTO DEL FRENTE E. Migracion de la base: la venta de la
+               revendedora, el circuito de aprobacion de Juliana y el snapshot
+               de comision congelado. NO agrega pantallas todavia: solo la
+               estructura, hecha UNA SOLA VEZ y bien.
 """
 import os
 from datetime import timedelta
@@ -31,7 +35,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.22.1'
+    APP_VERSION = '0.23.0'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 
@@ -101,8 +105,49 @@ class Config:
     # Regla que se hace cumplir en el servidor:
     #       margen_de_la_venta  -  comision_del_escalon  >=  MARGEN_CASA_MINIMO
     #
-    # (Todavia no lo usa nadie: queda definido aca para que E2 lo tome de una.)
     MARGEN_CASA_MINIMO = 6.0
+
+    # ------------------------------------------------------------------
+    # v0.23.0 · FRENTE E — VENTA DE LA REVENDEDORA
+    # ------------------------------------------------------------------
+    # Carrito minimo de un pedido de revendedora, en NETO (sin IVA).
+    #
+    # ¿Por que NETO y no con IVA? Porque el IVA no es plata de Ivan: es plata
+    # que se le junta a AFIP. Si el minimo fuera "con IVA", el 21% del pedido
+    # seria impuesto y el pedido real seria mas chico de lo pactado. Y la
+    # comision se calcula sobre el MISMO neto, por la misma razon: nadie
+    # comisiona sobre los impuestos.
+    MINIMO_REVENDEDORA_NETO = 50000.0
+
+    # Escalones de comision. Se leen de aca (no estan hardcodeados en el codigo)
+    # para poder cambiarlos sin tocar una linea de Python.
+    #   'desde' = ventas NETAS acumuladas y APROBADAS que hay que superar.
+    #
+    # OJO — la cuenta que hay que entender:
+    #   La comision sale DE ADENTRO del margen, no se suma encima. Entonces el
+    #   margen minimo que el sistema le exige a cada revendedora es:
+    #
+    #        margen_minimo = MARGEN_CASA_MINIMO + su comision
+    #
+    #   Inicial (2%) -> margen minimo  8%  ->  8 - 2 = 6% para la casa  ✓
+    #   Plata   (3%) -> margen minimo  9%  ->  9 - 3 = 6% para la casa  ✓
+    #   Oro     (4%) -> margen minimo 10%  -> 10 - 4 = 6% para la casa  ✓
+    #
+    #   Es decir: CUANTO MAS GANA ELLA, MENOS PUEDE REGALAR. Por ningun camino
+    #   -ni bajando el precio a mano, ni con un producto raro- la casa termina
+    #   ganando menos del 6%. El backend lo hace cumplir.
+    COMISION_NIVELES = [
+        {'clave': 'INICIAL', 'nombre': 'Inicial', 'comision': 2.0, 'desde': 0},
+        {'clave': 'PLATA',   'nombre': 'Plata',   'comision': 3.0, 'desde': 5_000_000},
+        {'clave': 'ORO',     'nombre': 'Oro',     'comision': 4.0, 'desde': 10_000_000},
+    ]
+
+    # Reglas de permanencia. La LOGICA que las aplica se programa en E5; se
+    # dejan los numeros aca para no volver a tocar el config despues.
+    # (PythonAnywhere free NO tiene tareas programadas: esto se calcula al
+    #  consultar, nunca con un cron.)
+    COMISION_MESES_GRACIA = 6            # mantiene el nivel 6 meses
+    COMISION_PISO_MENSUAL = 2_000_000    # si no llega a esto por mes, baja a Inicial
 
     # ------------------------------------------------------------------
     # v0.18.2 · Redes del NEGOCIO (para el "Seguinos en" de la tienda)

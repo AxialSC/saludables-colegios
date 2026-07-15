@@ -9,13 +9,35 @@ v0.12.0 -> Oferta (ofertas publicas por 7 dias) + Cotizacion / CotizacionItem
            (Cumpleaños y Colegios: carritos que arma Juliana, con PDF + WhatsApp/mail).
 v0.14.0 -> Banner (carrusel central + laterales izq/der de la tienda).
 v0.16.0 -> Usuario: PERFIL COMPLETO (DNI, nacimiento, contacto, datos bancarios
-           para pago de comisiones). Base para el modulo de Revendedores (Etapa 2).
+           para pago de comisiones). Base para el modulo de Revendedores.
 v0.16.1 -> Usuario: + CUIT y + clave temporal reenviable por WhatsApp.
 v0.17.0 -> Cliente: base de clientes (cimiento del CRM de revendedoras).
-v0.18.3 -> Suscriptor (C2): alta voluntaria desde la tienda publica, para que
-           Juliana le mande ofertas antes que a nadie (WhatsApp/email).
-v0.19.1 -> Factura / FacturaItem (Food Cost): facturas PDF de Torres subidas,
-           cruzadas por codigo contra el catalogo para detectar subas de costo.
+v0.18.3 -> Suscriptor (C2): alta voluntaria desde la tienda publica.
+v0.19.1 -> Factura / FacturaItem (Food Cost): facturas PDF de Torres.
+v0.20.0 -> Importacion / ImportacionItem: historial de precios del mayorista.
+
+v0.23.0 -> E2 · CIMIENTO DEL FRENTE E (VENTA DE LA REVENDEDORA).
+           NO se crea una tabla de ventas nueva: se AMPLIA 'Pedido'.
+           ¿Por que? Porque la venta de la revendedora ES un pedido. Si armaramos
+           una tabla paralela, Juliana terminaria con DOS bandejas de pedidos (la
+           web y la de las revendedoras), dos PDFs, dos CRMs y dos verdades. Con
+           esto, entra todo por la misma pantalla.
+
+           Lo que se agrega:
+             · Pedido: revendedora_id, cliente_id, el circuito de aprobacion y el
+               SNAPSHOT DE COMISION congelado.
+             · ItemPedido: costo_unitario (hacia falta: sin el costo no se puede
+               calcular el margen real de la venta, y sin margen no hay comision).
+             · EstadoPedido: BORRADOR y RECHAZADO (el circuito de Juliana).
+
+           EL CIRCUITO (tal como lo definio Ivan):
+             1. La revendedora arma el pedido            -> BORRADOR
+             2. Toca "Enviar a aprobacion"               -> PENDIENTE
+             3. Juliana llama a Torres y chequea stock real
+             4. Aprueba / edita / rechaza                -> CONFIRMADO o RECHAZADO
+             5. Al APROBAR se congela la comision y le aparece a la revendedora
+                en su dashboard como venta confirmada.
+             6. Se entrega y se cobra                    -> ENTREGADO
 """
 from flask_login import UserMixin
 
@@ -31,7 +53,7 @@ class Rol:
     """Roles del sistema (string simple, evita bugs de comparacion de Enum)."""
     SUPER_ADMIN = 'SUPER_ADMIN'   # Ivan (dueno del sistema, carga planillas)
     ADMIN = 'ADMIN'               # Juliana + hasta 4 mas (administran todo menos importar)
-    REVENDEDORA = 'REVENDEDORA'   # Vendedores del CRM (Etapa 2: comisiones / niveles)
+    REVENDEDORA = 'REVENDEDORA'   # Vendedores del CRM (comisiones / niveles)
 
     TODOS = (SUPER_ADMIN, ADMIN, REVENDEDORA)
     # Roles que el super admin PUEDE asignar desde el panel (SUPER_ADMIN no se toca).
@@ -43,7 +65,7 @@ class Rol:
     }
 
 
-# Forma en que se le paga la comision a una revendedora (Etapa 2 lo usa).
+# Forma en que se le paga la comision a una revendedora.
 class FormaPagoComision:
     EFECTIVO = 'EFECTIVO'
     TRANSFERENCIA = 'TRANSFERENCIA'
@@ -79,7 +101,7 @@ class Usuario(UserMixin, db.Model):
     email = db.Column(db.String(120), nullable=True)
     direccion = db.Column(db.String(200), nullable=True)
     localidad = db.Column(db.String(120), nullable=True)      # barrio / zona
-    # Datos para pagarle las comisiones (Etapa 2)
+    # Datos para pagarle las comisiones
     cbu_cvu = db.Column(db.String(30), nullable=True)         # CBU o CVU (22 digitos)
     alias_cbu = db.Column(db.String(60), nullable=True)       # alias bancario
     banco_fintech = db.Column(db.String(80), nullable=True)   # nombre del banco / fintech
@@ -228,15 +250,14 @@ class Producto(db.Model):
     # Costo del mayorista SIN IVA (3 decimales como viene en la planilla)
     costo_neto = db.Column(db.Numeric(12, 3), nullable=False)
 
-    # Campos para las proximas versiones (se crean ahora para no migrar despues)
-    marca = db.Column(db.String(80), nullable=True, index=True)         # v0.3 (buscador)
-    imagen = db.Column(db.String(255), nullable=True)                   # v0.5 (fotos)
-    margen_individual = db.Column(db.Numeric(5, 2), nullable=True)      # v0.3 (markup x producto)
-    destacado = db.Column(db.Boolean, nullable=False, default=False)    # v0.x (ofertas)
+    marca = db.Column(db.String(80), nullable=True, index=True)
+    imagen = db.Column(db.String(255), nullable=True)
+    margen_individual = db.Column(db.Numeric(5, 2), nullable=True)
+    destacado = db.Column(db.Boolean, nullable=False, default=False)
 
     # v0.10 -> solapas de la tienda (legacy: quedan pero ya no se usan en la logica)
-    es_saludable = db.Column(db.Boolean, nullable=False, default=False)   # solapa "Saludables"
-    es_alcoholica = db.Column(db.Boolean, nullable=False, default=False)  # bebidas con/sin alcohol
+    es_saludable = db.Column(db.Boolean, nullable=False, default=False)
+    es_alcoholica = db.Column(db.Boolean, nullable=False, default=False)
 
     # v0.11 -> categoria unica (fuente de verdad para las solapas)
     categoria = db.Column(db.String(20), nullable=False, default='', index=True)
@@ -268,16 +289,14 @@ class Ajustes(db.Model):
     __tablename__ = 'ajustes'
 
     id = db.Column(db.Integer, primary_key=True)
-    # Markup general de la web (margen sobre venta, Opcion 1). Editable por Juliana.
     markup_general = db.Column(db.Numeric(5, 2), nullable=False, default=30)
-    # Piso de seguridad: nunca se vende por debajo de este margen
     markup_minimo = db.Column(db.Numeric(5, 2), nullable=False, default=20)
-    # Descuentos por volumen (sobre el precio)
     desc_x5 = db.Column(db.Numeric(5, 2), nullable=False, default=3)
     desc_x10 = db.Column(db.Numeric(5, 2), nullable=False, default=5)
-    # Compra minima del carrito (con IVA) -> v0.4
+    # Compra minima del carrito de la TIENDA PUBLICA (con IVA).
+    # OJO: el minimo de la REVENDEDORA es otro y es NETO
+    # (config.py -> MINIMO_REVENDEDORA_NETO). No confundirlos.
     minimo_compra = db.Column(db.Numeric(12, 2), nullable=False, default=30000)
-    # WhatsApp de Juliana (formato internacional sin +, ej 5491171352560)
     whatsapp = db.Column(db.String(30), nullable=False, default='5491171352560')
     nombre_negocio = db.Column(db.String(120), nullable=False, default='Saludables')
 
@@ -297,36 +316,87 @@ def get_ajustes():
 import secrets
 
 
+# ============================================================================
+#  PEDIDOS  (tienda web + v0.23.0: tambien las ventas de las revendedoras)
+# ============================================================================
+
+class OrigenPedido:
+    """
+    De donde salio el pedido. v0.23.0 suma REVENDEDORA.
+    Los valores viejos (WEB / CUMPLE / COLEGIO) NO se tocan: los pedidos que ya
+    existen en la base siguen siendo validos tal cual estan.
+    """
+    WEB = 'WEB'                    # el cliente compro solo desde la tienda publica
+    CUMPLE = 'CUMPLE'              # nacio de una cotizacion de cumpleaños
+    COLEGIO = 'COLEGIO'            # nacio de una cotizacion de colegio/comercio
+    REVENDEDORA = 'REVENDEDORA'    # v0.23.0 · lo armo una revendedora en su portal
+
+    TODOS = (WEB, CUMPLE, COLEGIO, REVENDEDORA)
+    ETIQUETAS = {
+        WEB: '🛒 Tienda web',
+        CUMPLE: '🎉 Cumpleaños',
+        COLEGIO: '🏫 Comercio',
+        REVENDEDORA: '👩‍💼 Revendedora',
+    }
+    # Prefijo del numero correlativo de cada origen
+    PREFIJOS = {WEB: 'WEB', CUMPLE: 'CUMPLE', COLEGIO: 'COLEGIO', REVENDEDORA: 'RV'}
+
+
 class EstadoPedido:
-    PENDIENTE = 'PENDIENTE'    # recien hecho, falta que Juliana lo confirme
-    CONFIRMADO = 'CONFIRMADO'  # Juliana verifico stock y lo acordo
+    """
+    v0.23.0 suma BORRADOR y RECHAZADO: son los dos estados que le faltaban al
+    circuito de aprobacion de Juliana.
+
+    Circuito de una venta de revendedora:
+        BORRADOR -> PENDIENTE -> CONFIRMADO -> ENTREGADO
+                         |
+                         +-----> RECHAZADO   (Torres no tenia stock, etc.)
+
+    Los pedidos de la tienda web arrancan directo en PENDIENTE (no pasan por
+    BORRADOR): el cliente ya confirmo la compra al hacer el checkout.
+    """
+    BORRADOR = 'BORRADOR'      # v0.23 · la revendedora lo esta armando (Juliana NO lo ve)
+    PENDIENTE = 'PENDIENTE'    # esperando que Juliana lo revise
+    CONFIRMADO = 'CONFIRMADO'  # Juliana chequeo stock con Torres y lo aprobo
     ENTREGADO = 'ENTREGADO'    # entregado y cobrado
+    RECHAZADO = 'RECHAZADO'    # v0.23 · Juliana no lo pudo aprobar (sin stock, etc.)
     ANULADO = 'ANULADO'
 
+    TODOS = (BORRADOR, PENDIENTE, CONFIRMADO, ENTREGADO, RECHAZADO, ANULADO)
     ETIQUETAS = {
-        PENDIENTE: 'Pendiente',
-        CONFIRMADO: 'Confirmado',
+        BORRADOR: 'Borrador',
+        PENDIENTE: 'Pendiente de aprobación',
+        CONFIRMADO: 'Aprobado',
         ENTREGADO: 'Entregado',
+        RECHAZADO: 'Rechazado',
         ANULADO: 'Anulado',
     }
+    # Estados en los que la venta YA CUENTA para la comision de la revendedora.
+    # Un pedido rechazado o anulado NO paga comision. Un borrador tampoco: todavia
+    # no es una venta.
+    CUENTAN_COMISION = (CONFIRMADO, ENTREGADO)
 
 
 class Pedido(db.Model):
     """
-    Pedido hecho por un cliente desde la web. Los precios quedan CONGELADOS
-    en los items (snapshot), para que valgan lo que valian al momento de la compra.
+    Pedido. Los precios quedan CONGELADOS en los items (snapshot), para que valgan
+    lo que valian al momento de la compra.
+
+    v0.23.0 · Si 'revendedora_id' NO es None, este pedido es una VENTA DE
+    REVENDEDORA. Ahi entran a jugar todos los campos de comision.
     """
     __tablename__ = 'pedidos'
 
     id = db.Column(db.Integer, primary_key=True)
-    numero = db.Column(db.String(20), unique=True, nullable=False, index=True)  # WEB-00001
+    numero = db.Column(db.String(20), unique=True, nullable=False, index=True)  # WEB-00001 / RV-00001
     # token publico no adivinable para la pagina de confirmacion / PDF
     token = db.Column(db.String(32), unique=True, nullable=False, index=True,
                       default=lambda: secrets.token_hex(8))
-    origen = db.Column(db.String(15), nullable=False, default='WEB')  # WEB / CUMPLE / COLEGIO
+    origen = db.Column(db.String(15), nullable=False, default=OrigenPedido.WEB)
     estado = db.Column(db.String(15), nullable=False, default=EstadoPedido.PENDIENTE)
 
-    # Datos del cliente
+    # Datos del cliente (en las ventas de revendedora se copian del Cliente:
+    # snapshot, para que el pedido no cambie si despues editan la ficha)
     nombre = db.Column(db.String(80), nullable=False)
     apellido = db.Column(db.String(80), nullable=False)
     cuit = db.Column(db.String(13), nullable=False)
@@ -336,7 +406,7 @@ class Pedido(db.Model):
     zona = db.Column(db.String(120), nullable=False)         # barrio/colegio (para metricas)
     observaciones = db.Column(db.Text, nullable=True)
 
-    total = db.Column(db.Numeric(12, 2), nullable=False)
+    total = db.Column(db.Numeric(12, 2), nullable=False)      # FINAL con IVA
 
     # Para la contabilidad de Juliana (se completa en el panel)
     facturado = db.Column(db.Boolean, nullable=True, default=None)
@@ -351,10 +421,57 @@ class Pedido(db.Model):
     anulado_en = db.Column(db.DateTime, nullable=True)
     anulado_motivo = db.Column(db.String(200), nullable=True)
 
-    # Ultima modificacion (cuando Juliana edita el pedido)
     modificado_en = db.Column(db.DateTime, nullable=True)
-
     creado = db.Column(db.DateTime, default=_ahora, index=True)
+
+    # ==================================================================
+    #  v0.23.0 — FRENTE E: VENTA DE REVENDEDORA
+    # ==================================================================
+    # De quien es la venta. None = pedido normal de la tienda web.
+    revendedora_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'),
+                               nullable=True, index=True)
+    # A que cliente del CRM le vendio (None si es un pedido web suelto)
+    cliente_id = db.Column(db.Integer, db.ForeignKey('clientes.id'),
+                           nullable=True, index=True)
+
+    # --- Circuito de aprobacion ---
+    enviado_en = db.Column(db.DateTime, nullable=True)       # cuando lo mando a Juliana
+    aprobado_por = db.Column(db.String(80), nullable=True)   # quien lo aprobo/rechazo
+    aprobado_en = db.Column(db.DateTime, nullable=True)
+    rechazado_motivo = db.Column(db.String(200), nullable=True)
+
+    # --- SNAPSHOT DE PLATA (Pattern 1 de AXIAL: inmutabilidad historica) ---
+    # Estos numeros se CONGELAN al aprobar y NO se recalculan nunca mas.
+    # Si Nadia sube de escalon el mes que viene, sus ventas viejas siguen pagando
+    # lo que se pacto el dia que se hicieron. Esa es la unica forma de que una
+    # liquidacion de comisiones sea auditable.
+    neto_total = db.Column(db.Numeric(12, 2), nullable=True)
+    #   ^ La venta SIN IVA. Es la BASE DE LA COMISION. Nadie comisiona sobre el
+    #     IVA: esa plata no es de Ivan, es de AFIP.
+
+    costo_total = db.Column(db.Numeric(12, 2), nullable=True)
+    #   ^ Lo que le cuesta a Ivan comprarle esa mercaderia a Torres (neto).
+
+    margen_pct = db.Column(db.Numeric(5, 2), nullable=True)
+    #   ^ Margen REAL de la venta, sobre venta: (neto - costo) / neto * 100.
+
+    comision_pct = db.Column(db.Numeric(5, 2), nullable=True)
+    #   ^ El escalon que regia el dia que se aprobo. CONGELADO.
+
+    comision_monto = db.Column(db.Numeric(12, 2), nullable=True)
+    #   ^ neto_total * comision_pct / 100. CONGELADO.
+
+    margen_casa_pct = db.Column(db.Numeric(5, 2), nullable=True)
+    #   ^ Lo que le queda a la casa DESPUES de pagar la comision:
+    #         margen_pct - comision_pct
+    #     El backend NUNCA deja aprobar un pedido con esto por debajo de
+    #     config.MARGEN_CASA_MINIMO (6%). Se guarda igual, para que quede
+    #     auditado que en su momento se cumplio.
+
+    # --- Pago de la comision ---
+    comision_pagada = db.Column(db.Boolean, nullable=False, default=False)
+    comision_pagada_en = db.Column(db.DateTime, nullable=True)
+    comision_pagada_por = db.Column(db.String(80), nullable=True)
 
     items = db.relationship('ItemPedido', backref='pedido',
                             cascade='all, delete-orphan', lazy='selectin')
@@ -364,6 +481,10 @@ class Pedido(db.Model):
                                      cascade='all, delete-orphan', lazy='selectin',
                                      order_by='ModificacionPedido.creado.desc()')
 
+    revendedora = db.relationship('Usuario', foreign_keys=[revendedora_id], lazy='joined')
+    cliente = db.relationship('Cliente', foreign_keys=[cliente_id], lazy='joined')
+
+    # ---------- Propiedades de siempre ----------
     @property
     def cliente_completo(self):
         return f'{self.nombre} {self.apellido}'.strip()
@@ -371,6 +492,10 @@ class Pedido(db.Model):
     @property
     def estado_etiqueta(self):
         return EstadoPedido.ETIQUETAS.get(self.estado, self.estado)
+
+    @property
+    def origen_etiqueta(self):
+        return OrigenPedido.ETIQUETAS.get(self.origen, self.origen)
 
     @property
     def cantidad_items(self):
@@ -392,18 +517,92 @@ class Pedido(db.Model):
     def esta_anulado(self):
         return self.estado == EstadoPedido.ANULADO
 
+    # ---------- v0.23.0 · Propiedades del Frente E ----------
+    @property
+    def es_de_revendedora(self):
+        return self.revendedora_id is not None
+
+    @property
+    def es_borrador(self):
+        """Todavia lo esta armando la revendedora: Juliana NO lo ve."""
+        return self.estado == EstadoPedido.BORRADOR
+
+    @property
+    def espera_aprobacion(self):
+        """Esta en la bandeja de Juliana, esperando que llame a Torres."""
+        return self.estado == EstadoPedido.PENDIENTE and self.es_de_revendedora
+
+    @property
+    def esta_aprobado(self):
+        return self.estado in EstadoPedido.CUENTAN_COMISION
+
+    @property
+    def paga_comision(self):
+        """True si esta venta le tiene que pagar comision a la revendedora."""
+        return (self.es_de_revendedora
+                and self.estado in EstadoPedido.CUENTAN_COMISION
+                and self.comision_monto is not None
+                and float(self.comision_monto) > 0)
+
+    @property
+    def revendedora_nombre(self):
+        return self.revendedora.nombre_completo if self.revendedora else '—'
+
+    @property
+    def ganancia_casa(self):
+        """
+        Plata que le queda a la casa (Ivan + Juliana) despues de pagarle la
+        comision a la revendedora. En pesos, no en porcentaje.
+            (neto - costo) - comision
+        """
+        if self.neto_total is None or self.costo_total is None:
+            return None
+        bruta = float(self.neto_total) - float(self.costo_total)
+        return round(bruta - float(self.comision_monto or 0), 2)
+
+    def __repr__(self):
+        return f'<Pedido {self.numero} {self.estado}>'
+
 
 class ItemPedido(db.Model):
+    """
+    Renglon de un pedido. Snapshot: guardamos codigo y nombre por si el producto
+    cambia despues.
+
+    v0.23.0 -> + costo_unitario. Hacia falta y no estaba: SIN EL COSTO NO SE PUEDE
+    CALCULAR EL MARGEN REAL DE LA VENTA, y sin margen no hay forma de saber si la
+    comision deja a la casa por encima del 6%. Es nullable a proposito: los
+    pedidos web que ya existen no lo tienen y no hay que inventarselo.
+    """
     __tablename__ = 'items_pedido'
 
     id = db.Column(db.Integer, primary_key=True)
     pedido_id = db.Column(db.Integer, db.ForeignKey('pedidos.id'), nullable=False)
-    # Snapshot: guardamos codigo y nombre por si el producto cambia despues
     codigo = db.Column(db.String(40), nullable=False)
     nombre = db.Column(db.String(255), nullable=False)
     cantidad = db.Column(db.Integer, nullable=False)
-    precio_unitario = db.Column(db.Numeric(12, 2), nullable=False)  # ya con escalon aplicado
+    precio_unitario = db.Column(db.Numeric(12, 2), nullable=False)  # FINAL con IVA
     subtotal = db.Column(db.Numeric(12, 2), nullable=False)
+
+    # v0.23.0 · costo NETO del producto al momento de la venta (lo que paga Ivan
+    # a Torres). Congelado: si Torres sube el precio manana, esta venta ya
+    # quedo cerrada con el costo de hoy.
+    costo_unitario = db.Column(db.Numeric(12, 3), nullable=True)
+
+    @property
+    def neto_unitario(self):
+        """Precio unitario SIN IVA (base de la comision)."""
+        return round(float(self.precio_unitario) / (1 + IVA), 2)
+
+    @property
+    def neto_subtotal(self):
+        return round(float(self.subtotal) / (1 + IVA), 2)
+
+    @property
+    def costo_subtotal(self):
+        if self.costo_unitario is None:
+            return None
+        return round(float(self.costo_unitario) * self.cantidad, 2)
 
 
 class FormaPago:
@@ -467,8 +666,7 @@ class Oferta(db.Model):
         para poder mostrarlo tachado en la tienda.
       - 'costo_neto_snapshot' guarda el costo del momento (auditoria / food cost).
       - No hay tareas programadas en PythonAnywhere free: la oferta 'se vence sola'
-        porque las consultas de la tienda filtran por vence_en > ahora. Ademas
-        Juliana puede despublicarla a mano (activa = False).
+        porque las consultas de la tienda filtran por vence_en > ahora.
     """
     __tablename__ = 'ofertas'
 
@@ -500,7 +698,6 @@ class Oferta(db.Model):
         delta = self.vence_en - _ahora()
         if delta.total_seconds() <= 0:
             return 0
-        # Redondeo hacia arriba para mostrar 'vence en X dias' amigable
         dias = delta.days + (1 if delta.seconds > 0 else 0)
         return max(1, dias)
 
@@ -515,23 +712,27 @@ class Oferta(db.Model):
 
 
 # ============================================================================
-#  v0.12.0 — COTIZACIONES (Cumpleaños / Colegios) que arma Juliana en el panel
+#  v0.12.0 — COTIZACIONES (Cumpleaños / Colegios)
 # ============================================================================
 
 class TipoCotizacion:
-    CUMPLE = 'CUMPLE'     # Bolsa de cumpleaños (minimo de unidades, ver Ajustes/constante)
-    COLEGIO = 'COLEGIO'   # Pedido para un colegio (sin minimo de bolsas)
+    CUMPLE = 'CUMPLE'     # Bolsa de cumpleaños (minimo de unidades)
+    COLEGIO = 'COLEGIO'   # Pedido para un colegio / comercio
+    #  ^ v0.23: en pantalla se muestra como "Comercios". El valor interno sigue
+    #    siendo COLEGIO A PROPOSITO: renombrarlo obligaria a migrar las
+    #    cotizaciones viejas y los numeros correlativos (COLEGIO-00001) por un
+    #    cambio puramente cosmetico. Cero riesgo, mismo resultado visual.
 
     TODAS = (CUMPLE, COLEGIO)
     ETIQUETAS = {
         CUMPLE: '🎉 Cumpleaños',
-        COLEGIO: '🏫 Colegio',
+        COLEGIO: '🏪 Comercios',
     }
     PREFIJOS = {CUMPLE: 'CUMPLE', COLEGIO: 'COLEGIO'}
 
 
 class EstadoCotizacion:
-    BORRADOR = 'BORRADOR'   # Juliana la esta armando
+    BORRADOR = 'BORRADOR'   # se esta armando
     ENVIADA = 'ENVIADA'     # ya genero PDF / la mando por WhatsApp o mail
     CERRADA = 'CERRADA'     # el cliente acepto (se concreto la venta)
     ANULADA = 'ANULADA'     # descartada (no se borra, queda auditada)
@@ -546,43 +747,35 @@ class EstadoCotizacion:
 
 class Cotizacion(db.Model):
     """
-    Carrito personalizado que arma Juliana para un cliente (Cumpleaños o Colegio).
-    Es una herramienta del panel (no se compra online): Juliana elige productos,
-    el sistema suma el costo y aplica el piso del 10% blindado, y ella genera un
-    PDF para mandar por WhatsApp o mail.
+    Carrito personalizado que se arma para un cliente (Cumpleaños o Comercio).
+    Es un PRESUPUESTO: se elige productos, el sistema suma el costo y aplica el
+    piso blindado, y se genera un PDF para mandar por WhatsApp o mail.
 
     'unidades':
-      - CUMPLE  -> cantidad de bolsas iguales (minimo 20). El total = (suma de los
-                   items de 1 bolsa) * unidades.
+      - CUMPLE  -> cantidad de bolsas iguales. El total = (suma de los items de
+                   1 bolsa) * unidades.
       - COLEGIO -> 1 (la cantidad va en cada item).
-
-    Los items guardan snapshot (codigo, nombre, costo y precio) para que la
-    cotizacion valga lo que valia el dia que se armo, aunque la lista cambie.
     """
     __tablename__ = 'cotizaciones'
 
     id = db.Column(db.Integer, primary_key=True)
     tipo = db.Column(db.String(15), nullable=False, default=TipoCotizacion.CUMPLE, index=True)
-    numero = db.Column(db.String(20), unique=True, nullable=False, index=True)  # CUMPLE-00001
+    numero = db.Column(db.String(20), unique=True, nullable=False, index=True)
     token = db.Column(db.String(32), unique=True, nullable=False, index=True,
                       default=lambda: secrets.token_hex(8))
 
-    # Datos del cliente (todos opcionales: Juliana puede armar un presupuesto rapido)
     nombre_cliente = db.Column(db.String(120), nullable=True)
     whatsapp = db.Column(db.String(30), nullable=True)
     email = db.Column(db.String(120), nullable=True)
     nota = db.Column(db.Text, nullable=True)
 
-    unidades = db.Column(db.Integer, nullable=False, default=1)   # nº de bolsas (CUMPLE)
+    unidades = db.Column(db.Integer, nullable=False, default=1)
 
-    # v0.12 C1 -> opcion de bolsa fisica (solo CUMPLE):
-    #   incluye_bolsa = False -> el cliente trae la bolsa (sin costo)
-    #   incluye_bolsa = True  -> nosotros ponemos la bolsa (costo_bolsa por unidad, lo carga Juliana)
     incluye_bolsa = db.Column(db.Boolean, nullable=False, default=False)
-    costo_bolsa = db.Column(db.Numeric(12, 2), nullable=False, default=0)  # por bolsa
+    costo_bolsa = db.Column(db.Numeric(12, 2), nullable=False, default=0)
 
-    costo_total = db.Column(db.Numeric(12, 2), nullable=False, default=0)  # costo neto (food cost)
-    total = db.Column(db.Numeric(12, 2), nullable=False, default=0)        # precio final c/IVA
+    costo_total = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    total = db.Column(db.Numeric(12, 2), nullable=False, default=0)
 
     estado = db.Column(db.String(15), nullable=False, default=EstadoCotizacion.BORRADOR)
 
@@ -590,8 +783,19 @@ class Cotizacion(db.Model):
     creada_en = db.Column(db.DateTime, default=_ahora, index=True)
     modificada_en = db.Column(db.DateTime, nullable=True)
 
+    # v0.23.0 · Si la armo una revendedora desde su portal, queda registrado.
+    # None = la armo Juliana o un admin desde el panel (como hasta ahora).
+    revendedora_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'),
+                               nullable=True, index=True)
+    cliente_id = db.Column(db.Integer, db.ForeignKey('clientes.id'),
+                           nullable=True, index=True)
+    # Si el presupuesto se convirtio en una venta, apunta al pedido que nacio de el.
+    pedido_id = db.Column(db.Integer, db.ForeignKey('pedidos.id'),
+                          nullable=True, index=True)
+
     items = db.relationship('CotizacionItem', backref='cotizacion',
                             cascade='all, delete-orphan', lazy='selectin')
+    revendedora = db.relationship('Usuario', foreign_keys=[revendedora_id], lazy='joined')
 
     @property
     def tipo_etiqueta(self):
@@ -628,8 +832,8 @@ class CotizacionItem(db.Model):
     nombre = db.Column(db.String(255), nullable=False)
     cantidad = db.Column(db.Integer, nullable=False, default=1)
     costo_unitario = db.Column(db.Numeric(12, 3), nullable=False)   # neto, para food cost
-    precio_unitario = db.Column(db.Numeric(12, 2), nullable=False)  # final c/IVA (piso 10%)
-    subtotal = db.Column(db.Numeric(12, 2), nullable=False)         # precio_unitario * cantidad
+    precio_unitario = db.Column(db.Numeric(12, 2), nullable=False)  # final c/IVA
+    subtotal = db.Column(db.Numeric(12, 2), nullable=False)
 
 
 def generar_numero_cotizacion(tipo=TipoCotizacion.CUMPLE):
@@ -639,23 +843,28 @@ def generar_numero_cotizacion(tipo=TipoCotizacion.CUMPLE):
     return f'{pref}-{n:05d}'
 
 
-def generar_numero_pedido(origen='WEB'):
-    """Numero correlativo por origen: WEB-00001, CUMPLE-00001, COLEGIO-00001."""
-    prefijos = {'WEB': 'WEB', 'CUMPLE': 'CUMPLE', 'COLEGIO': 'COLEGIO'}
-    pref = prefijos.get(origen, 'WEB')
+def generar_numero_pedido(origen=OrigenPedido.WEB):
+    """
+    Numero correlativo por origen: WEB-00001, CUMPLE-00001, COLEGIO-00001,
+    y v0.23.0: RV-00001 para las ventas de revendedoras.
+
+    Se cuenta por origen (no global) para que cada serie sea independiente y se
+    lea de un vistazo de donde salio cada venta.
+    """
+    pref = OrigenPedido.PREFIJOS.get(origen, 'WEB')
     n = Pedido.query.filter_by(origen=origen).count() + 1
     return f'{pref}-{n:05d}'
 
 
 # ============================================================================
-#  v0.14.0 — BANNERS (carrusel central + laterales izquierdo/derecho)
+#  v0.14.0 — BANNERS
 # ============================================================================
 
 class ZonaBanner:
     """Donde aparece el banner en la tienda."""
-    CENTRAL = 'CENTRAL'   # carrusel arriba de todo (lo primero que se ve)
-    IZQ = 'IZQ'           # lateral izquierdo (fijo, ocupa el scroll)
-    DER = 'DER'           # lateral derecho (fijo, ocupa el scroll)
+    CENTRAL = 'CENTRAL'
+    IZQ = 'IZQ'
+    DER = 'DER'
 
     TODAS = (CENTRAL, IZQ, DER)
     ETIQUETAS = {
@@ -667,10 +876,10 @@ class ZonaBanner:
 
 class DestinoBanner:
     """A donde lleva el banner cuando el cliente lo toca."""
-    NINGUNO = 'NINGUNO'     # solo imagen, no es clickeable
-    BUSQUEDA = 'BUSQUEDA'   # lleva al catalogo con una busqueda (destino_valor = texto)
-    SOLAPA = 'SOLAPA'       # lleva a una solapa (destino_valor = ofertas/comida/sin/con)
-    WHATSAPP = 'WHATSAPP'   # abre WhatsApp de Juliana (destino_valor = mensaje opcional)
+    NINGUNO = 'NINGUNO'
+    BUSQUEDA = 'BUSQUEDA'
+    SOLAPA = 'SOLAPA'
+    WHATSAPP = 'WHATSAPP'
 
     TODOS = (NINGUNO, BUSQUEDA, SOLAPA, WHATSAPP)
     ETIQUETAS = {
@@ -684,17 +893,14 @@ class DestinoBanner:
 class Banner(db.Model):
     """
     Imagen de banner que muestra la tienda (v0.14).
-      - zona CENTRAL  -> entra al carrusel de arriba (varias rotan).
-      - zona IZQ/DER  -> banner lateral fijo (1 o 2 imagenes que rotan lento).
-    El archivo de imagen vive en static/img/banners/ (lo sube Ivan desde el panel).
-    El destino define a donde lleva al tocarlo (busqueda, solapa o WhatsApp).
+    El archivo vive en static/img/banners/.
     """
     __tablename__ = 'banners'
 
     id = db.Column(db.Integer, primary_key=True)
     zona = db.Column(db.String(10), nullable=False, index=True)
-    imagen = db.Column(db.String(255), nullable=False)        # archivo en static/img/banners/
-    orden = db.Column(db.Integer, nullable=False, default=0)  # orden dentro de la zona
+    imagen = db.Column(db.String(255), nullable=False)
+    orden = db.Column(db.Integer, nullable=False, default=0)
     destino_tipo = db.Column(db.String(12), nullable=False, default=DestinoBanner.NINGUNO)
     destino_valor = db.Column(db.String(200), nullable=True)
     activo = db.Column(db.Boolean, nullable=False, default=True)
@@ -710,20 +916,18 @@ class Banner(db.Model):
 
 
 # ============================================================================
-#  v0.17.0 — BASE DE CLIENTES (cimiento del CRM de revendedoras, Etapa 2)
+#  v0.17.0 — BASE DE CLIENTES (cimiento del CRM de revendedoras)
 # ============================================================================
 
 class Cliente(db.Model):
     """
-    Cliente final del negocio (v0.17). Lo da de alta una revendedora o un admin.
+    Cliente final del negocio. Lo da de alta una revendedora o un admin.
     Todos viven en la MISMA base: la revendedora ve y gestiona los suyos, y
     Juliana / cualquier admin ven y consultan TODOS.
 
     'revendedora_id' indica de quién es el cliente:
       - apunta a un Usuario con rol REVENDEDORA, o
-      - queda NULL = cliente "de la casa" (cargado por un admin, sin asignar).
-
-    Sobre esta tabla se construye después el módulo de Ventas y las métricas.
+      - queda NULL = cliente "de la casa".
     """
     __tablename__ = 'clientes'
 
@@ -744,8 +948,7 @@ class Cliente(db.Model):
     creado = db.Column(db.DateTime, default=_ahora)
     creado_por = db.Column(db.String(80), nullable=True)
 
-    # La revendedora dueña del cliente (o None si es de la casa)
-    revendedora = db.relationship('Usuario', lazy='joined')
+    revendedora = db.relationship('Usuario', foreign_keys=[revendedora_id], lazy='joined')
 
     @property
     def nombre_completo(self):
@@ -760,20 +963,18 @@ class Cliente(db.Model):
 
 
 # ============================================================================
-#  v0.18.3 — SUSCRIPTORES (C2: alta voluntaria desde la tienda publica)
+#  v0.18.3 — SUSCRIPTORES
 # ============================================================================
 
 class Suscriptor(db.Model):
     """
     Persona que se anoto desde la tienda publica para recibir las ofertas antes
-    que nadie (v0.18.3, C2). No requiere cuenta de usuario ni login: es un simple
-    registro de contacto que Juliana consulta y exporta (CSV) para avisar por
-    WhatsApp/email cuando sale una oferta nueva.
+    que nadie. No requiere cuenta ni login.
 
     'dia_nacimiento' / 'mes_nacimiento' -> SOLO dia y mes (sin año, por privacidad
-    en un formulario publico). Sirve para saludos/ofertas de cumpleaños a futuro.
+    en un formulario publico).
 
-    Regla AXIAL: desactivar, nunca borrar (activo=False si se da de baja).
+    Regla AXIAL: desactivar, nunca borrar.
     """
     __tablename__ = 'suscriptores'
 
@@ -809,19 +1010,18 @@ class Suscriptor(db.Model):
 
 
 # ============================================================================
-#  v0.19.1 — FOOD COST: facturas PDF de Torres subidas + cruce contra catalogo
+#  v0.19.1 — FOOD COST: facturas PDF de Torres + cruce contra catalogo
 # ============================================================================
 
 class Factura(db.Model):
     """
-    Factura de compra (proveedor Torres) subida en PDF y leida automaticamente
-    (v0.19.1). Guarda el encabezado; los renglones van en FacturaItem.
+    Factura de compra (proveedor Torres) subida en PDF y leida automaticamente.
     No se borra nunca: queda como historial de auditoria de compras.
     """
     __tablename__ = 'facturas'
 
     id = db.Column(db.Integer, primary_key=True)
-    numero = db.Column(db.String(30), nullable=False, unique=True, index=True)  # ej A00012-00553289
+    numero = db.Column(db.String(30), nullable=False, unique=True, index=True)
     proveedor = db.Column(db.String(120), nullable=False, default='S.TORRES Y CIA S.A.')
     fecha = db.Column(db.Date, nullable=True)
 
@@ -830,9 +1030,7 @@ class Factura(db.Model):
     reg_especiales = db.Column(db.Numeric(12, 2), nullable=True)
     total = db.Column(db.Numeric(12, 2), nullable=True)
 
-    # Renglones de la factura que el parser no pudo interpretar (ej: percepciones
-    # o impuestos que no son productos). Se guardan separados por salto de linea,
-    # nunca se descartan en silencio.
+    # Renglones que el parser no pudo interpretar. Nunca se descartan en silencio.
     no_reconocidas = db.Column(db.Text, nullable=True)
 
     subida_en = db.Column(db.DateTime, default=_ahora, index=True)
@@ -851,10 +1049,8 @@ class Factura(db.Model):
 
 class FacturaItem(db.Model):
     """
-    Renglon de una factura de Torres. Si 'codigo' matchea un Producto del
-    catalogo, queda vinculado (producto_id) y se guarda un snapshot del
-    costo_neto que tenia ANTES (costo_neto_anterior), para poder mostrar la
-    variacion. Si Ivan aplica el nuevo costo, 'actualizado' pasa a True.
+    Renglon de una factura de Torres. Si 'codigo' matchea un Producto del catalogo,
+    queda vinculado y se guarda el costo que tenia ANTES, para mostrar la variacion.
     """
     __tablename__ = 'factura_items'
 
@@ -864,12 +1060,12 @@ class FacturaItem(db.Model):
     codigo = db.Column(db.String(40), nullable=False, index=True)
     descripcion = db.Column(db.String(255), nullable=False)
     unidades = db.Column(db.Numeric(10, 2), nullable=False, default=0)
-    sugerido = db.Column(db.Numeric(12, 2), nullable=True)          # precio sugerido de venta (Torres)
-    costo_unitario = db.Column(db.Numeric(12, 3), nullable=False)   # "Unit." de la factura, neto
+    sugerido = db.Column(db.Numeric(12, 2), nullable=True)
+    costo_unitario = db.Column(db.Numeric(12, 3), nullable=False)
     importe = db.Column(db.Numeric(12, 2), nullable=True)
 
     producto_id = db.Column(db.Integer, db.ForeignKey('productos.id'), nullable=True)
-    costo_neto_anterior = db.Column(db.Numeric(12, 3), nullable=True)  # snapshot antes de actualizar
+    costo_neto_anterior = db.Column(db.Numeric(12, 3), nullable=True)
     actualizado = db.Column(db.Boolean, nullable=False, default=False)
 
     producto = db.relationship('Producto', lazy='joined')
@@ -893,22 +1089,17 @@ class FacturaItem(db.Model):
 
 class Importacion(db.Model):
     """
-    Registro de cada planilla del mayorista importada (v0.20.0).
-
+    Registro de cada planilla del mayorista importada.
     Sin acceso a la base de Torres, esta es la unica forma de saber QUE cambio
-    y CUANDO. Guarda el resumen (cuantos subieron / bajaron / nuevos) y, en
-    ImportacionItem, el detalle producto por producto.
-
-    No se borra nunca: es el historial de precios del negocio.
+    y CUANDO. No se borra nunca.
     """
     __tablename__ = 'importaciones'
 
     id = db.Column(db.Integer, primary_key=True)
-    archivo = db.Column(db.String(255), nullable=True)     # nombre del Excel subido
+    archivo = db.Column(db.String(255), nullable=True)
     creado = db.Column(db.DateTime, default=_ahora, index=True)
     creado_por = db.Column(db.String(80), nullable=True)
 
-    # Resumen de lo que paso en esta importacion
     nuevos = db.Column(db.Integer, nullable=False, default=0)
     actualizados = db.Column(db.Integer, nullable=False, default=0)
     subieron = db.Column(db.Integer, nullable=False, default=0)
@@ -917,7 +1108,6 @@ class Importacion(db.Model):
     fuera_de_lista = db.Column(db.Integer, nullable=False, default=0)
     total_catalogo = db.Column(db.Integer, nullable=False, default=0)
 
-    # Variacion promedio (%) de los productos que CAMBIARON de precio
     variacion_promedio = db.Column(db.Numeric(6, 2), nullable=True)
 
     items = db.relationship('ImportacionItem', backref='importacion',
@@ -933,9 +1123,8 @@ class Importacion(db.Model):
 
 class ImportacionItem(db.Model):
     """
-    Detalle de UN producto dentro de una importacion: que costo tenia antes y
-    que costo trajo la planilla nueva. Solo se guardan los que CAMBIARON de
-    precio o son NUEVOS (no tiene sentido guardar 1600 filas iguales).
+    Detalle de UN producto dentro de una importacion. Solo se guardan los que
+    CAMBIARON de precio o son NUEVOS (no tiene sentido guardar 1600 filas iguales).
     """
     __tablename__ = 'importacion_items'
 
@@ -945,9 +1134,9 @@ class ImportacionItem(db.Model):
 
     codigo = db.Column(db.String(40), nullable=False, index=True)
     nombre = db.Column(db.String(255), nullable=False)
-    costo_anterior = db.Column(db.Numeric(12, 3), nullable=True)   # None si es nuevo
+    costo_anterior = db.Column(db.Numeric(12, 3), nullable=True)
     costo_nuevo = db.Column(db.Numeric(12, 3), nullable=False)
-    variacion_pct = db.Column(db.Numeric(7, 2), nullable=True)     # None si es nuevo
+    variacion_pct = db.Column(db.Numeric(7, 2), nullable=True)
     es_nuevo = db.Column(db.Boolean, nullable=False, default=False)
 
     def __repr__(self):
