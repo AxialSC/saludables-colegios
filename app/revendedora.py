@@ -25,16 +25,19 @@ v0.24.0 -> E3 · EL PORTAL DE VENTAS (Frente E).
 import json
 
 from flask import (Blueprint, render_template, request, redirect,
-                   url_for, flash, abort, jsonify)
+                   url_for, flash, abort, jsonify, Response)
 from flask_login import login_required, current_user
 from sqlalchemy import or_, select
 
 from .extensions import db
 from .models import (Cliente, Producto, Pedido, ItemPedido, EstadoPedido,
-                     OrigenPedido, generar_numero_pedido, get_ajustes)
+                     OrigenPedido, generar_numero_pedido, get_ajustes,
+                     IVA, Cotizacion, CotizacionItem, TipoCotizacion,
+                     EstadoCotizacion, generar_numero_cotizacion)
 from .utils.decorators import revendedora_requerido
 from .utils.timezone import ahora_argentina
 from . import comisiones
+from .pdf_cotizacion import generar_pdf_cotizacion
 
 revendedora_bp = Blueprint('revendedora', __name__, url_prefix='/portal')
 
@@ -534,3 +537,426 @@ def redes():
         flash('Tus redes se guardaron ✓', 'success')
         return redirect(url_for('revendedora.redes'))
     return render_template('revendedora/redes.html')
+
+
+# ============================================================================
+#  v0.27.0 — E6 · PRESUPUESTOS (Cumpleaños / Comercios) EN EL PORTAL
+# ============================================================================
+#
+#  El circuito, tal como lo definio Ivan (opcion 3):
+#    1. La revendedora arma un PRESUPUESTO para UNO de SUS clientes.
+#         · Cumpleaños -> 1 bolsa modelo (productos x cantidad) + N bolsas.
+#         · Comercio   -> lista de items con cantidades.
+#    2. Genera un PDF lindo CON SU CONTACTO y se lo manda por WhatsApp. Eso es un
+#       TANTEO: no reserva stock ni paga comision.
+#    3. Si el cliente acepta, toca "Convertir en pedido" -> cae en la MISMA
+#       bandeja de aprobacion de Juliana que una venta normal (circuito E4).
+#    4. Juliana chequea stock con Torres y aprueba: recien ahi se congela la
+#       comision de la revendedora.
+#
+#  Reglas confirmadas por Ivan:
+#    · El presupuesto usa el PISO DE ELLA (segun su escalon), no el 10% fijo del
+#      panel admin. Un cumple de Nadia es una venta de Nadia.
+#    · Comercio exige el minimo de $50.000 netos; Cumpleaños NO (una bolsita
+#      puede ser chica y estaria mal bloquearla).
+#    · Al convertir un cumple, las bolsas se MULTIPLICAN (3 alfajores x 20
+#      bolsas = 60 alfajores): el pedido es lo que Juliana le pide a Torres de
+#      verdad. El candado del 6% se REVALIDA sobre ese total final multiplicado,
+#      con el costo de HOY (si Torres subio, no se convierte: se rearma).
+
+
+def _mi_presupuesto_o_404(cid):
+    """Trae la cotizacion SOLO si es de la revendedora logueada. Si no, 403."""
+    c = Cotizacion.query.get_or_404(cid)
+    if c.revendedora_id != current_user.id:
+        abort(403)
+    return c
+
+
+@revendedora_bp.route('/presupuestos')
+@revendedora_requerido
+def presupuestos():
+    """Lista de MIS presupuestos. Filtra por tipo si viene ?tipo=."""
+    tipo = (request.args.get('tipo') or '').strip().upper()
+    if tipo not in TipoCotizacion.TODAS:
+        tipo = ''
+    stmt = Cotizacion.query.filter_by(revendedora_id=current_user.id)
+    if tipo:
+        stmt = stmt.filter_by(tipo=tipo)
+    cotis = stmt.order_by(Cotizacion.creada_en.desc()).limit(100).all()
+    return render_template('revendedora/presupuestos.html', cotis=cotis,
+                           tipo_sel=tipo, tipos=TipoCotizacion.ETIQUETAS)
+
+
+@revendedora_bp.route('/presupuestos/nuevo/<tipo>')
+@revendedora_requerido
+def presupuesto_armar(tipo):
+    """Pantalla para armar un presupuesto nuevo (CUMPLE o COMERCIO=COLEGIO)."""
+    tipo = (tipo or '').strip().upper()
+    if tipo not in TipoCotizacion.TODAS:
+        abort(404)
+    ajustes = get_ajustes()
+    nivel = comisiones.nivel_de(current_user.id)
+
+    # Solo SUS clientes ACTIVOS, marcando a cuales les falta algun dato (igual
+    # que en Vender: sin datos completos no se puede convertir en pedido).
+    mis = (Cliente.query
+           .filter_by(revendedora_id=current_user.id, activo=True)
+           .order_by(Cliente.nombre).all())
+    lista_clientes = [{'c': c, 'falta': _falta_del_cliente(c)} for c in mis]
+
+    marcas = db.session.execute(
+        select(Producto.marca).where(Producto.activo.is_(True))
+        .where(Producto.marca.isnot(None)).where(Producto.marca != '')
+        .distinct().order_by(Producto.marca)
+    ).scalars().all()
+    rubros = db.session.execute(
+        select(Producto.rubro).where(Producto.activo.is_(True))
+        .where(Producto.rubro.isnot(None)).where(Producto.rubro != '')
+        .distinct().order_by(Producto.rubro)
+    ).scalars().all()
+
+    cliente_sel = request.args.get('cliente', type=int)
+
+    return render_template('revendedora/presupuesto_armar.html',
+                           tipo=tipo, es_cumple=(tipo == TipoCotizacion.CUMPLE),
+                           tipo_etiqueta=TipoCotizacion.ETIQUETAS[tipo],
+                           clientes=lista_clientes, cliente_sel=cliente_sel,
+                           marcas=marcas, rubros=rubros, ajustes=ajustes,
+                           nivel=nivel,
+                           margen_minimo=comisiones.margen_minimo(nivel['comision']),
+                           minimo_neto=comisiones.minimo_neto())
+
+
+@revendedora_bp.route('/presupuestos/guardar', methods=['POST'])
+@revendedora_requerido
+def presupuesto_guardar():
+    """
+    Guarda un presupuesto nuevo. BLINDAJE: cada precio se recalcula en el
+    servidor contra el PISO de esta revendedora (su escalon). El navegador no
+    decide nada.
+    """
+    tipo = (request.form.get('tipo') or '').strip().upper()
+    if tipo not in TipoCotizacion.TODAS:
+        flash('Tipo de presupuesto inválido.', 'error')
+        return redirect(url_for('revendedora.presupuestos'))
+    es_cumple = (tipo == TipoCotizacion.CUMPLE)
+
+    # ---------- 1) El cliente (obligatorio) ----------
+    cid = request.form.get('cliente_id', type=int)
+    if not cid:
+        flash('Elegí a qué cliente le estás armando el presupuesto.', 'error')
+        return redirect(url_for('revendedora.presupuesto_armar', tipo=tipo))
+    cliente = _mi_cliente_o_404(cid)
+    faltan = _falta_del_cliente(cliente)
+    if faltan:
+        flash(f'A "{cliente.nombre_completo}" le faltan datos: {", ".join(faltan)}. '
+              f'Completá su ficha antes de armar el presupuesto.', 'error')
+        return redirect(url_for('revendedora.cliente_editar', cid=cid))
+
+    # ---------- 2) Los items ----------
+    try:
+        items_in = json.loads(request.form.get('items_json') or '[]')
+    except (ValueError, TypeError):
+        items_in = []
+    if not items_in:
+        flash('Agregá al menos un producto al presupuesto.', 'error')
+        return redirect(url_for('revendedora.presupuesto_armar', tipo=tipo, cliente=cid))
+
+    nivel = comisiones.nivel_de(current_user.id)
+    comision_pct = nivel['comision']
+
+    # Unidades (bolsas). Solo CUMPLE multiplica; COMERCIO siempre 1.
+    try:
+        unidades = int(request.form.get('unidades') or 1)
+    except (TypeError, ValueError):
+        unidades = 1
+    if not es_cumple:
+        unidades = 1
+    elif unidades < 1:
+        unidades = 1
+
+    nota = (request.form.get('nota') or '').strip() or None
+
+    items_calc = []
+    subtotal_bolsa = 0.0
+    costo_prod_bolsa = 0.0
+    clampeados = 0
+    for it in items_in:
+        pid = it.get('id')
+        if not str(pid).isdigit():
+            continue
+        p = Producto.query.filter_by(id=int(pid), activo=True).first()
+        if p is None:
+            continue
+        try:
+            cant = int(it.get('cantidad') or 1)
+        except (TypeError, ValueError):
+            cant = 1
+        if cant < 1:
+            cant = 1
+        piso = comisiones.precio_minimo(p, comision_pct)     # SU piso, por escalon
+        try:
+            precio = round(float(it.get('precio') or piso), 2)
+        except (TypeError, ValueError):
+            precio = piso
+        if precio < piso:                                    # BLINDAJE
+            precio = piso
+            clampeados += 1
+        sub = round(precio * cant, 2)
+        items_calc.append({
+            'codigo': p.codigo, 'nombre': p.nombre, 'cantidad': cant,
+            'costo_unitario': float(p.costo_neto),
+            'precio_unitario': precio, 'subtotal': sub,
+        })
+        subtotal_bolsa += sub
+        costo_prod_bolsa += float(p.costo_neto) * cant
+
+    if not items_calc:
+        flash('No se pudo armar el presupuesto (productos no encontrados).', 'error')
+        return redirect(url_for('revendedora.presupuesto_armar', tipo=tipo, cliente=cid))
+
+    subtotal_bolsa = round(subtotal_bolsa, 2)
+    total = round(subtotal_bolsa * unidades, 2)
+    costo_total = round(costo_prod_bolsa * unidades, 2)
+
+    # Comercio: minimo de $50.000 netos. Cumple: sin minimo.
+    if not es_cumple:
+        neto = round(total / (1 + IVA), 2)
+        minimo = comisiones.minimo_neto()
+        if neto < minimo:
+            falta_min = round(minimo - neto, 2)
+            flash(f'El presupuesto de comercio no llega al mínimo. Necesitás '
+                  f'{_pesos(minimo)} netos (sin IVA) y llevás {_pesos(neto)}. '
+                  f'Te faltan {_pesos(falta_min)}.', 'error')
+            return redirect(url_for('revendedora.presupuesto_armar', tipo=tipo, cliente=cid))
+
+    # ---------- 3) Guardar ----------
+    try:
+        coti = Cotizacion(
+            tipo=tipo,
+            numero=generar_numero_cotizacion(tipo),
+            nombre_cliente=cliente.nombre_completo,
+            whatsapp=(cliente.telefono or None),
+            email=cliente.email,
+            nota=nota,
+            unidades=unidades,
+            incluye_bolsa=False, costo_bolsa=0,
+            costo_total=costo_total, total=total,
+            estado=EstadoCotizacion.BORRADOR,
+            creada_por=current_user.nombre,
+            revendedora_id=current_user.id,
+            cliente_id=cliente.id,
+        )
+        db.session.add(coti)
+        db.session.flush()
+        for it in items_calc:
+            db.session.add(CotizacionItem(cotizacion_id=coti.id, **it))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        flash('Hubo un problema al guardar el presupuesto. Probá de nuevo.', 'error')
+        return redirect(url_for('revendedora.presupuesto_armar', tipo=tipo, cliente=cid))
+
+    if clampeados:
+        flash(f'{clampeados} producto(s) se ajustaron a tu precio mínimo permitido '
+              f'para tu nivel.', 'warning')
+    flash(f'Presupuesto {coti.numero} creado ✓ Descargá el PDF y mandáselo a tu '
+          f'cliente.', 'success')
+    return redirect(url_for('revendedora.presupuesto_detalle', cid=coti.id))
+
+
+@revendedora_bp.route('/presupuestos/<int:cid>')
+@revendedora_requerido
+def presupuesto_detalle(cid):
+    coti = _mi_presupuesto_o_404(cid)
+    pedido = Pedido.query.get(coti.pedido_id) if coti.pedido_id else None
+    return render_template('revendedora/presupuesto_detalle.html', coti=coti,
+                           pedido=pedido, ajustes=get_ajustes())
+
+
+@revendedora_bp.route('/presupuestos/<int:cid>/pdf')
+@revendedora_requerido
+def presupuesto_pdf(cid):
+    """PDF del presupuesto, con el contacto de la revendedora (no el del negocio)."""
+    coti = _mi_presupuesto_o_404(cid)
+    pdf = generar_pdf_cotizacion(coti, get_ajustes())
+    return Response(pdf, mimetype='application/pdf', headers={
+        'Content-Disposition': f'inline; filename="{coti.numero}.pdf"'
+    })
+
+
+@revendedora_bp.route('/presupuestos/<int:cid>/whatsapp')
+@revendedora_requerido
+def presupuesto_whatsapp(cid):
+    """Abre un WhatsApp al cliente con un texto base. El PDF lo adjunta ella."""
+    coti = _mi_presupuesto_o_404(cid)
+    from urllib.parse import quote
+    nombre = (coti.nombre_cliente or '').split(' ')[0]
+    lineas = [f'Hola {nombre}! Te paso el presupuesto {coti.numero}.',
+              'Te adjunto el PDF con el detalle. Cualquier cosa me escribís 😊']
+    msg = '\n'.join(lineas)
+    numero = ''.join(c for c in (coti.whatsapp or '') if c.isdigit())
+    if not numero:
+        flash('El cliente no tiene un teléfono cargado.', 'error')
+        return redirect(url_for('revendedora.presupuesto_detalle', cid=cid))
+    if not numero.startswith('54'):
+        numero = '54' + numero
+    return redirect(f'https://wa.me/{numero}?text={quote(msg)}')
+
+
+@revendedora_bp.route('/presupuestos/<int:cid>/anular', methods=['POST'])
+@revendedora_requerido
+def presupuesto_anular(cid):
+    coti = _mi_presupuesto_o_404(cid)
+    if coti.pedido_id:
+        flash('Ya se convirtió en pedido; no se puede anular el presupuesto.', 'error')
+        return redirect(url_for('revendedora.presupuesto_detalle', cid=cid))
+    coti.estado = EstadoCotizacion.ANULADA
+    coti.modificada_en = _ahora()
+    db.session.commit()
+    flash(f'Presupuesto {coti.numero} anulado.', 'warning')
+    return redirect(url_for('revendedora.presupuestos'))
+
+
+@revendedora_bp.route('/presupuestos/<int:cid>/convertir', methods=['POST'])
+@revendedora_requerido
+def presupuesto_convertir(cid):
+    """
+    Convierte el presupuesto en un PEDIDO que cae en la bandeja de Juliana.
+    Mismo circuito que una venta normal (E4). El candado del 6% se revalida
+    sobre el total FINAL (cumple: bolsas multiplicadas) con el costo de HOY.
+    """
+    coti = _mi_presupuesto_o_404(cid)
+
+    if coti.estado == EstadoCotizacion.ANULADA:
+        flash('Este presupuesto está anulado.', 'error')
+        return redirect(url_for('revendedora.presupuesto_detalle', cid=cid))
+    if coti.pedido_id:
+        flash('Este presupuesto ya se convirtió en un pedido.', 'warning')
+        return redirect(url_for('revendedora.venta_detalle', pid=coti.pedido_id))
+    if not coti.cliente_id:
+        flash('El presupuesto no tiene un cliente asociado; no se puede convertir.', 'error')
+        return redirect(url_for('revendedora.presupuesto_detalle', cid=cid))
+
+    cliente = Cliente.query.get(coti.cliente_id)
+    if cliente is None or cliente.revendedora_id != current_user.id:
+        abort(403)
+    faltan = _falta_del_cliente(cliente)
+    if faltan:
+        flash(f'A "{cliente.nombre_completo}" le faltan datos: {", ".join(faltan)}. '
+              f'Completá su ficha antes de convertir.', 'error')
+        return redirect(url_for('revendedora.cliente_editar', cid=cliente.id))
+
+    es_cumple = (coti.tipo == TipoCotizacion.CUMPLE)
+    unidades = coti.unidades if es_cumple else 1
+
+    nivel = comisiones.nivel_de(current_user.id)
+    comision_pct = nivel['comision']
+
+    # Rearmar los items: cantidad FINAL (cumple x bolsas), precio que acepto el
+    # cliente (snapshot del presupuesto) y COSTO DE HOY (lo que cobra Torres ahora).
+    items_calc = []
+    faltantes = []
+    for it in coti.items:
+        p = Producto.query.filter_by(codigo=it.codigo, activo=True).first()
+        if p is None:
+            faltantes.append(it.nombre)
+            continue
+        cant_final = it.cantidad * unidades
+        items_calc.append({
+            'producto': p,
+            'cantidad': cant_final,
+            'precio_unitario': float(it.precio_unitario),
+            'costo_unitario': float(p.costo_neto),
+            'subtotal': round(float(it.precio_unitario) * cant_final, 2),
+        })
+
+    if faltantes:
+        flash('No se puede convertir: estos productos ya no están disponibles: '
+              + ', '.join(faltantes) + '. Rearmá el presupuesto.', 'error')
+        return redirect(url_for('revendedora.presupuesto_detalle', cid=cid))
+    if not items_calc:
+        flash('No se pudo convertir (sin productos válidos).', 'error')
+        return redirect(url_for('revendedora.presupuesto_detalle', cid=cid))
+
+    snap = comisiones.calcular(items_calc, comision_pct)
+
+    # Comercio: revalidar el minimo sobre el total final. Cumple: sin minimo.
+    if not es_cumple:
+        minimo = comisiones.minimo_neto()
+        if snap['neto_total'] < minimo:
+            flash(f'El pedido no llega al mínimo de comercio ({_pesos(minimo)} '
+                  f'netos). Ajustá el presupuesto.', 'error')
+            return redirect(url_for('revendedora.presupuesto_detalle', cid=cid))
+
+    # EL CANDADO: a la casa le tiene que quedar >= 6% sobre el total MULTIPLICADO.
+    if not comisiones.cumple_piso_casa(snap):
+        flash(f'No se puede convertir: con los costos de hoy, a la casa le quedaría '
+              f'{snap["margen_casa_pct"]}% (mínimo {comisiones.margen_casa_minimo()}%). '
+              f'Los costos de Torres cambiaron desde el presupuesto: rearmalo con '
+              f'precios actualizados.', 'error')
+        return redirect(url_for('revendedora.presupuesto_detalle', cid=cid))
+
+    # Observaciones del pedido: la nota + el equivalente en bolsas (para Juliana)
+    obs_partes = []
+    if coti.nota:
+        obs_partes.append(coti.nota)
+    if es_cumple:
+        obs_partes.append(f'🎉 Cumpleaños · equivale a {unidades} bolsa(s) iguales '
+                          f'(presupuesto {coti.numero}).')
+    else:
+        obs_partes.append(f'🏪 Comercio · presupuesto {coti.numero}.')
+    observaciones = ' · '.join(obs_partes) or None
+
+    try:
+        pedido = Pedido(
+            numero=generar_numero_pedido(OrigenPedido.REVENDEDORA),
+            origen=OrigenPedido.REVENDEDORA,
+            estado=EstadoPedido.PENDIENTE,          # va derecho a la bandeja de Juliana
+            nombre=cliente.nombre,
+            apellido=(cliente.apellido or '—'),
+            cuit=(cliente.dni_cuit or ''),
+            whatsapp=(cliente.telefono or ''),
+            email=cliente.email,
+            direccion=(cliente.direccion or ''),
+            zona=(cliente.localidad or 'Sin zona'),
+            observaciones=observaciones,
+            total=snap['total'],
+            revendedora_id=current_user.id,
+            cliente_id=cliente.id,
+            enviado_en=_ahora(),
+            # Snapshot de plata (ESTIMACION hasta que Juliana apruebe; ahi se
+            # vuelve a calcular y queda congelado)
+            neto_total=snap['neto_total'],
+            costo_total=snap['costo_total'],
+            margen_pct=snap['margen_pct'],
+            comision_pct=snap['comision_pct'],
+            comision_monto=snap['comision_monto'],
+            margen_casa_pct=snap['margen_casa_pct'],
+        )
+        db.session.add(pedido)
+        db.session.flush()
+        for it in items_calc:
+            db.session.add(ItemPedido(
+                pedido_id=pedido.id,
+                codigo=it['producto'].codigo,
+                nombre=it['producto'].nombre,
+                cantidad=it['cantidad'],
+                precio_unitario=it['precio_unitario'],
+                subtotal=it['subtotal'],
+                costo_unitario=it['costo_unitario'],
+            ))
+        # Vincular presupuesto <-> pedido y cerrar el presupuesto
+        coti.pedido_id = pedido.id
+        coti.estado = EstadoCotizacion.CERRADA
+        coti.modificada_en = _ahora()
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        flash('Hubo un problema al convertir el presupuesto. Probá de nuevo.', 'error')
+        return redirect(url_for('revendedora.presupuesto_detalle', cid=cid))
+
+    flash(f'Presupuesto convertido en el pedido {pedido.numero} ✓ '
+          f'Ya está en la bandeja de Juliana para aprobación.', 'success')
+    return redirect(url_for('revendedora.venta_detalle', pid=pedido.id))

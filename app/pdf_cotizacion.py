@@ -57,6 +57,11 @@ def generar_pdf_cotizacion(coti, ajustes):
     # Encabezado
     elems.append(Paragraph(ajustes.nombre_negocio, h_marca))
     elems.append(Paragraph('Catálogo Mayorista · Pilar, Zona Norte', h_sub))
+    # v0.27.0 · Si el presupuesto lo armo una revendedora, la firma es de ELLA:
+    # el cliente le compra a Nadia, no al negocio.
+    rev = getattr(coti, 'revendedora', None)
+    if rev is not None:
+        elems.append(Paragraph(f'Tu vendedora: <b>{rev.nombre_completo}</b>', h_sub))
     elems.append(Spacer(1, 6 * mm))
 
     # Cabecera del presupuesto + validez
@@ -163,9 +168,14 @@ def generar_pdf_cotizacion(coti, ajustes):
     elems.append(t_res)
     elems.append(Spacer(1, 8 * mm))
 
-    # Cierre con CTA (WhatsApp)
-    cierre = (f'Para confirmar tu pedido, escribinos por WhatsApp al '
-              f'<b>{ajustes.whatsapp}</b>. ¡Te esperamos!')
+    # Cierre con CTA (WhatsApp). v0.27.0: si es de una revendedora, el contacto
+    # es el DE ELLA (su nombre + su telefono); si no, el del negocio.
+    if rev is not None and (rev.telefono or '').strip():
+        cierre = (f'Para confirmar tu pedido, escribile a <b>{rev.nombre_completo}</b> '
+                  f'por WhatsApp al <b>{rev.telefono}</b>. ¡Te esperamos!')
+    else:
+        cierre = (f'Para confirmar tu pedido, escribinos por WhatsApp al '
+                  f'<b>{ajustes.whatsapp}</b>. ¡Te esperamos!')
     t_cta = Table([[Paragraph(cierre, normal)]], colWidths=[170 * mm])
     t_cta.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, -1), VERDE_SOFT),

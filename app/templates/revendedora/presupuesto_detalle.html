@@ -1,0 +1,148 @@
+{% extends 'revendedora/base_revendedora.html' %}
+{% block title %}Presupuesto {{ coti.numero }} · {{ app_nombre }}{% endblock %}
+{% block seccion %}Mi negocio · Presupuesto{% endblock %}
+{% block titulo %}{{ coti.tipo_etiqueta }} · {{ coti.numero }}{% endblock %}
+
+{% block contenido %}
+
+<p class="pd-volver"><a href="{{ url_for('revendedora.presupuestos') }}">← Volver a presupuestos</a></p>
+
+{% if pedido %}
+<div class="pd-banner ok">
+  ✅ Este presupuesto ya se convirtió en el pedido <b>{{ pedido.numero }}</b>
+  (<span>{{ pedido.estado_etiqueta }}</span>).
+  <a href="{{ url_for('revendedora.venta_detalle', pid=pedido.id) }}">Ver el pedido →</a>
+</div>
+{% elif coti.estado == 'ANULADA' %}
+<div class="pd-banner anulado">Este presupuesto está anulado.</div>
+{% else %}
+<div class="pd-banner">
+  📄 Es un <b>tanteo</b>: todavía no reserva stock ni paga comisión. Mandáselo a tu cliente;
+  si lo acepta, convertilo en pedido para que Juliana lo apruebe.
+</div>
+{% endif %}
+
+<div class="panel">
+  <div class="pd-grid">
+    <div>
+      <div class="pd-lbl">Cliente</div>
+      <div class="pd-val">{{ coti.nombre_cliente or '—' }}</div>
+      {% if coti.whatsapp %}<div class="pd-mini">📱 {{ coti.whatsapp }}</div>{% endif %}
+    </div>
+    <div>
+      <div class="pd-lbl">Estado</div>
+      <div class="pd-val"><span class="pd-estado est-{{ coti.estado|lower }}">{{ coti.estado_etiqueta }}</span></div>
+    </div>
+    <div>
+      <div class="pd-lbl">Creado</div>
+      <div class="pd-val">{{ coti.creada_en|ar_datetime }}</div>
+    </div>
+    {% if coti.tipo == 'CUMPLE' %}
+    <div>
+      <div class="pd-lbl">Bolsas</div>
+      <div class="pd-val">x {{ coti.unidades }}</div>
+    </div>
+    {% endif %}
+  </div>
+  {% if coti.nota %}<div class="pd-nota">📝 {{ coti.nota }}</div>{% endif %}
+</div>
+
+<div class="panel" style="padding:0; overflow:hidden;">
+  <table class="pd-tabla">
+    <thead>
+      <tr>
+        <th>{% if coti.tipo == 'CUMPLE' %}Por bolsa{% else %}Cant.{% endif %}</th>
+        <th>Producto</th>
+        <th style="text-align:right;">P. Unit.</th>
+        <th style="text-align:right;">Subtotal</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in coti.items %}
+      <tr>
+        <td style="text-align:center;">{{ it.cantidad }}</td>
+        <td>{{ it.nombre }}</td>
+        <td style="text-align:right;">{{ it.precio_unitario|pesos }}</td>
+        <td style="text-align:right;" class="pd-sub">{{ it.subtotal|pesos }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      {% if coti.tipo == 'CUMPLE' %}
+      <tr><td colspan="3" style="text-align:right;">Por bolsa</td><td style="text-align:right;">{{ coti.subtotal_productos|pesos }}</td></tr>
+      <tr><td colspan="3" style="text-align:right;">x {{ coti.unidades }} bolsas</td><td style="text-align:right;">—</td></tr>
+      {% endif %}
+      <tr class="pd-total-row">
+        <td colspan="3" style="text-align:right;">TOTAL (con IVA)</td>
+        <td style="text-align:right;">{{ coti.total|pesos }}</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
+<div class="pd-acciones">
+  <a href="{{ url_for('revendedora.presupuesto_pdf', cid=coti.id) }}" target="_blank" class="pd-btn pd-pdf">📄 Descargar PDF</a>
+  {% if coti.whatsapp %}
+  <a href="{{ url_for('revendedora.presupuesto_whatsapp', cid=coti.id) }}" target="_blank" class="pd-btn pd-wa">💬 WhatsApp al cliente</a>
+  {% endif %}
+
+  {% if not pedido and coti.estado != 'ANULADA' %}
+  <form method="POST" action="{{ url_for('revendedora.presupuesto_convertir', cid=coti.id) }}"
+        style="display:inline;" onsubmit="return confirm('¿Convertir en pedido? Va a la bandeja de Juliana para que lo apruebe.');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="pd-btn pd-conv">✅ Convertir en pedido</button>
+  </form>
+  <form method="POST" action="{{ url_for('revendedora.presupuesto_anular', cid=coti.id) }}"
+        style="display:inline;" onsubmit="return confirm('¿Anular este presupuesto?');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="pd-btn pd-anular">Anular</button>
+  </form>
+  {% endif %}
+</div>
+
+<style>
+  .pd-volver { margin-bottom:10px; }
+  .pd-volver a { font-size:.82rem; color:var(--bronce); font-weight:700; text-decoration:none; }
+  .pd-banner { font-size:.85rem; line-height:1.55; background:#faf8f4; border:1px solid var(--divider);
+    border-left:3px solid var(--bronce); border-radius:var(--radius); padding:13px 15px; margin-bottom:16px; }
+  .pd-banner.ok { background:#f0f8f1; border-left-color:#2e7d32; }
+  .pd-banner.ok a { color:#2e7d32; font-weight:800; }
+  .pd-banner.anulado { background:#fdeaea; border-left-color:#c62828; color:#c62828; }
+  .pd-banner a { color:var(--bronce); font-weight:700; text-decoration:none; }
+  .panel { margin-bottom:16px; }
+  .pd-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:16px; }
+  .pd-lbl { font-size:.64rem; letter-spacing:.1em; text-transform:uppercase; color:var(--text-soft); font-weight:700; }
+  .pd-val { font-size:.92rem; font-weight:700; margin-top:4px; }
+  .pd-mini { font-size:.76rem; color:var(--text-soft); margin-top:2px; }
+  .pd-nota { margin-top:14px; font-size:.82rem; color:#5a5345; background:#faf8f4;
+    border-radius:8px; padding:10px 12px; }
+  .pd-estado { font-size:.66rem; font-weight:800; padding:3px 9px; border-radius:20px; text-transform:uppercase; }
+  .est-borrador { background:#eef3ee; color:#3a6b46; }
+  .est-enviada  { background:#e8f0fb; color:#2a5b9e; }
+  .est-cerrada  { background:#2e7d32; color:#fff; }
+  .est-anulada  { background:#fdeaea; color:#c62828; }
+  .pd-tabla { width:100%; border-collapse:collapse; font-size:.85rem; }
+  .pd-tabla thead th { background:#faf8f4; text-align:left; padding:12px 16px;
+    font-size:.68rem; letter-spacing:.08em; text-transform:uppercase; color:var(--text-soft);
+    border-bottom:1px solid var(--divider); }
+  .pd-tabla tbody td { padding:11px 16px; border-bottom:1px solid #f0ece4; }
+  .pd-sub { font-weight:700; color:#6b5638; }
+  .pd-tabla tfoot td { padding:9px 16px; font-size:.8rem; color:var(--text-soft); }
+  .pd-total-row td { font-size:1rem; font-weight:800; color:#6b5638; border-top:2px solid var(--divider); }
+  .pd-acciones { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:4px; }
+  .pd-btn { padding:11px 16px; border-radius:var(--radius); font-size:.82rem; font-weight:800;
+    text-decoration:none; border:none; cursor:pointer; }
+  .pd-pdf { background:var(--carbon); color:#fff; }
+  .pd-wa { background:#25d366; color:#fff; }
+  .pd-conv { background:#2e7d32; color:#fff; }
+  .pd-anular { background:#fff; color:var(--danger); border:1px solid #f0d0d0; }
+  .pd-btn:hover { opacity:.92; }
+  @media (max-width:640px) {
+    .pd-acciones .pd-btn { flex:1; text-align:center; min-height:46px; display:flex;
+      align-items:center; justify-content:center; }
+    .pd-acciones form { flex:1; display:flex; }
+    .pd-acciones form .pd-btn { width:100%; }
+  }
+</style>
+
+{% endblock %}

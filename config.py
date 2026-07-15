@@ -29,6 +29,15 @@ v0.25.0 -> E4: LA BANDEJA DE APROBACION DE JULIANA. Aprobar / editar / rechazar
                las ventas de revendedora, con la comision congelandose al aprobar
                y el piso del 6% blindado tambien al editar. + 3 fixes (cobro
                deshabilitado explicado, precio elastico, telefono clickeable).
+v0.26.0 -> E5: MOTOR DE NIVELES automatico (permanencia mixta, sin cron).
+v0.26.1 -> E5-fix: import faltante en comisiones.py (500 en el portal).
+v0.27.0 -> E6: PRESUPUESTOS (Cumpleaños / Comercios) EN EL PORTAL DE LA
+               REVENDEDORA. Arma un presupuesto para su cliente con SU piso,
+               genera un PDF con SU contacto, y con "Convertir en pedido" lo manda
+               a la misma bandeja de aprobacion de Juliana (circuito E4). Cumple
+               sin minimo; comercio con minimo de $50k netos. Al convertir un
+               cumple, las bolsas se multiplican y el candado del 6% se revalida
+               sobre el total final. SIN migracion (los campos ya existian de E2).
 """
 import os
 from datetime import timedelta
@@ -42,7 +51,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.26.1'
+    APP_VERSION = '0.27.0'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 

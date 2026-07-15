@@ -31,6 +31,8 @@
          "Mis ventas" deja de ser un link muerto con el cartelito "pronto". #}
       <a href="{{ url_for('revendedora.vender') }}"
          class="nav-cta {% if 'vender' in request.endpoint %}activo{% endif %}">🛒 Vender</a>
+      <a href="{{ url_for('revendedora.presupuestos') }}"
+         class="{% if 'presupuesto' in request.endpoint %}activo{% endif %}">🧾 Presupuestos</a>
       <a href="{{ url_for('revendedora.ventas') }}"
          class="{% if 'venta' in request.endpoint %}activo{% endif %}">📋 Mis ventas</a>
       <a href="{{ url_for('revendedora.clientes') }}"

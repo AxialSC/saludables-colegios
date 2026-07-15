@@ -1,0 +1,401 @@
+{% extends 'revendedora/base_revendedora.html' %}
+{% block title %}{{ tipo_etiqueta }} · {{ app_nombre }}{% endblock %}
+{% block seccion %}Mi negocio · Presupuesto{% endblock %}
+{% block titulo %}{% if es_cumple %}🎉 Nuevo cumpleaños{% else %}🏪 Nuevo comercio{% endif %}{% endblock %}
+
+{% block contenido %}
+
+<div class="pa-intro">
+  Estás armando un <b>presupuesto</b>{% if es_cumple %} de cumpleaños{% else %} de comercio{% endif %}
+  en el nivel <b>{{ nivel.nombre }}</b> · comisión <b>{{ '%.0f'|format(nivel.comision) }}%</b>.
+  Es un <b>tanteo</b>: genera un PDF para mandarle a tu cliente. No reserva stock ni paga
+  comisión hasta que lo aceptes y lo conviertas en pedido.
+  {% if es_cumple %}
+  <br>Armá <b>una bolsa modelo</b> y después elegís cuántas bolsas iguales.
+  {% else %}
+  <br>Mínimo del comercio: <b>{{ minimo_neto|pesos }} netos</b> (sin IVA).
+  {% endif %}
+</div>
+
+<form method="POST" action="{{ url_for('revendedora.presupuesto_guardar') }}" id="form-pz">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<input type="hidden" name="tipo" value="{{ tipo }}">
+<input type="hidden" name="items_json" id="items_json">
+<input type="hidden" name="unidades" id="unidades_hidden" value="1">
+
+<!-- 1 · CLIENTE -->
+<div class="panel">
+  <h3 class="pa-h">1 · ¿Para qué cliente?</h3>
+  {% if not clientes %}
+  <p class="pa-vacio">
+    Todavía no tenés clientes cargados.
+    <a href="{{ url_for('revendedora.cliente_nuevo') }}">Agregá tu primer cliente →</a>
+  </p>
+  {% else %}
+  <div class="pa-clientes">
+    {% for fila in clientes %}
+    {% set c = fila.c %}
+    <label class="pa-cli {% if fila.falta %}incompleto{% endif %}">
+      <input type="radio" name="cliente_id" value="{{ c.id }}"
+             {% if cliente_sel == c.id %}checked{% endif %}
+             {% if fila.falta %}disabled{% endif %}>
+      <span class="pa-cli-info">
+        <span class="pa-cli-nom">{{ c.nombre_completo }}</span>
+        {% if fila.falta %}
+        <span class="pa-cli-falta">⚠️ Le faltan datos: {{ fila.falta|join(', ') }} ·
+          <a href="{{ url_for('revendedora.cliente_editar', cid=c.id) }}">Completar ficha</a></span>
+        {% else %}
+        <span class="pa-cli-dir">{{ c.direccion }}{% if c.localidad %} · {{ c.localidad }}{% endif %}</span>
+        {% endif %}
+      </span>
+    </label>
+    {% endfor %}
+  </div>
+  <p class="pa-nota">¿No está? <a href="{{ url_for('revendedora.cliente_nuevo') }}">Agregá un cliente nuevo →</a></p>
+  {% endif %}
+</div>
+
+<!-- 2 · PRODUCTOS -->
+<div class="panel">
+  <h3 class="pa-h">2 · {% if es_cumple %}Armá la bolsa{% else %}Agregá productos{% endif %}</h3>
+  <div class="pa-buscador">
+    <input type="text" id="pa-q" class="pa-input" autocomplete="off"
+           placeholder="Buscá por nombre, marca o código…">
+    {% if marcas %}
+    <select id="pa-filtro" data-tipo="marca" class="pa-input pa-sel">
+      <option value="">Todas las marcas</option>
+      {% for m in marcas %}<option value="{{ m }}">{{ m }}</option>{% endfor %}
+    </select>
+    {% else %}
+    <select id="pa-filtro" data-tipo="rubro" class="pa-input pa-sel">
+      <option value="">Todos los rubros</option>
+      {% for r in rubros %}<option value="{{ r }}">{{ r }}</option>{% endfor %}
+    </select>
+    {% endif %}
+  </div>
+  <div id="pa-resultados" class="pa-resultados">
+    <p class="pa-hint">Escribí algo o elegí {% if marcas %}una marca{% else %}un rubro{% endif %} para ver productos.</p>
+  </div>
+</div>
+
+<!-- 3 · CARRITO -->
+<div class="panel pa-carrito" id="pa-carrito" style="display:none;">
+  <div class="pa-carrito-head">
+    <h3 class="pa-h">3 · {% if es_cumple %}Cada bolsa lleva{% else %}Tu pedido{% endif %} (<span id="pa-count">0</span>)</h3>
+    <button type="button" class="pa-vaciar" onclick="vaciar()">Vaciar</button>
+  </div>
+
+  <div id="pa-lista"></div>
+
+  {% if es_cumple %}
+  <div class="pa-bolsas">
+    <label>🎉 Cantidad de bolsas iguales</label>
+    <input type="number" id="pa-bolsas" min="1" value="10">
+    <span class="pa-bolsas-hint">El total se multiplica por esta cantidad.</span>
+  </div>
+  {% endif %}
+
+  <div class="pa-field">
+    <label>Nota <small>(opcional, sale en el PDF)</small></label>
+    <input type="text" name="nota" class="pa-input" placeholder="Ej: entrega para el sábado 20">
+  </div>
+
+  <div class="pa-totales" id="pa-totales"></div>
+
+  <button type="submit" class="pa-enviar" id="pa-enviar" disabled>Guardar presupuesto</button>
+  <p class="pa-nota-final">
+    Después de guardarlo vas a poder descargar el PDF, mandárselo a tu cliente, y si lo acepta
+    convertirlo en pedido para que Juliana lo apruebe.
+  </p>
+</div>
+</form>
+
+<style>
+  .pa-intro { font-size:.86rem; line-height:1.65; color:#5a5345; background:#faf8f4;
+    border:1px solid var(--divider); border-left:3px solid var(--bronce);
+    border-radius:var(--radius); padding:14px 16px; margin-bottom:18px; }
+  .pa-h { font-size:.95rem; font-weight:700; margin-bottom:14px; color:var(--carbon); }
+  .panel { margin-bottom:18px; }
+  .pa-vacio, .pa-nota { font-size:.84rem; color:var(--text-soft); }
+  .pa-nota { margin-top:12px; }
+  .pa-vacio a, .pa-nota a { color:var(--bronce); font-weight:700; }
+
+  .pa-clientes { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:10px; }
+  .pa-cli { display:flex; align-items:flex-start; gap:11px; padding:13px 14px; cursor:pointer;
+    border:2px solid var(--divider); border-radius:12px; background:#fff; transition:all .14s; }
+  .pa-cli:hover { border-color:#d8cfbe; }
+  .pa-cli:has(input:checked) { border-color:var(--bronce); background:#faf6ef; }
+  .pa-cli.incompleto { background:#fffaf3; border-color:#f0dcc0; cursor:default; opacity:.85; }
+  .pa-cli-info { display:flex; flex-direction:column; gap:3px; min-width:0; }
+  .pa-cli-nom { font-weight:700; font-size:.88rem; }
+  .pa-cli-dir { font-size:.74rem; color:var(--text-soft); word-break:break-word; }
+  .pa-cli-falta { font-size:.74rem; color:#9a6200; line-height:1.45; word-break:break-word; }
+  .pa-cli-falta a { color:var(--bronce); font-weight:700; }
+
+  .pa-buscador { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+  .pa-input { padding:11px 13px; border:1px solid var(--divider); border-radius:var(--radius);
+    font-size:.9rem; background:#fff; outline:none; font-family:inherit; width:100%; }
+  .pa-input:focus { border-color:var(--bronce); }
+  .pa-buscador .pa-input { flex:1; min-width:200px; width:auto; }
+  .pa-sel { max-width:230px; cursor:pointer; }
+  .pa-resultados { max-height:340px; overflow-y:auto; border:1px solid var(--divider); border-radius:var(--radius); }
+  .pa-hint { font-size:.82rem; color:var(--text-soft); padding:14px; }
+
+  .pa-row { display:flex; align-items:center; gap:12px; padding:11px 14px; }
+  .pa-row:nth-child(even) { background:#f8f6f1; }
+  .pa-row-info { flex:1; min-width:0; }
+  .pa-row-nom { font-weight:700; font-size:.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pa-row-meta { font-size:.72rem; color:var(--text-soft); margin-top:3px; }
+  .pa-row-meta b { color:#6b5638; }
+  .pa-add { font-size:.76rem; font-weight:700; padding:7px 13px; border-radius:8px;
+    border:1px solid var(--bronce); background:#fff; color:#6b5638; cursor:pointer; white-space:nowrap; }
+  .pa-add:hover { background:var(--bronce); color:#fff; }
+  .pa-add:disabled { opacity:.6; cursor:default; background:#eef3ee; border-color:#bcdcbc; color:#2e7d32; }
+
+  .pa-carrito { border:2px solid var(--bronce); }
+  .pa-carrito-head { display:flex; align-items:center; justify-content:space-between; }
+  .pa-vaciar { border:none; background:none; font-size:.78rem; color:var(--danger); cursor:pointer; font-weight:700; }
+  .pa-item { display:flex; align-items:center; gap:12px; padding:13px 2px; flex-wrap:wrap; border-bottom:1px solid #f0ece4; }
+  .pa-item:last-child { border-bottom:none; }
+  .pa-item-info { flex:1; min-width:190px; }
+  .pa-item-nom { font-weight:700; font-size:.85rem; }
+  .pa-item-meta { font-size:.72rem; color:var(--text-soft); margin-top:3px; }
+  .pa-sub { font-size:.68rem; font-weight:800; color:#6b5638; }
+  .pa-ctrl { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+  .pa-cant { display:flex; align-items:center; gap:4px; }
+  .pa-cant label { font-size:.64rem; color:var(--text-soft); font-weight:700; text-transform:uppercase; }
+  .pa-cant input { width:64px; padding:6px; border:1px solid var(--divider); border-radius:8px;
+    text-align:center; font-weight:700; font-size:.85rem; outline:none; }
+  .pa-presets { display:inline-flex; border:1px solid var(--divider); border-radius:9px; overflow:hidden; }
+  .pa-preset { font-size:.68rem; font-weight:800; padding:6px 9px; border:none; cursor:pointer;
+    background:#f4f1ec; color:#8a857a; border-right:1px solid var(--divider); }
+  .pa-preset:last-child { border-right:none; }
+  .pa-preset:hover { background:#e9e3d8; color:#6b5638; }
+  .pa-preset.on { background:var(--bronce); color:#fff; }
+  .pa-preset.on.max { background:#2e7d32; }
+  .pa-precio { display:flex; align-items:center; gap:5px; }
+  .pa-precio input { width:clamp(104px, 14vw, 150px); min-width:104px; padding:7px 9px;
+    border:1px solid var(--divider); border-radius:8px; text-align:right; font-weight:700; font-size:.85rem; outline:none; }
+  .pa-precio input.at-min { border-color:#2e7d32; background:#f5fbf5; }
+  .pa-quitar { border:none; background:none; color:var(--danger); cursor:pointer; font-size:1rem; padding:0 3px; }
+
+  .pa-bolsas { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:16px;
+    padding:14px; background:#faf6ef; border:1px solid #e9dcc4; border-radius:var(--radius); }
+  .pa-bolsas label { font-size:.8rem; font-weight:800; color:#6b5638; }
+  .pa-bolsas input { width:90px; padding:9px; border:1px solid var(--divider); border-radius:8px;
+    text-align:center; font-weight:800; font-size:1rem; outline:none; }
+  .pa-bolsas-hint { font-size:.72rem; color:var(--text-soft); }
+
+  .pa-field { margin:16px 0 6px; }
+  .pa-field label { display:block; font-size:.72rem; font-weight:700; color:#555; margin-bottom:5px; }
+  .pa-field label small { font-weight:400; color:var(--text-soft); }
+
+  .pa-totales { margin-top:14px; padding-top:14px; border-top:2px solid var(--divider); }
+  .pa-tot { display:flex; justify-content:space-between; font-size:.86rem; padding:5px 0; }
+  .pa-tot .lbl { color:var(--text-soft); }
+  .pa-tot.grande { font-size:1.12rem; font-weight:800; color:#6b5638; border-top:1px solid var(--divider);
+    margin-top:6px; padding-top:10px; }
+  .pa-tot.comi { color:#2e7d32; font-weight:800; }
+  .pa-barra { height:6px; background:#eee7db; border-radius:999px; overflow:hidden; margin:12px 0 6px; }
+  .pa-barra span { display:block; height:100%; background:var(--bronce); border-radius:999px; transition:width .25s ease; }
+  .pa-barra.ok span { background:#2e7d32; }
+  .pa-falta { font-size:.8rem; text-align:center; color:#9a6200; font-weight:700; }
+  .pa-falta.ok { color:#2e7d32; }
+
+  .pa-enviar { width:100%; margin-top:14px; padding:15px; border:none; border-radius:var(--radius);
+    background:var(--carbon); color:#fff; font-size:.85rem; font-weight:800; letter-spacing:.08em;
+    text-transform:uppercase; cursor:pointer; transition:background .15s; }
+  .pa-enviar:hover:not(:disabled) { background:var(--bronce); }
+  .pa-enviar:disabled { background:#c8c8c0; cursor:not-allowed; }
+  .pa-nota-final { font-size:.75rem; color:var(--text-soft); text-align:center; margin-top:10px; line-height:1.5; }
+
+  @media (max-width:640px) {
+    .pa-clientes { grid-template-columns:1fr; }
+    .pa-sel { max-width:none; }
+    .pa-input, .pa-cant input, .pa-precio input, .pa-bolsas input { font-size:16px; }
+    .pa-enviar { min-height:48px; }
+  }
+</style>
+
+<script>
+(function () {
+  var IVA = 1.21;
+  var ES_CUMPLE = {{ 'true' if es_cumple else 'false' }};
+  var MIN_NETO = {{ minimo_neto }};
+  var COMISION = {{ nivel.comision }};
+
+  var Q = document.getElementById('pa-q');
+  var FIL = document.getElementById('pa-filtro');
+  var TIPO = FIL.getAttribute('data-tipo');
+  var RES = document.getElementById('pa-resultados');
+  var BOLSAS = document.getElementById('pa-bolsas');   // solo existe en cumple
+
+  var sel = {};
+  var tmr = null, reqId = 0;
+
+  function fmt(v) {
+    return '$' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function casi(a, b) { return Math.abs(a - b) < 0.01; }
+  function bolsas() {
+    if (!ES_CUMPLE || !BOLSAS) return 1;
+    var n = parseInt(BOLSAS.value, 10);
+    return (isNaN(n) || n < 1) ? 1 : n;
+  }
+
+  function buscar() {
+    var myId = ++reqId;
+    var q = Q.value.trim(), f = FIL.value;
+    if (!q && !f) {
+      RES.innerHTML = '<p class="pa-hint">Escribí algo o elegí ' +
+        (TIPO === 'marca' ? 'una marca' : 'un rubro') + ' para ver productos.</p>';
+      return;
+    }
+    var p = new URLSearchParams();
+    if (q) p.set('q', q);
+    if (f) p.set(TIPO, f);
+    RES.innerHTML = '<p class="pa-hint">Buscando…</p>';
+    fetch('{{ url_for("revendedora.vender_buscar") }}?' + p.toString())
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (myId === reqId) pintar(d); })
+      .catch(function () { RES.innerHTML = '<p class="pa-hint">Error al buscar.</p>'; });
+  }
+
+  function pintar(data) {
+    if (!data.length) { RES.innerHTML = '<p class="pa-hint">No se encontraron productos.</p>'; return; }
+    RES.innerHTML = data.map(function (p) {
+      var ya = !!sel[p.id];
+      return '<div class="pa-row"><div class="pa-row-info">' +
+          '<div class="pa-row-nom">' + p.nombre + '</div>' +
+          '<div class="pa-row-meta">Cód. ' + p.codigo +
+            ' · Lista: <b>' + fmt(p.lista) + '</b> · Tu mínimo: <b>' + fmt(p.minimo) + '</b></div>' +
+        '</div>' +
+        '<button type="button" class="pa-add" ' + (ya ? 'disabled' : '') +
+          " onclick='agregar(" + JSON.stringify(p) + ", this)'>" + (ya ? '✓ Agregado' : '+ Agregar') + '</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  window.agregar = function (p, btn) {
+    if (sel[p.id]) return;
+    sel[p.id] = { codigo: p.codigo, nombre: p.nombre, costo: p.costo,
+      lista: p.lista, medio: p.medio, minimo: p.minimo, precio: p.lista, cantidad: 1 };
+    if (btn) { btn.disabled = true; btn.textContent = '✓ Agregado'; }
+    render();
+  };
+  window.quitar = function (id) { delete sel[id]; render(); buscar(); };
+  window.vaciar = function () { sel = {}; render(); buscar(); };
+  window.preset = function (id, cual) {
+    var it = sel[id];
+    it.precio = (cual === 'lista') ? it.lista : (cual === 'medio') ? it.medio : it.minimo;
+    render();
+  };
+  window.cambiarPrecio = function (id, v) {
+    var n = parseFloat(v);
+    if (isNaN(n)) n = sel[id].minimo;
+    if (n < sel[id].minimo) n = sel[id].minimo;   // piso, tambien en el navegador
+    sel[id].precio = n;
+    render();
+  };
+  window.cambiarCant = function (id, v) {
+    var n = parseInt(v, 10);
+    sel[id].cantidad = (isNaN(n) || n < 1) ? 1 : n;
+    render();
+  };
+
+  function cual(it) {
+    if (casi(it.precio, it.minimo)) return 'max';
+    if (casi(it.precio, it.medio)) return 'medio';
+    if (casi(it.precio, it.lista)) return 'lista';
+    return '';
+  }
+
+  function render() {
+    var ids = Object.keys(sel);
+    var caja = document.getElementById('pa-carrito');
+    document.getElementById('pa-count').textContent = ids.length;
+    if (!ids.length) { caja.style.display = 'none'; return; }
+    caja.style.display = 'block';
+
+    document.getElementById('pa-lista').innerHTML = ids.map(function (id) {
+      var it = sel[id];
+      var c = cual(it);
+      var sub = it.precio * it.cantidad;
+      return '<div class="pa-item"><div class="pa-item-info">' +
+          '<div class="pa-item-nom">' + it.nombre + '</div>' +
+          '<div class="pa-item-meta">Mín: <b>' + fmt(it.minimo) + '</b> · ' +
+            '<span class="pa-sub">Subtotal ' + fmt(sub) + '</span></div>' +
+        '</div><div class="pa-ctrl">' +
+          '<div class="pa-cant"><label>' + (ES_CUMPLE ? 'x bolsa' : 'Cant.') + '</label>' +
+            '<input type="number" min="1" value="' + it.cantidad +
+            '" onchange="cambiarCant(\'' + id + '\', this.value)"></div>' +
+          '<div class="pa-presets">' +
+            '<button type="button" class="pa-preset ' + (c === 'lista' ? 'on' : '') + '" onclick="preset(\'' + id + '\',\'lista\')">Lista</button>' +
+            '<button type="button" class="pa-preset ' + (c === 'medio' ? 'on' : '') + '" onclick="preset(\'' + id + '\',\'medio\')">Medio</button>' +
+            '<button type="button" class="pa-preset max ' + (c === 'max' ? 'on' : '') + '" onclick="preset(\'' + id + '\',\'max\')">MÁX</button>' +
+          '</div>' +
+          '<div class="pa-precio"><span>$</span>' +
+            '<input type="number" step="0.01" min="' + it.minimo + '" class="' + (c === 'max' ? 'at-min' : '') +
+              '" value="' + it.precio.toFixed(2) + '" onchange="cambiarPrecio(\'' + id + '\', this.value)">' +
+            '<button type="button" class="pa-quitar" onclick="quitar(\'' + id + '\')">✕</button>' +
+          '</div>' +
+        '</div></div>';
+    }).join('');
+
+    var subtotal = 0, costoU = 0;
+    ids.forEach(function (id) {
+      var it = sel[id];
+      subtotal += it.precio * it.cantidad;
+      costoU += it.costo * it.cantidad;
+    });
+
+    var nb = bolsas();
+    var total = subtotal * nb;
+    var neto = total / IVA;
+    var comision = neto * COMISION / 100;
+
+    var html = '';
+    if (ES_CUMPLE) {
+      html += '<div class="pa-tot"><span class="lbl">Por bolsa</span><span>' + fmt(subtotal) + '</span></div>';
+      html += '<div class="pa-tot"><span class="lbl">Cantidad de bolsas</span><span>x ' + nb + '</span></div>';
+    }
+    html += '<div class="pa-tot grande"><span>Total (con IVA)</span><span>' + fmt(total) + '</span></div>';
+    html += '<div class="pa-tot"><span class="lbl">Neto (sin IVA) — base de tu comisión</span><span>' + fmt(neto) + '</span></div>';
+    html += '<div class="pa-tot comi"><span>Tu comisión (' + COMISION + '%)</span><span>' + fmt(comision) + '</span></div>';
+
+    var puede = true;
+    if (!ES_CUMPLE) {
+      var pct = Math.min(100, (neto / MIN_NETO) * 100);
+      var llega = neto >= MIN_NETO - 0.01;
+      puede = llega;
+      html += '<div class="pa-barra ' + (llega ? 'ok' : '') + '"><span style="width:' + pct + '%"></span></div>';
+      html += '<div class="pa-falta ' + (llega ? 'ok' : '') + '">' +
+        (llega ? '✓ Llegaste al mínimo de ' + fmt(MIN_NETO) + ' netos'
+               : 'Te faltan ' + fmt(MIN_NETO - neto) + ' netos para el mínimo') + '</div>';
+    }
+    document.getElementById('pa-totales').innerHTML = html;
+
+    var btn = document.getElementById('pa-enviar');
+    btn.disabled = !puede;
+    btn.textContent = puede ? 'Guardar presupuesto'
+                            : 'Falta para el mínimo (' + fmt(MIN_NETO - neto) + ')';
+  }
+
+  document.getElementById('form-pz').addEventListener('submit', function (e) {
+    var ids = Object.keys(sel);
+    if (!ids.length) { e.preventDefault(); alert('Agregá al menos un producto.'); return; }
+    var cli = document.querySelector('input[name="cliente_id"]:checked');
+    if (!cli) { e.preventDefault(); alert('Elegí a qué cliente le estás armando el presupuesto.'); return; }
+    document.getElementById('unidades_hidden').value = bolsas();
+    document.getElementById('items_json').value = JSON.stringify(ids.map(function (id) {
+      return { id: id, cantidad: sel[id].cantidad, precio: Number(sel[id].precio.toFixed(2)) };
+    }));
+  });
+
+  Q.addEventListener('input', function () { clearTimeout(tmr); tmr = setTimeout(buscar, 280); });
+  FIL.addEventListener('change', buscar);
+  if (BOLSAS) BOLSAS.addEventListener('input', render);
+})();
+</script>
+
+{% endblock %}

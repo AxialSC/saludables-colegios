@@ -1,0 +1,95 @@
+{% extends 'revendedora/base_revendedora.html' %}
+{% block title %}Presupuestos · {{ app_nombre }}{% endblock %}
+{% block seccion %}Mi negocio{% endblock %}
+{% block titulo %}🧾 Presupuestos{% endblock %}
+
+{% block contenido %}
+
+<div class="pz-acciones">
+  <a href="{{ url_for('revendedora.presupuesto_armar', tipo='CUMPLE') }}" class="pz-btn pz-cumple">🎉 Nuevo cumpleaños</a>
+  <a href="{{ url_for('revendedora.presupuesto_armar', tipo='COLEGIO') }}" class="pz-btn pz-comercio">🏪 Nuevo comercio</a>
+</div>
+
+<div class="pz-tabs">
+  <a href="{{ url_for('revendedora.presupuestos') }}" class="{% if not tipo_sel %}on{% endif %}">Todos</a>
+  <a href="{{ url_for('revendedora.presupuestos', tipo='CUMPLE') }}" class="{% if tipo_sel == 'CUMPLE' %}on{% endif %}">🎉 Cumpleaños</a>
+  <a href="{{ url_for('revendedora.presupuestos', tipo='COLEGIO') }}" class="{% if tipo_sel == 'COLEGIO' %}on{% endif %}">🏪 Comercios</a>
+</div>
+
+<div class="panel" style="padding:0; overflow:hidden;">
+  {% if cotis %}
+  <table class="pz-tabla">
+    <thead>
+      <tr>
+        <th>N°</th>
+        {% if not tipo_sel %}<th>Tipo</th>{% endif %}
+        <th>Cliente</th>
+        <th style="text-align:right;">Total</th>
+        <th>Estado</th>
+        <th>Fecha</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in cotis %}
+      <tr class="{% if c.estado == 'ANULADA' %}fuera{% endif %}">
+        <td class="mono">{{ c.numero }}</td>
+        {% if not tipo_sel %}<td>{{ c.tipo_etiqueta }}</td>{% endif %}
+        <td>{{ c.nombre_cliente or '—' }}</td>
+        <td style="text-align:right;" class="pz-total">{{ c.total|pesos }}</td>
+        <td>
+          <span class="pz-estado est-{{ c.estado|lower }}">{{ c.estado_etiqueta }}</span>
+          {% if c.pedido_id %}<span class="pz-conv">→ pedido</span>{% endif %}
+        </td>
+        <td class="pz-fecha">{{ c.creada_en|ar_datetime }}</td>
+        <td style="text-align:right;">
+          <a href="{{ url_for('revendedora.presupuesto_detalle', cid=c.id) }}" class="pz-ver">Ver →</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div style="text-align:center; padding:44px 20px;">
+    <h3 style="margin-bottom:6px;">Todavía no tenés presupuestos{% if tipo_sel == 'CUMPLE' %} de cumpleaños{% elif tipo_sel == 'COLEGIO' %} de comercios{% endif %}</h3>
+    <p style="color:var(--text-soft);">Armá uno nuevo con los botones de arriba. Es un tanteo:
+      no reserva stock ni paga comisión hasta que el cliente acepte y lo conviertas en pedido.</p>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+  .pz-acciones { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+  .pz-btn { padding:11px 16px; border-radius:var(--radius); font-size:.84rem; font-weight:800;
+    text-decoration:none; color:#fff; }
+  .pz-cumple { background:var(--bronce); }
+  .pz-comercio { background:var(--carbon); }
+  .pz-btn:hover { opacity:.92; }
+  .pz-tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+  .pz-tabs a { font-size:.78rem; font-weight:700; padding:7px 13px; border-radius:999px;
+    text-decoration:none; color:var(--text-soft); background:#f4f1ec; border:1px solid var(--divider); }
+  .pz-tabs a.on { background:var(--carbon); color:#fff; border-color:var(--carbon); }
+  .pz-tabla { width:100%; border-collapse:collapse; font-size:.85rem; }
+  .pz-tabla thead th { background:#faf8f4; text-align:left; padding:13px 16px;
+    font-size:.68rem; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--text-soft); border-bottom:1px solid var(--divider); }
+  .pz-tabla tbody td { padding:12px 16px; border-bottom:1px solid #f0ece4; }
+  .pz-tabla tbody tr:hover { background:#faf8f4; }
+  .pz-tabla tr.fuera { opacity:.5; }
+  .mono { font-family:'Courier New', monospace; color:var(--text-soft); }
+  .pz-total { font-weight:800; color:#6b5638; white-space:nowrap; }
+  .pz-fecha { font-size:.78rem; color:var(--text-soft); white-space:nowrap; }
+  .pz-estado { font-size:.66rem; font-weight:800; padding:3px 9px; border-radius:20px; text-transform:uppercase; }
+  .est-borrador { background:#eef3ee; color:#3a6b46; }
+  .est-enviada  { background:#e8f0fb; color:#2a5b9e; }
+  .est-cerrada  { background:#2e7d32; color:#fff; }
+  .est-anulada  { background:#fdeaea; color:#c62828; }
+  .pz-conv { font-size:.64rem; font-weight:800; color:#2e7d32; margin-left:6px; }
+  .pz-ver { font-size:.78rem; font-weight:700; color:var(--bronce); text-decoration:none; }
+  .pz-ver:hover { text-decoration:underline; }
+  @media (max-width:640px) {
+    .pz-fecha { display:none; }
+  }
+</style>
+
+{% endblock %}
