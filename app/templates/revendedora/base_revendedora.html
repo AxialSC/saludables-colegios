@@ -1,6 +1,13 @@
 {% extends 'base.html' %}
 
 {% block body %}
+<style>
+  /* v0.24.0 · El boton "Vender" del sidebar. Es la accion que da plata:
+     tiene que verse distinta a un link mas de la lista. */
+  .nav a.nav-cta { color: #E8DCC4; font-weight: 700; }
+  .nav a.nav-cta::after { content: ''; }
+  .nav a.nav-cta.activo { border-left-color: var(--gold); }
+</style>
 <div class="admin-layout">
 
   <!-- Sidebar -->
@@ -20,9 +27,14 @@
          class="{% if request.endpoint == 'revendedora.dashboard' %}activo{% endif %}">📊 Inicio</a>
 
       <div class="nav-sec">Mi negocio</div>
+      {# v0.24.0 · "Vender" es LA accion del portal: va primera y resaltada.
+         "Mis ventas" deja de ser un link muerto con el cartelito "pronto". #}
+      <a href="{{ url_for('revendedora.vender') }}"
+         class="nav-cta {% if 'vender' in request.endpoint %}activo{% endif %}">🛒 Vender</a>
+      <a href="{{ url_for('revendedora.ventas') }}"
+         class="{% if 'venta' in request.endpoint %}activo{% endif %}">📋 Mis ventas</a>
       <a href="{{ url_for('revendedora.clientes') }}"
          class="{% if 'cliente' in request.endpoint %}activo{% endif %}">📇 Mis clientes</a>
-      <a href="#" class="disabled">🛒 Mis ventas <span class="badge-soon">pronto</span></a>
 
       <div class="nav-sec">Herramientas</div>
       <a href="{{ url_for('revendedora.redes') }}"

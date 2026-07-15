@@ -1,0 +1,191 @@
+{% extends 'revendedora/base_revendedora.html' %}
+{% block title %}{{ p.numero }} · {{ app_nombre }}{% endblock %}
+{% block seccion %}Mi negocio{% endblock %}
+{% block titulo %}{{ p.numero }}{% endblock %}
+
+{% block contenido %}
+
+<a href="{{ url_for('revendedora.ventas') }}" class="vt-volver">← Volver a mis ventas</a>
+
+<!-- ===== Estado ===== -->
+<div class="vt-estado e-{{ p.estado|lower }}">
+  {% if p.estado == 'PENDIENTE' %}
+    <div class="vt-estado-ic">⏳</div>
+    <div>
+      <div class="vt-estado-tit">Esperando a Juliana</div>
+      <div class="vt-estado-txt">
+        Juliana está chequeando el stock real con la distribuidora.
+        <b>Todavía no le avises a tu cliente</b>: hasta que no confirme, el stock no está asegurado.
+      </div>
+    </div>
+  {% elif p.esta_aprobado %}
+    <div class="vt-estado-ic">✓</div>
+    <div>
+      <div class="vt-estado-tit">Venta aprobada</div>
+      <div class="vt-estado-txt">
+        Juliana confirmó el stock{% if p.aprobado_en %} el {{ p.aprobado_en|ar_datetime('%d/%m/%Y a las %H:%M') }}{% endif %}.
+        Ya podés avisarle a tu cliente.
+      </div>
+    </div>
+  {% elif p.estado == 'RECHAZADO' %}
+    <div class="vt-estado-ic">✕</div>
+    <div>
+      <div class="vt-estado-tit">Pedido rechazado</div>
+      <div class="vt-estado-txt">
+        {% if p.rechazado_motivo %}<b>Motivo:</b> {{ p.rechazado_motivo }}<br>{% endif %}
+        Podés armar un pedido nuevo con otros productos.
+      </div>
+    </div>
+  {% else %}
+    <div class="vt-estado-ic">•</div>
+    <div>
+      <div class="vt-estado-tit">{{ p.estado_etiqueta }}</div>
+    </div>
+  {% endif %}
+</div>
+
+<div class="vt-cols">
+
+  <!-- ===== Productos ===== -->
+  <div class="panel" style="padding:0; overflow:hidden;">
+    <div class="vt-head">Productos ({{ p.cantidad_items }} u.)</div>
+    <table class="vt-tabla">
+      <tbody>
+        {% for it in p.items %}
+        <tr>
+          <td>
+            <div class="vt-nom">{{ it.nombre }}</div>
+            <div class="vt-cod">Cód. {{ it.codigo }} · {{ it.cantidad }} × {{ it.precio_unitario|pesos }}</div>
+          </td>
+          <td class="vt-money">{{ it.subtotal|pesos }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="vt-tot">
+      <div class="vt-tot-row">
+        <span>Neto (sin IVA)</span><span>{{ (p.neto_total or 0)|pesos }}</span>
+      </div>
+      <div class="vt-tot-row">
+        <span>IVA (21%)</span>
+        <span>{{ (p.total|float - (p.neto_total or 0)|float)|pesos }}</span>
+      </div>
+      <div class="vt-tot-row grande">
+        <span>TOTAL</span><span>{{ p.total|pesos }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Costado ===== -->
+  <div class="vt-lado">
+
+    <!-- Comisión -->
+    <div class="panel vt-comi {% if p.paga_comision %}ok{% endif %}">
+      <div class="vt-comi-lab">
+        {% if p.paga_comision %}Tu comisión{% else %}Comisión estimada{% endif %}
+      </div>
+      <div class="vt-comi-num">{{ (p.comision_monto or 0)|pesos }}</div>
+      <div class="vt-comi-sub">
+        {{ '%.0f'|format(p.comision_pct or 0) }}% sobre {{ (p.neto_total or 0)|pesos }} netos
+      </div>
+      {% if p.paga_comision %}
+        {% if p.comision_pagada %}
+        <div class="vt-comi-tag pagada">✓ Comisión pagada</div>
+        {% else %}
+        <div class="vt-comi-tag">Pendiente de pago</div>
+        {% endif %}
+      {% elif p.estado == 'PENDIENTE' %}
+      <div class="vt-comi-nota">
+        Se confirma cuando Juliana apruebe la venta. La comisión queda
+        <b>congelada</b> con el porcentaje de ese día: si después subís de nivel,
+        esta venta no cambia.
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Cliente -->
+    <div class="panel">
+      <div class="vt-lab">Cliente</div>
+      <div class="vt-cli-nom">{{ p.cliente_completo }}</div>
+      <div class="vt-cli-d">Doc. {{ p.cuit }}</div>
+      <div class="vt-cli-d">Tel. {{ p.whatsapp }}</div>
+      <div class="vt-cli-d">{{ p.direccion }}</div>
+      <div class="vt-cli-d">{{ p.zona }}</div>
+      {% if p.observaciones %}
+      <div class="vt-obs"><b>Nota:</b> {{ p.observaciones }}</div>
+      {% endif %}
+    </div>
+
+    <!-- Acciones -->
+    {% if p.esta_aprobado %}
+    <a href="{{ url_for('revendedora.venta_whatsapp', pid=p.id) }}"
+       target="_blank" rel="noopener" class="vt-wa">
+      Avisarle al cliente por WhatsApp
+    </a>
+    {% endif %}
+    <a href="{{ url_for('revendedora.vender') }}" class="vt-otro">🛒 Armar otro pedido</a>
+
+  </div>
+</div>
+
+<style>
+  .vt-volver { font-size:.8rem; color:var(--bronce); font-weight:700; display:inline-block; margin-bottom:14px; }
+
+  .vt-estado { display:flex; gap:14px; align-items:flex-start; padding:16px 18px;
+    border-radius:var(--radius); border:1px solid var(--divider); background:#fff; margin-bottom:18px; }
+  .vt-estado-ic { width:36px; height:36px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:1rem; font-weight:800;
+    background:#f0ede8; color:#8a857a; }
+  .vt-estado-tit { font-weight:700; font-size:.95rem; margin-bottom:3px; }
+  .vt-estado-txt { font-size:.82rem; color:#5a5345; line-height:1.55; }
+  .vt-estado.e-pendiente { border-color:#e8c98a; background:#fffaf2; }
+  .vt-estado.e-pendiente .vt-estado-ic { background:#fff0d6; color:#9a6200; }
+  .vt-estado.e-confirmado, .vt-estado.e-entregado { border-color:#bcdcbc; background:#f5fbf5; }
+  .vt-estado.e-confirmado .vt-estado-ic, .vt-estado.e-entregado .vt-estado-ic { background:#dcefdc; color:#2e7d32; }
+  .vt-estado.e-rechazado { border-color:#f0c4c4; background:#fdf6f6; }
+  .vt-estado.e-rechazado .vt-estado-ic { background:#fadada; color:#c62828; }
+
+  .vt-cols { display:grid; grid-template-columns:1fr 320px; gap:18px; align-items:start; }
+  @media (max-width:900px) { .vt-cols { grid-template-columns:1fr; } }
+  .vt-lado { display:flex; flex-direction:column; gap:14px; }
+
+  .vt-head { background:var(--carbon); color:var(--gold); padding:12px 18px; font-size:.68rem;
+    font-weight:700; letter-spacing:.13em; text-transform:uppercase; }
+  .vt-tabla { width:100%; border-collapse:collapse; }
+  .vt-tabla td { padding:12px 18px; border-bottom:1px solid #f0ece4; vertical-align:top; }
+  .vt-nom { font-size:.85rem; font-weight:600; }
+  .vt-cod { font-size:.72rem; color:var(--text-soft); margin-top:3px; }
+  .vt-money { text-align:right; font-weight:800; white-space:nowrap; font-size:.88rem; }
+  .vt-tot { padding:14px 18px 18px; background:#faf8f4; }
+  .vt-tot-row { display:flex; justify-content:space-between; font-size:.84rem; padding:4px 0;
+    color:var(--text-soft); }
+  .vt-tot-row.grande { font-size:1.1rem; font-weight:800; color:#6b5638;
+    border-top:1px solid var(--divider); margin-top:7px; padding-top:11px; }
+
+  .vt-comi { text-align:center; border:2px solid var(--divider); }
+  .vt-comi.ok { border-color:#2e7d32; background:#f5fbf5; }
+  .vt-comi-lab { font-size:.66rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--bronce); }
+  .vt-comi-num { font-size:1.9rem; font-weight:800; color:#2e7d32; margin:6px 0 2px; }
+  .vt-comi-sub { font-size:.76rem; color:var(--text-soft); }
+  .vt-comi-tag { display:inline-block; margin-top:10px; font-size:.64rem; font-weight:700;
+    text-transform:uppercase; letter-spacing:.06em; padding:4px 10px; border-radius:6px;
+    background:#fff6e8; color:#9a6200; }
+  .vt-comi-tag.pagada { background:#eaf5ea; color:#2e7d32; }
+  .vt-comi-nota { font-size:.72rem; color:var(--text-soft); margin-top:12px; line-height:1.55; text-align:left; }
+
+  .vt-lab { font-size:.66rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--bronce); margin-bottom:8px; }
+  .vt-cli-nom { font-weight:700; font-size:.9rem; margin-bottom:5px; }
+  .vt-cli-d { font-size:.78rem; color:var(--text-soft); line-height:1.6; word-break:break-word; }
+  .vt-obs { font-size:.78rem; color:#5a5345; margin-top:10px; padding-top:10px;
+    border-top:1px solid var(--divider); line-height:1.55; }
+
+  .vt-wa { display:block; text-align:center; background:#25D366; color:#fff; font-weight:800;
+    font-size:.85rem; padding:14px; border-radius:var(--radius); }
+  .vt-wa:hover { background:#1da955; }
+  .vt-otro { display:block; text-align:center; background:#fff; border:1px solid var(--divider);
+    color:#4a4538; font-weight:700; font-size:.82rem; padding:12px; border-radius:var(--radius); }
+  .vt-otro:hover { background:var(--crema); border-color:#d8cfbe; }
+</style>
+{% endblock %}

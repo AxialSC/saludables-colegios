@@ -1,0 +1,126 @@
+{% extends 'revendedora/base_revendedora.html' %}
+{% block title %}Mis ventas · {{ app_nombre }}{% endblock %}
+{% block seccion %}Mi negocio{% endblock %}
+{% block titulo %}📋 Mis ventas{% endblock %}
+
+{% block contenido %}
+
+<div class="mv-bar">
+  <div class="mv-filtros">
+    <a href="{{ url_for('revendedora.ventas') }}"
+       class="mv-f {% if not estado_sel %}on{% endif %}">Todas ({{ total }})</a>
+    <a href="{{ url_for('revendedora.ventas', estado='PENDIENTE') }}"
+       class="mv-f {% if estado_sel == 'PENDIENTE' %}on{% endif %}">Esperando aprobación</a>
+    <a href="{{ url_for('revendedora.ventas', estado='CONFIRMADO') }}"
+       class="mv-f {% if estado_sel == 'CONFIRMADO' %}on{% endif %}">Aprobadas</a>
+    <a href="{{ url_for('revendedora.ventas', estado='ENTREGADO') }}"
+       class="mv-f {% if estado_sel == 'ENTREGADO' %}on{% endif %}">Entregadas</a>
+    <a href="{{ url_for('revendedora.ventas', estado='RECHAZADO') }}"
+       class="mv-f {% if estado_sel == 'RECHAZADO' %}on{% endif %}">Rechazadas</a>
+  </div>
+  <a href="{{ url_for('revendedora.vender') }}" class="mv-nuevo">🛒 Armar un pedido</a>
+</div>
+
+{% if not lista %}
+<div class="panel mv-vacio">
+  {% if estado_sel %}
+  <h3>No tenés ventas en este estado</h3>
+  <p><a href="{{ url_for('revendedora.ventas') }}">Ver todas tus ventas →</a></p>
+  {% else %}
+  <h3>Todavía no hiciste ninguna venta</h3>
+  <p style="margin-bottom:16px;">Armá tu primer pedido: elegí un cliente, buscá productos y mandáselo a Juliana.</p>
+  <a href="{{ url_for('revendedora.vender') }}" class="mv-nuevo">🛒 Armar mi primer pedido</a>
+  {% endif %}
+</div>
+{% else %}
+
+<div class="panel" style="padding:0; overflow:hidden;">
+  <table class="mv-tabla">
+    <thead>
+      <tr>
+        <th>Pedido</th>
+        <th>Cliente</th>
+        <th>Fecha</th>
+        <th style="text-align:right;">Total</th>
+        <th style="text-align:right;">Neto</th>
+        <th>Estado</th>
+        <th style="text-align:right;">Mi comisión</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in lista %}
+      <tr onclick="location.href='{{ url_for('revendedora.venta_detalle', pid=p.id) }}'">
+        <td class="mv-num">{{ p.numero }}</td>
+        <td>{{ p.cliente_completo }}</td>
+        <td class="mv-fecha">{{ p.creado|ar_datetime('%d/%m/%Y') }}</td>
+        <td class="mv-money">{{ p.total|pesos }}</td>
+        <td class="mv-money mv-soft">{{ (p.neto_total or 0)|pesos }}</td>
+        <td><span class="mv-badge e-{{ p.estado|lower }}">{{ p.estado_etiqueta }}</span></td>
+        <td class="mv-money">
+          {% if p.paga_comision %}
+            <span class="mv-comi">+{{ p.comision_monto|pesos }}</span>
+            {% if p.comision_pagada %}<span class="mv-pagada">pagada</span>{% endif %}
+          {% elif p.estado == 'PENDIENTE' %}
+            <span class="mv-est">~{{ (p.comision_monto or 0)|pesos }}<small>estimada</small></span>
+          {% else %}
+            <span class="mv-soft">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<p class="mv-nota">
+  💡 La comisión de un pedido <b>pendiente</b> es una <b>estimación</b>. Se confirma
+  cuando Juliana aprueba la venta con la distribuidora.
+</p>
+
+{% endif %}
+
+<style>
+  .mv-bar { display:flex; align-items:center; justify-content:space-between;
+    gap:14px; flex-wrap:wrap; margin-bottom:16px; }
+  .mv-filtros { display:flex; gap:7px; flex-wrap:wrap; }
+  .mv-f { font-size:.78rem; font-weight:700; padding:8px 13px; border-radius:8px;
+    background:#fff; border:1px solid var(--divider); color:#5a5345; }
+  .mv-f:hover { border-color:var(--bronce); }
+  .mv-f.on { background:var(--carbon); color:#fff; border-color:var(--carbon); }
+  .mv-nuevo { display:inline-flex; align-items:center; gap:7px; background:var(--bronce);
+    color:#fff; font-size:.82rem; font-weight:700; padding:10px 17px; border-radius:9px; }
+  .mv-nuevo:hover { filter:brightness(1.08); }
+
+  .mv-vacio { text-align:center; padding:44px 26px; }
+  .mv-vacio h3 { font-weight:600; margin-bottom:8px; }
+
+  .mv-tabla { width:100%; border-collapse:collapse; font-size:.85rem; }
+  .mv-tabla thead th { background:#faf8f4; text-align:left; padding:13px 16px;
+    font-size:.66rem; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--text-soft); border-bottom:1px solid var(--divider); white-space:nowrap; }
+  .mv-tabla tbody td { padding:13px 16px; border-bottom:1px solid #f0ece4; }
+  .mv-tabla tbody tr { cursor:pointer; }
+  .mv-tabla tbody tr:hover { background:#faf8f4; }
+  .mv-num { font-family:'Courier New',monospace; font-weight:700; color:#6b5638; white-space:nowrap; }
+  .mv-fecha { color:var(--text-soft); font-size:.78rem; white-space:nowrap; }
+  .mv-money { text-align:right; font-weight:700; white-space:nowrap; }
+  .mv-soft { color:var(--text-soft); font-weight:400; }
+  .mv-comi { color:#2e7d32; font-weight:800; }
+  .mv-est { color:#9a6200; font-weight:700; }
+  .mv-est small { display:block; font-size:.6rem; font-weight:600; text-transform:uppercase;
+    letter-spacing:.06em; opacity:.8; }
+  .mv-pagada { display:block; font-size:.6rem; color:var(--text-soft); font-weight:600;
+    text-transform:uppercase; letter-spacing:.06em; }
+
+  .mv-badge { font-size:.64rem; font-weight:700; padding:4px 9px; border-radius:6px;
+    text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; }
+  .e-pendiente  { background:#fff6e8; color:#9a6200; }
+  .e-confirmado { background:#eaf5ea; color:#2e7d32; }
+  .e-entregado  { background:#eaf5ea; color:#2e7d32; }
+  .e-rechazado  { background:#fdeaea; color:#c62828; }
+  .e-anulado    { background:#f0ede8; color:#8a857a; }
+  .e-borrador   { background:#f0ede8; color:#8a857a; }
+
+  .mv-nota { font-size:.78rem; color:var(--text-soft); margin-top:14px; line-height:1.55; }
+</style>
+{% endblock %}

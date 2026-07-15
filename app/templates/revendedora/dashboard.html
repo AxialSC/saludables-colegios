@@ -1,5 +1,5 @@
 {% extends 'revendedora/base_revendedora.html' %}
-
+{% block title %}Inicio · {{ app_nombre }}{% endblock %}
 {% block seccion %}Mi portal{% endblock %}
 {% block titulo %}Hola, {{ current_user.nombre }} 👋{% endblock %}
 
@@ -9,19 +9,24 @@
   <!-- Tarjetas resumen -->
   <div class="rv-cards">
     <div class="rv-card">
-      <div class="rv-card-lab">Mis clientes</div>
-      <div class="rv-card-num">{{ n_clientes }}</div>
-      <div class="rv-card-sub">{{ n_activos }} activo(s)</div>
+      <div class="rv-card-lab">Vendido (neto)</div>
+      <div class="rv-card-num">{{ vendido|pesos }}</div>
+      <div class="rv-card-sub">{{ n_aprobadas }} venta(s) aprobada(s)</div>
+    </div>
+    <div class="rv-card rv-verde">
+      <div class="rv-card-lab">Comisión a cobrar</div>
+      <div class="rv-card-num">{{ comision_a_cobrar|pesos }}</div>
+      <div class="rv-card-sub">de {{ comision_total|pesos }} ganados en total</div>
     </div>
     <div class="rv-card">
       <div class="rv-card-lab">Mi nivel</div>
       <div class="rv-card-num">{{ nivel.nombre }}</div>
-      <div class="rv-card-sub">Comisión {{ nivel.comision }}%</div>
+      <div class="rv-card-sub">Comisión {{ '%.0f'|format(nivel.comision) }}%</div>
     </div>
-    <div class="rv-card rv-soon">
-      <div class="rv-card-lab">Mis ventas</div>
-      <div class="rv-card-num">—</div>
-      <div class="rv-card-sub">Próximamente</div>
+    <div class="rv-card {% if n_pendientes %}rv-espera{% endif %}">
+      <div class="rv-card-lab">Esperando a Juliana</div>
+      <div class="rv-card-num">{{ n_pendientes }}</div>
+      <div class="rv-card-sub">{{ n_clientes }} cliente(s) en tu cartera</div>
     </div>
   </div>
 
@@ -29,68 +34,124 @@
   <div class="rv-panel">
     <div class="rv-panel-head"><span class="rv-dot">◆</span> Cómo subís de nivel</div>
     <div class="rv-panel-body">
+      {% if siguiente %}
       <p class="rv-text">
-        Tu comisión sale de la ganancia del sistema y sube según cuánto vendas.
-        Cuando activemos el módulo de ventas, tu progreso se va a actualizar solo.
+        Te faltan <b>{{ falta|pesos }}</b> de venta neta para pasar a
+        <b>{{ siguiente.nombre }}</b> y cobrar <b>{{ '%.0f'|format(siguiente.comision) }}%</b>.
       </p>
+      {% else %}
+      <p class="rv-text">
+        🏆 Llegaste al <b>nivel máximo</b>. Cobrás la comisión más alta: {{ '%.0f'|format(nivel.comision) }}%.
+      </p>
+      {% endif %}
       <div class="rv-niveles">
         {% for n in niveles %}
         <div class="rv-nivel {% if n.nombre == nivel.nombre %}on{% endif %}">
           <div class="rv-nivel-nom">{{ n.nombre }}</div>
-          <div class="rv-nivel-com">{{ n.comision }}%</div>
+          <div class="rv-nivel-com">{{ '%.0f'|format(n.comision) }}%</div>
           <div class="rv-nivel-desde">
-            {% if n.desde == 0 %}desde el inicio{% else %}vendiendo ${{ '{:,.0f}'.format(n.desde).replace(',', '.') }}{% endif %}
+            {% if n.desde == 0 %}desde el inicio{% else %}vendiendo {{ n.desde|pesos }}{% endif %}
           </div>
         </div>
         {% endfor %}
       </div>
+      <p class="rv-mini">
+        Tu comisión sale de la ganancia del sistema (no se le suma al precio del cliente),
+        y se calcula sobre el <b>neto</b>: sin IVA ni impuestos.
+      </p>
     </div>
   </div>
 
+  <!-- Últimas ventas -->
+  {% if ultimas %}
+  <div class="rv-panel">
+    <div class="rv-panel-head"><span class="rv-dot">◆</span> Tus últimas ventas</div>
+    <div class="rv-panel-body" style="padding:0;">
+      <table class="rv-tabla">
+        <tbody>
+        {% for p in ultimas %}
+          <tr onclick="location.href='{{ url_for('revendedora.venta_detalle', pid=p.id) }}'">
+            <td class="rv-num">{{ p.numero }}</td>
+            <td>{{ p.cliente_completo }}</td>
+            <td class="rv-money">{{ p.total|pesos }}</td>
+            <td>
+              <span class="rv-badge e-{{ p.estado|lower }}">{{ p.estado_etiqueta }}</span>
+            </td>
+            <td class="rv-money rv-comi">
+              {% if p.paga_comision %}+{{ p.comision_monto|pesos }}{% else %}—{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Accesos rápidos -->
   <div class="rv-acc">
-    <a href="{{ url_for('revendedora.clientes') }}" class="rv-acc-btn">📇 Ver mis clientes</a>
-    <a href="{{ url_for('revendedora.cliente_nuevo') }}" class="rv-acc-btn primary">+ Agregar cliente</a>
-    <a href="{{ url_for('cliente.catalogo') }}" target="_blank" class="rv-acc-btn">🛍️ Ir a la tienda</a>
+    <a href="{{ url_for('revendedora.vender') }}" class="rv-acc-btn primary">🛒 Armar un pedido</a>
+    <a href="{{ url_for('revendedora.ventas') }}" class="rv-acc-btn">📋 Mis ventas</a>
+    <a href="{{ url_for('revendedora.clientes') }}" class="rv-acc-btn">📇 Mis clientes</a>
+    <a href="{{ url_for('revendedora.cliente_nuevo') }}" class="rv-acc-btn">+ Agregar cliente</a>
   </div>
 
 </div>
 
 <style>
-  .rv { --carbon:#1A1A1A; --bronce:#8B6F47; --oro:#C2A05B; --crema:#F4F1EC; --crema2:#FAF8F4;
-        --linea:#E7E0D4; --oliva:#6B7A4F; font-size:14px; }
-  .rv-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:20px; }
-  .rv-card { background:#fff; border:1px solid var(--linea); border-radius:12px; padding:20px 22px;
+  .rv { --linea:#E7E0D4; --oliva:#6B7A4F; font-size:14px; }
+  .rv-cards { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px; }
+  .rv-card { background:#fff; border:1px solid var(--linea); border-radius:12px; padding:18px 20px;
              box-shadow:0 1px 2px rgba(26,26,26,.04); }
-  .rv-card-lab { font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--bronce); }
-  .rv-card-num { font-size:34px; font-weight:700; color:var(--carbon); line-height:1.1; margin-top:6px;
-                 font-family:'Cormorant Garamond',Georgia,serif; }
-  .rv-card-sub { font-size:13px; color:#9a8f7e; margin-top:2px; }
-  .rv-card.rv-soon { opacity:.6; }
+  .rv-card-lab { font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--bronce); }
+  .rv-card-num { font-size:26px; font-weight:700; color:var(--carbon); line-height:1.15; margin-top:6px; }
+  .rv-card-sub { font-size:12.5px; color:#9a8f7e; margin-top:3px; }
+  .rv-card.rv-verde .rv-card-num { color:#2e7d32; }
+  .rv-card.rv-espera { border-color:#e8c98a; background:#fffaf2; }
+  .rv-card.rv-espera .rv-card-num { color:#9a6200; }
 
   .rv-panel { background:#fff; border:1px solid var(--linea); border-radius:12px; overflow:hidden;
               margin-bottom:20px; box-shadow:0 1px 2px rgba(26,26,26,.04); }
-  .rv-panel-head { background:var(--carbon); color:var(--oro); padding:12px 20px; font-size:12px;
-                   font-weight:700; letter-spacing:.13em; text-transform:uppercase; display:flex; align-items:center; gap:9px; }
+  .rv-panel-head { background:var(--carbon); color:var(--gold); padding:12px 20px; font-size:12px;
+                   font-weight:700; letter-spacing:.13em; text-transform:uppercase;
+                   display:flex; align-items:center; gap:9px; }
   .rv-panel-head .rv-dot { font-size:10px; }
   .rv-panel-body { padding:20px; }
   .rv-text { font-size:13.5px; color:#5a5345; margin:0 0 16px; max-width:680px; line-height:1.55; }
+  .rv-mini { font-size:12px; color:#9a8f7e; margin-top:14px; line-height:1.55; }
   .rv-niveles { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
   .rv-nivel { border:1px solid var(--linea); border-radius:10px; padding:14px 16px; text-align:center; }
   .rv-nivel.on { border-color:var(--oliva); background:#F3F6EE; box-shadow:inset 0 0 0 1px var(--oliva); }
   .rv-nivel-nom { font-size:14px; font-weight:700; color:var(--carbon); }
-  .rv-nivel-com { font-size:24px; font-weight:700; color:var(--oliva);
-                  font-family:'Cormorant Garamond',Georgia,serif; }
+  .rv-nivel-com { font-size:24px; font-weight:700; color:var(--oliva); }
   .rv-nivel-desde { font-size:11.5px; color:#9a8f7e; }
+
+  .rv-tabla { width:100%; border-collapse:collapse; font-size:13px; }
+  .rv-tabla td { padding:12px 20px; border-bottom:1px solid #f0ece4; }
+  .rv-tabla tr { cursor:pointer; }
+  .rv-tabla tr:hover { background:#faf8f4; }
+  .rv-tabla tr:last-child td { border-bottom:none; }
+  .rv-num { font-family:'Courier New',monospace; font-weight:700; color:#6b5638; }
+  .rv-money { text-align:right; font-weight:700; white-space:nowrap; }
+  .rv-comi { color:#2e7d32; }
+  .rv-badge { font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:6px;
+              text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; }
+  .e-pendiente  { background:#fff6e8; color:#9a6200; }
+  .e-confirmado { background:#eaf5ea; color:#2e7d32; }
+  .e-entregado  { background:#eaf5ea; color:#2e7d32; }
+  .e-rechazado  { background:#fdeaea; color:#c62828; }
+  .e-anulado    { background:#f0ede8; color:#8a857a; }
+  .e-borrador   { background:#f0ede8; color:#8a857a; }
 
   .rv-acc { display:flex; gap:10px; flex-wrap:wrap; }
   .rv-acc-btn { display:inline-flex; align-items:center; gap:6px; background:#fff; border:1px solid var(--linea);
-                color:#4a4538; text-decoration:none; padding:11px 18px; border-radius:9px; font-size:14px;
+                color:#4a4538; padding:11px 18px; border-radius:9px; font-size:14px;
                 font-weight:600; transition:all .13s; }
   .rv-acc-btn:hover { background:var(--crema); border-color:#d8cfbe; }
   .rv-acc-btn.primary { background:var(--carbon); color:#fff; border-color:var(--carbon); }
   .rv-acc-btn.primary:hover { background:var(--bronce); border-color:var(--bronce); }
 
-  @media (max-width:720px){ .rv-cards, .rv-niveles { grid-template-columns:1fr; } }
+  @media (max-width:980px){ .rv-cards { grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:640px){ .rv-cards, .rv-niveles { grid-template-columns:1fr; } }
 </style>
 {% endblock %}

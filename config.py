@@ -22,6 +22,9 @@ v0.23.0 -> E2: CIMIENTO DEL FRENTE E. Migracion de la base: la venta de la
                revendedora, el circuito de aprobacion de Juliana y el snapshot
                de comision congelado. NO agrega pantallas todavia: solo la
                estructura, hecha UNA SOLA VEZ y bien.
+v0.24.0 -> E3: EL PORTAL DE VENTAS DE LA REVENDEDORA. Catalogo con buscador,
+               carrito con minimo de $50.000 NETOS, piso de ganancia por escalon
+               y envio a la bandeja de aprobacion de Juliana.
 """
 import os
 from datetime import timedelta
@@ -35,7 +38,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.23.0'
+    APP_VERSION = '0.24.0'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 
