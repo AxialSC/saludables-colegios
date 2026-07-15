@@ -42,7 +42,7 @@ from flask import current_app
 from sqlalchemy import func
 
 from .extensions import db
-from .models import IVA, Pedido, EstadoPedido
+from .models import IVA, Pedido, EstadoPedido, Usuario
 from . import pricing
 
 
