@@ -31,7 +31,7 @@ from werkzeug.utils import secure_filename
 
 from .extensions import db
 from .models import (Producto, Pedido, Cobro, ModificacionPedido, ItemPedido,
-                     get_ajustes, EstadoPedido, FormaPago, CategoriaProducto,
+                     get_ajustes, EstadoPedido, OrigenPedido, FormaPago, CategoriaProducto,
                      Oferta, Cotizacion, CotizacionItem, TipoCotizacion,
                      EstadoCotizacion, generar_numero_cotizacion,
                      Banner, ZonaBanner, DestinoBanner,
@@ -132,12 +132,55 @@ def dashboard():
     ultima_factura = Factura.query.order_by(Factura.subida_en.desc()).first()
     n_suscriptores = Suscriptor.query.filter_by(activo=True).count()
 
+    # ------------------------------------------------------------------
+    # v0.28.0 · ALERTAS OPERATIVAS (P1) — lo que Juliana tiene que VER al entrar.
+    # Todo lo que signifique "algo espera acción" o "alguien se olvidó de algo".
+    # Se calcula al consultar (sin cron, como todo lo temporal del sistema).
+    # ------------------------------------------------------------------
+    # Ventas de revendedora esperando aprobación (van a la bandeja, NO a Pedidos:
+    # editarlas en Pedidos haría que la revendedora pierda la comisión).
+    pend_rev = Pedido.query.filter(
+        Pedido.origen == OrigenPedido.REVENDEDORA,
+        Pedido.estado == EstadoPedido.PENDIENTE).count()
+    # Pedidos de la tienda web (y cotizaciones del panel) sin procesar.
+    pend_web = Pedido.query.filter(
+        Pedido.origen != OrigenPedido.REVENDEDORA,
+        Pedido.estado == EstadoPedido.PENDIENTE).count()
+
+    # Suscriptores nuevos de los últimos 7 días (no hay flag "contactado" en el
+    # modelo, así que el disparador es la fecha de alta: gente nueva para saludar).
+    hace_7 = _ahora() - timedelta(days=7)
+    susc_nuevos = Suscriptor.query.filter(
+        Suscriptor.activo.is_(True), Suscriptor.creado >= hace_7).count()
+
+    # Cobros pendientes: pedidos ya aprobados (confirmados o entregados) con saldo
+    # sin cobrar. 'esta_cobrado'/'saldo' son propiedades (suman la relación cobros),
+    # así que se filtra en Python sobre el set de aprobados (chico).
+    cobros_n = 0
+    cobros_monto = 0.0
+    aprobados = Pedido.query.filter(
+        Pedido.estado.in_([EstadoPedido.CONFIRMADO, EstadoPedido.ENTREGADO])).all()
+    for pp in aprobados:
+        if not pp.esta_cobrado:
+            cobros_n += 1
+            cobros_monto += pp.saldo
+
+    alertas = {
+        'pend_rev': pend_rev,
+        'pend_web': pend_web,
+        'susc_nuevos': susc_nuevos,
+        'cobros_n': cobros_n,
+        'cobros_monto': round(cobros_monto, 2),
+    }
+
     return render_template('admin/dashboard.html', stats=stats,
                            ultima_imp=ultima_imp, dias_precios=dias_precios,
                            nivel_precios=nivel_precios,
                            dias_aviso=DIAS_AVISO_PRECIOS,
                            ultima_factura=ultima_factura,
-                           n_suscriptores=n_suscriptores)
+                           n_suscriptores=n_suscriptores,
+                           alertas=alertas,
+                           pendientes_aprobacion=pend_rev)
 
 
 # ======================= PEDIDOS (CRM) =======================

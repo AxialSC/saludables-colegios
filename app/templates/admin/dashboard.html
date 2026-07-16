@@ -46,7 +46,87 @@
     }
     .dash-link:hover { text-decoration: underline; }
     .dash-vacio { color: var(--text-soft); font-size: 0.86rem; }
+
+    /* v0.28.0 · ALERTAS OPERATIVAS (lo que espera acción) */
+    .alertas-op { display: grid; gap: 10px; margin-bottom: 22px; }
+    .alerta-op {
+        display: flex; align-items: center; gap: 14px;
+        padding: 14px 18px; border-radius: var(--radius);
+        border: 1px solid transparent; border-left-width: 4px; font-size: 0.9rem;
+    }
+    .alerta-op .ic { font-size: 1.4rem; line-height: 1; flex-shrink: 0; }
+    .alerta-op .txt { flex: 1; min-width: 0; }
+    .alerta-op b { display: block; margin-bottom: 3px; }
+    .alerta-op small { display: block; color: inherit; opacity: .9; line-height: 1.45; }
+    .alerta-op .accion {
+        flex-shrink: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: .06em;
+        text-transform: uppercase; padding: 10px 16px; border-radius: 8px;
+        background: var(--carbon); color: var(--crema); white-space: nowrap;
+    }
+    .alerta-op .accion:hover { background: #000; }
+    .alerta-op.rev   { background: #fdeaea; border-color: #f3cccc; color: #8e2020; }
+    .alerta-op.web   { background: #fff6e8; border-color: #ffe0b3; color: #8a5a00; }
+    .alerta-op.cobro { background: #eef4fb; border-color: #cfe0f3; color: #1e4e79; }
+    .alerta-op.susc  { background: #f0ede8; border-color: var(--divider); color: #5a5148; }
+    .alerta-op .reco { margin-top: 5px; font-weight: 700; }
+    @media (max-width: 640px) {
+        .alerta-op { flex-wrap: wrap; }
+        .alerta-op .accion { width: 100%; text-align: center; margin-top: 4px; }
+    }
 </style>
+
+{# ===== ALERTAS OPERATIVAS (v0.28.0) — lo que espera acción, primero de todo ===== #}
+{% set hay_op = alertas.pend_rev or alertas.pend_web or alertas.cobros_n or alertas.susc_nuevos %}
+{% if hay_op %}
+<div class="alertas-op">
+
+    {% if alertas.pend_rev %}
+    <div class="alerta-op rev">
+        <span class="ic">👩‍💼</span>
+        <div class="txt">
+            <b>{{ alertas.pend_rev }} venta{{ 's' if alertas.pend_rev != 1 }} de revendedora esperando tu aprobación</b>
+            <small>Llamá a Torres, confirmá el stock y aprobá (podés ajustar cantidades) o rechazá.</small>
+            <small class="reco">⚠️ Editá estas ventas SOLO desde Aprobaciones. Si las tocás desde Pedidos, la revendedora pierde su comisión.</small>
+        </div>
+        <a class="accion" href="{{ url_for('aprobaciones.bandeja') }}">Ir a aprobar</a>
+    </div>
+    {% endif %}
+
+    {% if alertas.pend_web %}
+    <div class="alerta-op web">
+        <span class="ic">🧾</span>
+        <div class="txt">
+            <b>{{ alertas.pend_web }} pedido{{ 's' if alertas.pend_web != 1 }} sin procesar</b>
+            <small>Pedidos de la tienda web (y del panel) que todavía no tocaste.</small>
+        </div>
+        <a class="accion" href="{{ url_for('admin.pedidos', estado='PENDIENTE') }}">Ver pedidos</a>
+    </div>
+    {% endif %}
+
+    {% if alertas.cobros_n %}
+    <div class="alerta-op cobro">
+        <span class="ic">💵</span>
+        <div class="txt">
+            <b>{{ alertas.cobros_n }} pedido{{ 's' if alertas.cobros_n != 1 }} aprobado{{ 's' if alertas.cobros_n != 1 }} con saldo sin cobrar</b>
+            <small>Pendiente de cobro: <b>{{ alertas.cobros_monto|pesos }}</b>.</small>
+        </div>
+        <a class="accion" href="{{ url_for('admin.pedidos') }}">Ver pedidos</a>
+    </div>
+    {% endif %}
+
+    {% if alertas.susc_nuevos %}
+    <div class="alerta-op susc">
+        <span class="ic">📩</span>
+        <div class="txt">
+            <b>{{ alertas.susc_nuevos }} suscriptor{{ 'es' if alertas.susc_nuevos != 1 }} nuevo{{ 's' if alertas.susc_nuevos != 1 }} esta semana</b>
+            <small>Gente que se anotó en los últimos 7 días. Un mensajito de bienvenida suma.</small>
+        </div>
+        <a class="accion" href="{{ url_for('admin.suscriptores') }}">Ver suscriptores</a>
+    </div>
+    {% endif %}
+
+</div>
+{% endif %}
 
 {# ===== ALERTA DE PRECIOS (lo primero que se ve) ===== #}
 {% if nivel_precios == 'nunca' %}

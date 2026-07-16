@@ -38,6 +38,11 @@ v0.27.0 -> E6: PRESUPUESTOS (Cumpleaños / Comercios) EN EL PORTAL DE LA
                sin minimo; comercio con minimo de $50k netos. Al convertir un
                cumple, las bolsas se multiplican y el candado del 6% se revalida
                sobre el total final. SIN migracion (los campos ya existian de E2).
+v0.28.0 -> P1: ALERTAS OPERATIVAS EN EL DASHBOARD. Al entrar, Juliana ve lo que
+               espera accion: ventas de revendedora por aprobar (con recordatorio
+               de editarlas SOLO desde Aprobaciones), pedidos web sin procesar,
+               cobros pendientes (aprobados con saldo) y suscriptores nuevos de la
+               semana. Todo se calcula al consultar (sin cron). SIN migracion.
 """
 import os
 from datetime import timedelta
@@ -51,7 +56,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.27.0'
+    APP_VERSION = '0.28.0'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 
