@@ -60,16 +60,33 @@
                y no se puede estilar con CSS. Va SVG inline: se ve igual en todos
                lados y toma el color del boton (fill: currentColor).
                VERIFICADO contra carrito.js: agregarAlCarrito() solo LEE btn.dataset
-               y nunca reescribe el contenido del boton -> el icono no se borra. #}
-            <button class="t-add{% if of %} t-add-of{% endif %}"
-                    data-codigo="{{ p.codigo }}"
-                    data-nombre="{{ p.nombre }}"
-                    data-p1="{{ pr.x1 }}" data-p5="{{ pr.x5 }}" data-p10="{{ pr.x10 }}"
-                    {% if of %}data-oferta="1" data-poferta="{{ of.precio }}"{% endif %}
-                    onclick="agregarAlCarrito(this)">
-                <svg class="t-add-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 18Zm10 0a2 2 0 1 0 .001 4.001A2 2 0 0 0 17 18ZM7.16 14.26l.03-.12.9-1.64h7.45a2 2 0 0 0 1.75-1.03l3.58-6.49-1.74-.96-3.59 6.48H8.53L4.27 2H1v2h2l3.6 7.59-1.35 2.44A1.99 1.99 0 0 0 7 17h12v-2H7.42a.25.25 0 0 1-.26-.24Z"/></svg>
-                <span class="t-add-tx">Agregar</span>
-            </button>
+               y nunca reescribe el contenido del boton -> el icono no se borra.
+
+               v0.29.0 · BOX ESTILO CARREFOUR. El boton "Agregar" y el stepper
+               (- cant +) viven en un mismo contenedor .t-add-wrap. carrito.js
+               muestra uno u otro segun la cantidad de ESE producto en el carrito:
+                 · qty 0  -> se ve "Agregar" (verde marca).
+                 · qty>=1 -> se ve el stepper (verde interfaz = "esta en el carrito").
+               El boton conserva TODOS sus data-* y su onclick: carrito.js sigue
+               leyendolos igual, no se rompe nada. #}
+            <div class="t-add-wrap" data-codigo="{{ p.codigo }}">
+                <button class="t-add{% if of %} t-add-of{% endif %}"
+                        data-codigo="{{ p.codigo }}"
+                        data-nombre="{{ p.nombre }}"
+                        data-p1="{{ pr.x1 }}" data-p5="{{ pr.x5 }}" data-p10="{{ pr.x10 }}"
+                        {% if of %}data-oferta="1" data-poferta="{{ of.precio }}"{% endif %}
+                        onclick="agregarAlCarrito(this)">
+                    <svg class="t-add-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 18Zm10 0a2 2 0 1 0 .001 4.001A2 2 0 0 0 17 18ZM7.16 14.26l.03-.12.9-1.64h7.45a2 2 0 0 0 1.75-1.03l3.58-6.49-1.74-.96-3.59 6.48H8.53L4.27 2H1v2h2l3.6 7.59-1.35 2.44A1.99 1.99 0 0 0 7 17h12v-2H7.42a.25.25 0 0 1-.26-.24Z"/></svg>
+                    <span class="t-add-tx">Agregar</span>
+                </button>
+                <div class="t-step{% if of %} t-step-of{% endif %}" hidden>
+                    <button type="button" class="t-step-btn t-step-menos" aria-label="Quitar uno"
+                            onclick="cambiarCant('{{ p.codigo }}', -1)">−</button>
+                    <span class="t-step-qty" aria-live="polite">0</span>
+                    <button type="button" class="t-step-btn t-step-mas" aria-label="Agregar uno"
+                            onclick="cambiarCant('{{ p.codigo }}', 1)">+</button>
+                </div>
+            </div>
         </div>
     </div>
     {% endfor %}

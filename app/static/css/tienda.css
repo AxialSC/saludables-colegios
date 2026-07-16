@@ -451,6 +451,43 @@ a { color: inherit; text-decoration: none; }
    confirmacion visual de que el toque funciono. */
 .t-add-ok { background: var(--t-verde) !important; transform: scale(1.04); }
 
+/* v0.29.0 · BOX ESTILO CARREFOUR (botón "Agregar" <-> stepper − cant +) ------ */
+.t-add-wrap { margin-top: 11px; }
+.t-add { margin-top: 0; }                 /* el margen ahora lo pone .t-add-wrap */
+.t-add[hidden], .t-step[hidden] { display: none !important; }
+
+.t-step {
+    display: flex; align-items: stretch; overflow: hidden;
+    background: var(--t-verde); color: #fff;
+    border-radius: 999px; min-height: 42px;
+    box-shadow: 0 2px 8px rgba(47,111,78,.28);
+    animation: t-step-in .14s ease;
+    user-select: none;
+}
+@keyframes t-step-in { from { transform: scale(.96); opacity: .6; } to { transform: scale(1); opacity: 1; } }
+.t-step-btn {
+    border: none; background: transparent; color: #fff; cursor: pointer;
+    font-size: 1.35rem; font-weight: 800; line-height: 1;
+    width: 46px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .12s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+.t-step-btn:hover  { background: rgba(255,255,255,.16); }
+.t-step-btn:active { background: rgba(255,255,255,.30); }
+.t-step-qty {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    font-size: 0.98rem; font-weight: 800; letter-spacing: .02em; min-width: 2ch;
+}
+/* En oferta el stepper mantiene el rojo, para no perder el código de color */
+.t-step-of { background: var(--t-oferta); box-shadow: 0 2px 8px rgba(198,40,40,.28); }
+
+/* Vista LISTA: compacto y a la derecha */
+.t-grid.lista .t-add-wrap { order: 4; width: auto; margin: 0; flex-shrink: 0; }
+.t-grid.lista .t-step { min-height: 34px; }
+.t-grid.lista .t-step-btn { width: 36px; font-size: 1.15rem; }
+.t-grid.lista .t-step-qty { padding: 0 4px; font-size: 0.85rem; }
+
 /* ---------- Vista LISTA ---------- */
 .t-grid.lista { grid-template-columns: 1fr; gap: 7px; }
 .t-grid.lista .t-card { flex-direction: row; align-items: center; padding: 6px 10px; gap: 10px; }
@@ -623,6 +660,8 @@ a { color: inherit; text-decoration: none; }
 /* Touch targets: Apple y Google recomiendan 44px minimo para el pulgar */
 @media (max-width: 640px) {
     .t-add { min-height: 44px; }
+    .t-step { min-height: 46px; }
+    .t-step-btn { width: 52px; }
     .ci-controls button { width: 34px; height: 34px; }
     .cart-pedir { min-height: 48px; }
 }

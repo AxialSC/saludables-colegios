@@ -73,6 +73,30 @@
     setTimeout(function () { btn.classList.remove('t-add-ok'); }, 300);
   }
 
+  // v0.29.0 · CARREFOUR — sincroniza cada card con el carrito.
+  //   qty 0  -> se ve el boton "Agregar".
+  //   qty>=1 -> se ve el stepper (- qty +) con la cantidad de ESE producto.
+  // Recorre por el DOM (no toca sessionStorage), asi que es barato: son ~24 cards.
+  function sincronizarCards() {
+    var wraps = document.querySelectorAll('.t-add-wrap');
+    for (var i = 0; i < wraps.length; i++) {
+      var wrap = wraps[i];
+      var cod = wrap.getAttribute('data-codigo');
+      var qty = carrito[cod] ? carrito[cod].qty : 0;
+      var btn = wrap.querySelector('.t-add');
+      var step = wrap.querySelector('.t-step');
+      var qtyEl = wrap.querySelector('.t-step-qty');
+      if (qty >= 1) {
+        if (btn) btn.hidden = true;
+        if (step) step.hidden = false;
+        if (qtyEl) qtyEl.textContent = qty;
+      } else {
+        if (btn) btn.hidden = false;
+        if (step) step.hidden = true;
+      }
+    }
+  }
+
   // --- Acciones (globales para los onclick) ---
   window.agregarAlCarrito = function (btn) {
     const d = btn.dataset;
@@ -193,7 +217,23 @@
         btnPedir.textContent = 'Hacer el pedido';
       }
     }
+
+    // v0.29.0 · cada cambio del carrito refleja el stepper en las cards.
+    sincronizarCards();
   }
 
-  document.addEventListener('DOMContentLoaded', render);
+  // v0.29.0 · El buscador en vivo reemplaza el innerHTML de #resultados con
+  // cards NUEVAS (que no saben qué hay en el carrito). Este observer las vuelve
+  // a sincronizar tras cada búsqueda, sin tocar el script de catalogo.html.
+  function observarResultados() {
+    var cont = document.getElementById('resultados');
+    if (!cont || !window.MutationObserver) return;
+    new MutationObserver(function () { sincronizarCards(); })
+      .observe(cont, { childList: true });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    render();
+    observarResultados();
+  });
 })();

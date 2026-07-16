@@ -43,6 +43,11 @@ v0.28.0 -> P1: ALERTAS OPERATIVAS EN EL DASHBOARD. Al entrar, Juliana ve lo que
                de editarlas SOLO desde Aprobaciones), pedidos web sin procesar,
                cobros pendientes (aprobados con saldo) y suscriptores nuevos de la
                semana. Todo se calcula al consultar (sin cron). SIN migracion.
+v0.29.0 -> P2: BOX ESTILO CARREFOUR EN LA TIENDA. El boton "Agregar" al tocarlo
+               se transforma en un stepper (- cant +) con la cantidad de ese
+               producto; cambia de color (verde marca -> verde interfaz, rojo en
+               ofertas). Sincroniza con el carrito y se re-sincroniza tras cada
+               busqueda en vivo (observer, sin tocar catalogo.html). SIN migracion.
 """
 import os
 from datetime import timedelta
@@ -56,7 +61,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.28.0'
+    APP_VERSION = '0.29.0'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 
