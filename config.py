@@ -48,6 +48,11 @@ v0.29.0 -> P2: BOX ESTILO CARREFOUR EN LA TIENDA. El boton "Agregar" al tocarlo
                producto; cambia de color (verde marca -> verde interfaz, rojo en
                ofertas). Sincroniza con el carrito y se re-sincroniza tras cada
                busqueda en vivo (observer, sin tocar catalogo.html). SIN migracion.
+v0.30.0 -> P3: COBRO BLINDADO. El cobro de un pedido se habilita SOLO cuando esta
+               CONFIRMADO o ENTREGADO. En PENDIENTE el form se reemplaza por un
+               cartel ("primero confirma el pedido") y el backend rechaza el POST
+               igual (defensa en profundidad). Evita cobrar algo no confirmado.
+               SIN migracion.
 """
 import os
 from datetime import timedelta
@@ -61,7 +66,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.29.0'
+    APP_VERSION = '0.30.0'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 

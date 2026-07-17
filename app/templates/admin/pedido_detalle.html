@@ -140,19 +140,30 @@
             </div>
             {% endif %}
 
+            {# v0.30.0 · P3 — El cobro se habilita SOLO cuando el pedido ya está
+               confirmado o entregado. En PENDIENTE no se cobra: primero se
+               confirma (llamar a Torres / chequear stock). Cartel explicativo
+               en vez del form. El backend revalida lo mismo (defensa en profundidad). #}
             {% if not pedido.esta_anulado and not pedido.esta_cobrado %}
-            <form method="POST" action="{{ url_for('admin.pedido_cobro', pid=pedido.id) }}" style="margin-top:12px;">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="acc-row" style="margin-bottom:8px;">
-                    <select name="forma_pago" class="filtro-input" style="flex:1;">
-                        {% for cod, et in formas.items() %}<option value="{{ cod }}">{{ et }}</option>{% endfor %}
-                    </select>
-                    <input type="number" name="monto" step="0.01" min="0" placeholder="Monto"
-                           value="{{ '%.2f'|format(pedido.saldo) }}" class="filtro-input" style="width:120px;">
+                {% if pedido.estado in ['CONFIRMADO', 'ENTREGADO'] %}
+                <form method="POST" action="{{ url_for('admin.pedido_cobro', pid=pedido.id) }}" style="margin-top:12px;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="acc-row" style="margin-bottom:8px;">
+                        <select name="forma_pago" class="filtro-input" style="flex:1;">
+                            {% for cod, et in formas.items() %}<option value="{{ cod }}">{{ et }}</option>{% endfor %}
+                        </select>
+                        <input type="number" name="monto" step="0.01" min="0" placeholder="Monto"
+                               value="{{ '%.2f'|format(pedido.saldo) }}" class="filtro-input" style="width:120px;">
+                    </div>
+                    <input type="text" name="nota" placeholder="Nota (opcional)" class="filtro-input" style="width:100%; margin-bottom:8px;">
+                    <button class="btn btn-bronce btn-block">Registrar cobro</button>
+                </form>
+                {% elif pedido.estado == 'PENDIENTE' %}
+                <div class="cobro-bloqueado">
+                    🔒 <b>Primero confirmá el pedido</b> (arriba, en "Estado del pedido") para poder
+                    registrar cobros. No se cobra un pedido que todavía no está confirmado.
                 </div>
-                <input type="text" name="nota" placeholder="Nota (opcional)" class="filtro-input" style="width:100%; margin-bottom:8px;">
-                <button class="btn btn-bronce btn-block">Registrar cobro</button>
-            </form>
+                {% endif %}
             {% endif %}
         </div>
 
@@ -209,6 +220,8 @@
 .cobro-item { display:flex; justify-content:space-between; align-items:center; padding:8px 0;
     border-bottom:1px solid #f0ece4; font-size:0.78rem; }
 .x-mini { border:none; background:none; color:#c62828; cursor:pointer; font-size:0.75rem; }
+.cobro-bloqueado { margin-top:12px; font-size:0.8rem; line-height:1.5; color:#9a6200;
+    background:#fff6e8; border:1px solid #ffe0b3; border-radius:var(--radius); padding:12px 14px; }
 .panel-peligro { border-color:#f0d0d0; }
 
 /* ===== Historial de modificaciones (v0.9 — prolijo) ===== */

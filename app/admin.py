@@ -258,6 +258,13 @@ def pedido_cobro(pid):
     if pedido.esta_anulado:
         flash('El pedido está anulado.', 'error')
         return redirect(url_for('admin.pedido_detalle', pid=pid))
+    # v0.30.0 · P3 — No se cobra un pedido que todavía no está confirmado.
+    # Defensa en profundidad: el template ya oculta el form en PENDIENTE, pero el
+    # backend NO confía en el frontend. Primero se confirma el pedido, después se cobra.
+    if pedido.estado not in (EstadoPedido.CONFIRMADO, EstadoPedido.ENTREGADO):
+        flash('Primero confirmá el pedido (arriba, en "Estado del pedido") para poder '
+              'registrar cobros.', 'error')
+        return redirect(url_for('admin.pedido_detalle', pid=pid))
 
     forma = (request.form.get('forma_pago') or '').strip()
     if forma not in FormaPago.TODAS:
