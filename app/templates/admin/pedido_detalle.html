@@ -28,6 +28,13 @@
             <div class="dato"><span>Dirección</span><b>{{ pedido.direccion }}</b></div>
             <div class="dato"><span>Zona / Colegio</span><b>{{ pedido.zona }}</b></div>
             {% if pedido.observaciones %}<div class="dato"><span>Observaciones</span><b>{{ pedido.observaciones }}</b></div>{% endif %}
+            {# v0.35.1 · Con que dijo el cliente que iba a pagar. Es una INTENCION,
+               no un cobro: la plata que entra de verdad se registra abajo, en
+               "Cobros". Los pedidos viejos no lo tienen y no muestran nada. #}
+            {% if pedido.medio_pago_etiqueta %}
+            <div class="dato"><span>Quiere pagar con</span>
+                <b><span class="pago-pill">{{ pedido.medio_pago_etiqueta }}</span></b></div>
+            {% endif %}
             <div class="dato"><span>Origen</span><b>{{ pedido.dispositivo or '—' }} · IP {{ pedido.ip_origen or '—' }}</b></div>
             <div class="dato"><span>Fecha</span><b>{{ pedido.creado|ar_datetime }} hs</b></div>
         </div>
@@ -146,11 +153,23 @@
                en vez del form. El backend revalida lo mismo (defensa en profundidad). #}
             {% if not pedido.esta_anulado and not pedido.esta_cobrado %}
                 {% if pedido.estado in ['CONFIRMADO', 'ENTREGADO'] %}
+                {# v0.35.1 · Recordatorio de lo que ELIGIO el cliente, justo donde
+                   Juliana registra el cobro. Es una ayuda, no una imposicion: si
+                   dijo transferencia pero al final pago en efectivo, se registra
+                   efectivo sin problema. Manda lo que realmente entro. #}
+                {% if pedido.medio_pago_etiqueta %}
+                <div class="pago-elegido">
+                    El cliente eligió pagar con <b>{{ pedido.medio_pago_etiqueta }}</b>.
+                    Si al final pagó de otra forma, registrá la que realmente entró.
+                </div>
+                {% endif %}
                 <form method="POST" action="{{ url_for('admin.pedido_cobro', pid=pedido.id) }}" style="margin-top:12px;">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="acc-row" style="margin-bottom:8px;">
                         <select name="forma_pago" class="filtro-input" style="flex:1;">
-                            {% for cod, et in formas.items() %}<option value="{{ cod }}">{{ et }}</option>{% endfor %}
+                            {# Viene preseleccionado lo que eligio el cliente: un clic menos. #}
+                            {% for cod, et in formas.items() %}<option value="{{ cod }}"
+                                {% if pedido.medio_pago == cod %}selected{% endif %}>{{ et }}</option>{% endfor %}
                         </select>
                         <input type="number" name="monto" step="0.01" min="0" placeholder="Monto"
                                value="{{ '%.2f'|format(pedido.saldo) }}" class="filtro-input" style="width:120px;">
@@ -223,6 +242,13 @@
 .cobro-bloqueado { margin-top:12px; font-size:0.8rem; line-height:1.5; color:#9a6200;
     background:#fff6e8; border:1px solid #ffe0b3; border-radius:var(--radius); padding:12px 14px; }
 .panel-peligro { border-color:#f0d0d0; }
+
+/* ===== v0.35.1 · Medio de pago elegido por el cliente ===== */
+.pago-pill { display:inline-block; background:#eef4ff; color:#2b4b7d; border:1px solid #cbdcf7;
+    font-size:0.7rem; font-weight:800; padding:3px 10px; border-radius:999px; }
+.pago-elegido { margin-top:12px; font-size:0.78rem; line-height:1.5; color:#2b4b7d;
+    background:#eef4ff; border:1px solid #cbdcf7; border-radius:var(--radius); padding:10px 12px; }
+.pago-elegido b { font-weight:800; }
 
 /* ===== Historial de modificaciones (v0.9 — prolijo) ===== */
 .modif-item { padding:12px 0; border-bottom:1px solid #f0ece4; }

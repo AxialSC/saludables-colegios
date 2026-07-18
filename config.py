@@ -123,6 +123,15 @@ v0.35.0 -> P7: MEDIOS DE PAGO. Pantalla nueva en el panel (Sistema -> Medios de
                Se agrego QR a FormaPago (ahora tambien se puede registrar un
                cobro por QR). CON MIGRACION: migrar_v350.py (10 columnas en
                ajustes + medio_pago en pedidos, idempotente y con backup).
+v0.35.1 -> P7-cierre: EL MEDIO DE PAGO SE VE EN EL DETALLE DEL PEDIDO. Juliana
+               abre el pedido y ve "Quiere pagar con: Transferencia". Ademas, en
+               el bloque de Cobros aparece el recordatorio y el desplegable viene
+               PRESELECCIONADO con lo que eligio el cliente (un clic menos).
+               Es una ayuda, no una imposicion: si dijo transferencia y termino
+               pagando en efectivo, se registra efectivo. Manda lo que realmente
+               entro. Nuevo: propiedad Pedido.medio_pago_etiqueta. Los pedidos
+               viejos (sin medio) no muestran nada. SIN migracion (las columnas
+               ya entraron con migrar_v350).
 """
 import os
 from datetime import timedelta
@@ -136,7 +145,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.35.0'
+    APP_VERSION = '0.35.1'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 

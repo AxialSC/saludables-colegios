@@ -532,6 +532,17 @@ class Pedido(db.Model):
         return EstadoPedido.ETIQUETAS.get(self.estado, self.estado)
 
     @property
+    def medio_pago_etiqueta(self):
+        """
+        v0.35.0 · Con que medio dijo el cliente que iba a pagar, en lindo.
+        Devuelve None si el pedido no tiene ninguno (los pedidos viejos y los
+        de revendedora no lo tienen: ahi la pantalla no muestra nada).
+        """
+        if not self.medio_pago:
+            return None
+        return FormaPago.ETIQUETAS.get(self.medio_pago, self.medio_pago)
+
+    @property
     def origen_etiqueta(self):
         return OrigenPedido.ETIQUETAS.get(self.origen, self.origen)
 
