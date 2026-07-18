@@ -949,3 +949,85 @@ a { color: inherit; text-decoration: none; }
     font-size: 0.82rem; color: var(--t-text); line-height: 1.5; text-align: center;
     padding: 4px 0;
 }
+
+/* =====================================================================
+   v0.36.0 · HEADER DEL CHECKOUT Y LA CONFIRMACION — FIX DE ALINEACION
+   Estas tres clases (.t-header-top, .t-marca, .t-tagline) las usan
+   checkout.html y confirmacion.html desde siempre, pero NUNCA tuvieron
+   estilos: quedaron huerfanas cuando en v0.22 se rediseño el header de la
+   tienda (que paso a .t-head-main). Resultado: texto crudo pegado al borde
+   izquierdo, sin centrar.
+   Ahora comparten el MISMO ancho que .co-wrap (620px) y el mismo centrado,
+   asi la pagina se lee como una sola columna prolija, en PC y en celular.
+   ===================================================================== */
+.t-header-top {
+    max-width: 620px;
+    margin: 0 auto;
+    padding: 14px 16px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+}
+
+/* Nombre del negocio */
+.t-marca {
+    font-size: 1.3rem;
+    font-weight: 800;
+    letter-spacing: -.01em;
+    color: var(--t-marca-d);
+    line-height: 1.2;
+}
+
+/* Bajada: "Finalizá tu pedido" / "Catálogo mayorista · Pilar" */
+.t-tagline {
+    font-size: 0.84rem;
+    color: var(--t-soft);
+    line-height: 1.4;
+    margin-top: -6px;
+}
+
+/* ---- "← Seguir comprando" ahora es un BOTON de verdad ----
+   Antes era un link suelto que se perdia arriba a la izquierda. Ahora es
+   una pastilla con borde: se ve tocable (importante en celular, donde un
+   texto chico es dificil de acertar con el dedo). Al pasar el mouse se
+   pinta de verde y la flecha se corre hacia la izquierda, reforzando la
+   idea de "volver". */
+.t-volver {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: var(--t-marca);
+    background: var(--t-bg);
+    border: 1.5px solid var(--t-line);
+    padding: 9px 16px;
+    border-radius: 999px;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.t-volver::before {
+    content: '←';
+    font-size: 0.95rem;
+    line-height: 1;
+    transition: transform .15s ease;
+}
+.t-volver:hover {
+    background: var(--t-marca);
+    color: #fff;
+    border-color: var(--t-marca);
+}
+.t-volver:hover::before { transform: translateX(-3px); }
+.t-volver:active { transform: scale(.97); }
+
+/* En celular el boton ocupa todo el ancho: imposible errarle con el dedo */
+@media (max-width: 520px) {
+    .t-header-top { padding: 12px 14px 16px; gap: 10px; }
+    .t-volver { align-self: stretch; justify-content: center; }
+    .t-marca { font-size: 1.15rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .t-volver, .t-volver::before { transition: none; }
+}

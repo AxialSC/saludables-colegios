@@ -132,6 +132,20 @@ v0.35.1 -> P7-cierre: EL MEDIO DE PAGO SE VE EN EL DETALLE DEL PEDIDO. Juliana
                entro. Nuevo: propiedad Pedido.medio_pago_etiqueta. Los pedidos
                viejos (sin medio) no muestran nada. SIN migracion (las columnas
                ya entraron con migrar_v350).
+v0.36.0 -> P8: FIX DE ALINEACION DEL CHECKOUT Y LA CONFIRMACION. Las clases
+               .t-header-top, .t-marca y .t-tagline las usaban checkout.html y
+               confirmacion.html desde siempre, pero NUNCA tuvieron una linea de
+               CSS: quedaron huerfanas cuando en v0.22 se rediseño el header de
+               la tienda (que paso a .t-head-main). Por eso el encabezado se veia
+               como texto crudo apilado contra el borde izquierdo. Ahora comparten
+               el mismo ancho (620px) y el mismo centrado que .co-wrap, en PC y en
+               celular. Ademas "Seguir comprando" dejo de ser un link suelto y es
+               un BOTON con forma de pastilla: al pasar el mouse se pinta de verde
+               y la flecha se corre hacia la izquierda; en celular ocupa todo el
+               ancho (imposible errarle con el dedo). La flecha ahora la pone el
+               CSS (se saco del HTML) para poder animarla. Como las dos pantallas
+               comparten las clases, el arreglo del CSS cura las DOS de una.
+               SIN migracion.
 """
 import os
 from datetime import timedelta
@@ -145,7 +159,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.35.1'
+    APP_VERSION = '0.36.0'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 
