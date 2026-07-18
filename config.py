@@ -72,6 +72,21 @@ v0.32.0 -> P5: MENU DE CATEGORIAS ESTILO GONDOLA. El navbar horizontal verde se
                siguen accesibles en el desplegable "Todos los rubros". Iconos SVG
                inline (stroke=currentColor) para que se vean bien en el azulejo
                activo. Solo tienda: catalogo.html + tienda.css. SIN migracion.
+v0.33.0 -> P5-fix: CADA MENU EN SU LUGAR (PC vs CELULAR). En v0.32 el mosaico se
+               habia comido tambien el menu de la COMPU, y no era la idea: el
+               mosaico es una solucion de ESPACIO, y en una PC el espacio sobra.
+               Ahora:
+                 · COMPU  -> NAVBAR horizontal REDISEÑADO: las 8 categorias a la
+                   vista repartidas a lo ancho, cada una con su icono chico
+                   (Todo, Golosinas, Galletitas, Comestibles, Bebidas, Sin
+                   alcohol, Con alcohol, Saludables) + pastilla Ofertas a la
+                   derecha con el contador, en 2 tonos (amarilla -> roja).
+                 · CELULAR -> el MOSAICO de azulejos de v0.32 (linea de 4).
+               El corte es en 640px: se muestra uno u otro, nunca los dos
+               (clases .solo-pc / .solo-cel). Ademas se limpio una regla vieja
+               duplicada que hacia que la pastilla Ofertas ROJA volviera a
+               amarillo al pasarle el mouse. Solo tienda: catalogo.html +
+               tienda.css. SIN migracion.
 """
 import os
 from datetime import timedelta
@@ -85,7 +100,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.32.0'
+    APP_VERSION = '0.33.0'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 
