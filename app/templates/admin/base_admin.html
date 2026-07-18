@@ -65,6 +65,8 @@
             <div class="nav-sec">Sistema</div>
             <a href="{{ url_for('admin.ajustes') }}"
                class="{% if request.endpoint == 'admin.ajustes' %}activo{% endif %}">⚙️ Ajustes y precios</a>
+            <a href="{{ url_for('admin.medios_pago') }}"
+               class="{% if request.endpoint == 'admin.medios_pago' %}activo{% endif %}">💳 Medios de pago</a>
             {% if current_user.es_super_admin %}
             <a href="{{ url_for('admin.banners') }}"
                class="{% if 'banner' in request.endpoint %}activo{% endif %}">🖼️ Banners</a>

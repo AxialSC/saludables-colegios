@@ -88,9 +88,105 @@
                 <label>Observaciones <small>(horario de contacto, referencias…)</small></label>
                 <textarea name="observaciones" rows="2">{{ datos.observaciones if datos else '' }}</textarea>
             </div>
-
-            <button type="submit" class="co-submit" id="co-submit">Enviar pedido</button>
         </form>
+    </div>
+
+    <!-- =================================================================
+         v0.35.0 · COMO VA A PAGAR
+         Solo aparecen los medios que Juliana dejo PRENDIDOS en el panel
+         (Sistema -> Medios de pago). Si no hay ninguno prendido, esta
+         tarjeta entera no se muestra y el pedido se manda igual: nunca
+         se traba una venta por la configuracion de pagos.
+         Al elegir uno, se despliegan sus datos (CBU, alias, QR...).
+         ================================================================= -->
+    {% set hay_pagos = ajustes.pago_efectivo or ajustes.pago_transferencia
+                       or ajustes.pago_qr or ajustes.pago_mercadopago %}
+    {% if hay_pagos %}
+    <div class="co-card">
+        <h3>¿Cómo vas a pagar?</h3>
+        <p class="co-ayuda">
+            Elegí una opción. Coordinás el pago con Juliana cuando te confirme el pedido.
+        </p>
+
+        {% if ajustes.pago_efectivo %}
+        <label class="pg-opt">
+            <input type="radio" name="medio_pago" value="EFECTIVO" form="co-form"
+                   {% if not datos or datos.medio_pago == 'EFECTIVO' or not datos.medio_pago %}checked{% endif %}>
+            <span class="pg-txt">
+                <b>💵 Efectivo</b>
+                <small>Contra entrega o al retirar el pedido.</small>
+            </span>
+        </label>
+        {% endif %}
+
+        {% if ajustes.pago_transferencia %}
+        <label class="pg-opt">
+            <input type="radio" name="medio_pago" value="TRANSFERENCIA" form="co-form"
+                   {% if datos and datos.medio_pago == 'TRANSFERENCIA' %}checked{% endif %}>
+            <span class="pg-txt">
+                <b>🏦 Transferencia bancaria</b>
+                <small>Te pasamos los datos de la cuenta.</small>
+            </span>
+        </label>
+        <div class="pg-datos" data-para="TRANSFERENCIA">
+            {% if ajustes.transf_titular %}
+            <div class="pg-dato"><span>Titular</span><b>{{ ajustes.transf_titular }}</b></div>{% endif %}
+            {% if ajustes.transf_banco %}
+            <div class="pg-dato"><span>Banco</span><b>{{ ajustes.transf_banco }}</b></div>{% endif %}
+            {% if ajustes.transf_cbu %}
+            <div class="pg-dato"><span>CBU / CVU</span><b class="pg-copiable">{{ ajustes.transf_cbu }}</b></div>{% endif %}
+            {% if ajustes.transf_alias %}
+            <div class="pg-dato"><span>Alias</span><b class="pg-copiable">{{ ajustes.transf_alias }}</b></div>{% endif %}
+            {% if ajustes.transf_cuit %}
+            <div class="pg-dato"><span>CUIT</span><b>{{ ajustes.transf_cuit }}</b></div>{% endif %}
+            {% if not (ajustes.transf_cbu or ajustes.transf_alias) %}
+            <div class="pg-aviso">Te pasamos los datos de la cuenta por WhatsApp al confirmar el pedido.</div>
+            {% endif %}
+            <div class="pg-nota">Después de transferir, mandanos el comprobante por WhatsApp 📲</div>
+        </div>
+        {% endif %}
+
+        {% if ajustes.pago_qr %}
+        <label class="pg-opt">
+            <input type="radio" name="medio_pago" value="QR" form="co-form"
+                   {% if datos and datos.medio_pago == 'QR' %}checked{% endif %}>
+            <span class="pg-txt">
+                <b>📱 QR / Billetera</b>
+                <small>Escaneás con tu app y pagás.</small>
+            </span>
+        </label>
+        <div class="pg-datos" data-para="QR">
+            {% if ajustes.qr_imagen %}
+            <img class="pg-qr" src="{{ url_for('static', filename='img/pagos/' + ajustes.qr_imagen) }}"
+                 alt="QR para pagar">
+            <div class="pg-nota">Escaneá el QR con la app de tu banco o billetera.
+                Después mandanos el comprobante por WhatsApp 📲</div>
+            {% else %}
+            <div class="pg-aviso">Te enviamos el QR por WhatsApp al confirmar el pedido.</div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if ajustes.pago_mercadopago %}
+        <label class="pg-opt">
+            <input type="radio" name="medio_pago" value="MERCADOPAGO" form="co-form"
+                   {% if datos and datos.medio_pago == 'MERCADOPAGO' %}checked{% endif %}>
+            <span class="pg-txt">
+                <b>💳 Mercado Pago</b>
+                <small>Tarjeta o dinero en cuenta.</small>
+            </span>
+        </label>
+        <div class="pg-datos" data-para="MERCADOPAGO">
+            <div class="pg-aviso">Coordinamos el pago por Mercado Pago al confirmar tu pedido.</div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="co-card">
+        <div style="text-align:center;">
+            <button type="submit" class="co-submit" id="co-submit" form="co-form">Enviar pedido</button>
+        </div>
     </div>
 </div>
 
@@ -108,6 +204,13 @@
         cont.innerHTML = '<p class="co-vacio">Tu carrito está vacío. <a href="/">Volvé a la tienda</a>.</p>';
         document.getElementById('co-form').style.display = 'none';
         document.querySelector('.co-total-row').style.display = 'none';
+        // v0.35.0 · Con el carrito vacio tampoco tiene sentido mostrar el bloque
+        // de "como vas a pagar" ni el boton de enviar.
+        document.querySelectorAll('.co-card').forEach(function (c) {
+            if (c.querySelector('.pg-opt') || c.querySelector('#co-submit')) {
+                c.style.display = 'none';
+            }
+        });
     } else {
         let total = 0;
         cont.innerHTML = cods.map(function (cod) {
@@ -125,6 +228,47 @@
         cods.forEach(function (c) { simple[c] = carrito[c].qty; });
         document.getElementById('carrito_json').value = JSON.stringify(simple);
     }
+
+    /* =================================================================
+       v0.35.0 · Mostrar los datos del medio de pago ELEGIDO y esconder
+       los demas. Asi el cliente ve el CBU solo si eligio transferencia,
+       y el QR solo si eligio QR: una cosa a la vez, sin ruido.
+       ================================================================= */
+    (function () {
+        var radios = document.querySelectorAll('input[name="medio_pago"]');
+        if (!radios.length) return;
+
+        function refrescar() {
+            var elegido = document.querySelector('input[name="medio_pago"]:checked');
+            var valor = elegido ? elegido.value : null;
+            document.querySelectorAll('.pg-datos').forEach(function (d) {
+                d.style.display = (d.dataset.para === valor) ? 'block' : 'none';
+            });
+            document.querySelectorAll('.pg-opt').forEach(function (o) {
+                var r = o.querySelector('input[name="medio_pago"]');
+                o.classList.toggle('elegido', !!(r && r.checked));
+            });
+        }
+
+        radios.forEach(function (r) { r.addEventListener('change', refrescar); });
+        refrescar();   // estado inicial
+    })();
+
+    /* Tocar un CBU o alias lo copia al portapapeles: el cliente no tiene que
+       seleccionar 22 digitos con el dedo en el celular. */
+    document.querySelectorAll('.pg-copiable').forEach(function (el) {
+        el.addEventListener('click', function () {
+            var txt = el.textContent.trim();
+            var avisar = function () {
+                var antes = el.textContent;
+                el.textContent = '¡Copiado! ✓';
+                setTimeout(function () { el.textContent = antes; }, 1200);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(txt).then(avisar, function () {});
+            }
+        });
+    });
 </script>
 
 </body>

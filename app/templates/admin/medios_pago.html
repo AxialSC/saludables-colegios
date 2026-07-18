@@ -1,0 +1,273 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Medios de pago · {{ app_nombre }}{% endblock %}
+{% block seccion %}Sistema{% endblock %}
+{% block titulo %}Medios de pago{% endblock %}
+
+{% block contenido %}
+<style>
+    /* v0.35.0 · Cada medio de pago es una TARJETA con su interruptor arriba.
+       Si el interruptor esta apagado, los campos de adentro se ven grises:
+       queda claro de un vistazo que ese medio no se le muestra al cliente. */
+    .mp-wrap { max-width: 760px; }
+
+    .mp-aviso {
+        background: #FBF4E6; border: 1px solid #E8D9B0; color: #7a5b1e;
+        border-radius: 9px; padding: 12px 14px; margin-bottom: 20px;
+        font-size: 0.83rem; line-height: 1.55;
+    }
+
+    .mp-card {
+        border: 1px solid var(--divider); border-radius: 10px;
+        margin-bottom: 16px; overflow: hidden; background: #fff;
+    }
+    .mp-head {
+        display: flex; align-items: center; gap: 10px;
+        padding: 12px 16px; background: var(--carbon, #1A1A1A); color: #fff;
+    }
+    .mp-head .mp-ic { font-size: 1rem; }
+    .mp-head .mp-tit {
+        font-size: 0.76rem; font-weight: 800; letter-spacing: .09em;
+        text-transform: uppercase;
+    }
+    .mp-head .mp-estado {
+        margin-left: auto; font-size: 0.7rem; font-weight: 700;
+        letter-spacing: .06em; opacity: .75;
+    }
+    .mp-body { padding: 16px; }
+
+    .mp-check { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 4px; }
+    .mp-check input { margin-top: 3px; width: 16px; height: 16px; cursor: pointer; }
+    .mp-check label {
+        font-size: 0.78rem; font-weight: 700; letter-spacing: .05em;
+        text-transform: uppercase; cursor: pointer; color: var(--text);
+    }
+    .mp-check .mp-sub {
+        display: block; font-size: 0.76rem; font-weight: 400; letter-spacing: 0;
+        text-transform: none; color: var(--text-soft); margin-top: 3px; line-height: 1.5;
+    }
+
+    .mp-campos { margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+    .mp-campos .campo.full { grid-column: 1 / -1; }
+    @media (max-width: 700px) { .mp-campos { grid-template-columns: 1fr; } }
+
+    /* Apagado -> todo lo de adentro se ve gris y no invita a completarlo */
+    .mp-body.apagado .mp-campos,
+    .mp-body.apagado .mp-nota,
+    .mp-body.apagado .mp-qr-box { opacity: .42; }
+
+    .mp-nota {
+        margin-top: 14px; padding: 11px 13px; border-radius: 8px;
+        background: #EEF4FF; border: 1px solid #CBDCF7; color: #2b4b7d;
+        font-size: 0.78rem; line-height: 1.55;
+    }
+    .mp-nota b { font-weight: 800; }
+
+    .mp-qr-box { margin-top: 16px; display: flex; gap: 18px; align-items: flex-start; flex-wrap: wrap; }
+    .mp-qr-actual { text-align: center; }
+    .mp-qr-actual img {
+        width: 130px; height: 130px; object-fit: contain;
+        border: 1px solid var(--divider); border-radius: 8px; padding: 6px; background: #fff;
+    }
+    .mp-qr-vacio {
+        width: 130px; height: 130px; display: flex; align-items: center; justify-content: center;
+        border: 2px dashed var(--divider); border-radius: 8px;
+        color: var(--text-soft); font-size: 0.72rem; text-align: center; padding: 10px;
+    }
+    .mp-qr-lb {
+        font-size: 0.66rem; letter-spacing: .08em; text-transform: uppercase;
+        color: var(--text-soft); margin-bottom: 6px; font-weight: 700;
+    }
+    .mp-qr-sub { font-size: 0.75rem; color: var(--text-soft); margin-top: 6px; line-height: 1.5; }
+    .mp-qr-file { flex: 1; min-width: 240px; }
+
+    .mp-mp-pronto {
+        display: inline-block; background: #E8E4DC; color: #6b5638;
+        font-size: 0.64rem; font-weight: 800; letter-spacing: .08em;
+        text-transform: uppercase; padding: 3px 9px; border-radius: 999px;
+        margin-left: 8px;
+    }
+</style>
+
+<div class="mp-wrap">
+
+    <div class="mp-aviso">
+        Lo que cargues acá es <b>lo que ve el cliente en la tienda al momento de pagar</b>.
+        El cobro se confirma como siempre: el cliente paga, te manda el comprobante por
+        WhatsApp y vos lo verificás en tu cuenta. Esto <b>no cobra automático</b> todavía.
+        Lo que dejes <b>apagado no se le muestra</b> al cliente.
+    </div>
+
+    <form method="POST" action="{{ url_for('admin.medios_pago') }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- ============ EFECTIVO ============ -->
+        <div class="mp-card">
+            <div class="mp-head">
+                <span class="mp-ic">💵</span>
+                <span class="mp-tit">Efectivo</span>
+                <span class="mp-estado">{{ 'Visible' if aj.pago_efectivo else 'Oculto' }}</span>
+            </div>
+            <div class="mp-body {% if not aj.pago_efectivo %}apagado{% endif %}" data-body="efectivo">
+                <div class="mp-check">
+                    <input type="checkbox" id="pago_efectivo" name="pago_efectivo"
+                           data-toggle="efectivo" {% if aj.pago_efectivo %}checked{% endif %}>
+                    <label for="pago_efectivo">
+                        Aceptar pago en efectivo
+                        <span class="mp-sub">Contra entrega o al retirar el pedido.</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ TRANSFERENCIA ============ -->
+        <div class="mp-card">
+            <div class="mp-head">
+                <span class="mp-ic">🏦</span>
+                <span class="mp-tit">Transferencia</span>
+                <span class="mp-estado">{{ 'Visible' if aj.pago_transferencia else 'Oculto' }}</span>
+            </div>
+            <div class="mp-body {% if not aj.pago_transferencia %}apagado{% endif %}" data-body="transferencia">
+                <div class="mp-check">
+                    <input type="checkbox" id="pago_transferencia" name="pago_transferencia"
+                           data-toggle="transferencia" {% if aj.pago_transferencia %}checked{% endif %}>
+                    <label for="pago_transferencia">
+                        Aceptar transferencia bancaria
+                        <span class="mp-sub">El cliente ve estos datos para transferirte.</span>
+                    </label>
+                </div>
+
+                <div class="mp-campos">
+                    <div class="campo">
+                        <label for="transf_titular">Titular de la cuenta</label>
+                        <input type="text" id="transf_titular" name="transf_titular"
+                               value="{{ aj.transf_titular or '' }}" placeholder="Ej: Juliana Pérez">
+                    </div>
+                    <div class="campo">
+                        <label for="transf_banco">Banco / Billetera</label>
+                        <input type="text" id="transf_banco" name="transf_banco"
+                               value="{{ aj.transf_banco or '' }}" placeholder="Ej: Banco Galicia">
+                    </div>
+                    <div class="campo">
+                        <label for="transf_cbu">CBU / CVU <small>(22 dígitos)</small></label>
+                        <input type="text" id="transf_cbu" name="transf_cbu" inputmode="numeric"
+                               maxlength="22" value="{{ aj.transf_cbu or '' }}"
+                               placeholder="0000000000000000000000">
+                    </div>
+                    <div class="campo">
+                        <label for="transf_alias">Alias</label>
+                        <input type="text" id="transf_alias" name="transf_alias"
+                               value="{{ aj.transf_alias or '' }}" placeholder="Ej: saludables.pilar">
+                    </div>
+                    <div class="campo full">
+                        <label for="transf_cuit">CUIT del titular <small>(11 dígitos, sin guiones)</small></label>
+                        <input type="text" id="transf_cuit" name="transf_cuit" inputmode="numeric"
+                               maxlength="13" value="{{ aj.transf_cuit or '' }}"
+                               placeholder="20123456786">
+                    </div>
+                </div>
+
+                <div class="mp-nota">
+                    Los puntos y guiones se limpian solos: se guardan <b>solo los números</b>,
+                    así el cliente puede copiar y pegar el CBU sin errores.
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ QR / BILLETERA ============ -->
+        <div class="mp-card">
+            <div class="mp-head">
+                <span class="mp-ic">📱</span>
+                <span class="mp-tit">QR / Billetera</span>
+                <span class="mp-estado">{{ 'Visible' if aj.pago_qr else 'Oculto' }}</span>
+            </div>
+            <div class="mp-body {% if not aj.pago_qr %}apagado{% endif %}" data-body="qr">
+                <div class="mp-check">
+                    <input type="checkbox" id="pago_qr" name="pago_qr"
+                           data-toggle="qr" {% if aj.pago_qr %}checked{% endif %}>
+                    <label for="pago_qr">
+                        Aceptar pago por QR
+                        <span class="mp-sub">Mercado Pago, Cuenta DNI, MODO, Ualá, etc.</span>
+                    </label>
+                </div>
+
+                <div class="mp-nota">
+                    Sacá tu <b>QR de cobro</b> desde la app de tu banco o billetera
+                    (suele estar como “Mi QR” o “Cobrar”) y subilo acá. El cliente lo escanea
+                    con el celular y te paga. <b>El QR lo genera tu banco, no este sistema.</b>
+                </div>
+
+                <div class="mp-qr-box">
+                    <div class="mp-qr-actual">
+                        <div class="mp-qr-lb">QR actual</div>
+                        {% if aj.qr_imagen %}
+                        <img src="{{ url_for('static', filename='img/pagos/' + aj.qr_imagen) }}"
+                             alt="QR de cobro">
+                        {% else %}
+                        <div class="mp-qr-vacio">Todavía no subiste ningún QR</div>
+                        {% endif %}
+                    </div>
+                    <div class="mp-qr-file">
+                        <div class="campo">
+                            <label for="qr_imagen">
+                                {{ 'Reemplazar el QR' if aj.qr_imagen else 'Subir el QR' }}
+                                <small>(JPG / PNG / WEBP)</small>
+                            </label>
+                            <input type="file" id="qr_imagen" name="qr_imagen"
+                                   accept=".jpg,.jpeg,.png,.webp">
+                        </div>
+                        <div class="mp-qr-sub">
+                            Si no subís nada, se mantiene el QR actual.
+                            Sacale una captura derecha y bien iluminada: si el QR sale torcido
+                            o cortado, el celular del cliente no lo va a poder leer.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ MERCADO PAGO (preparado, apagado) ============ -->
+        <div class="mp-card">
+            <div class="mp-head">
+                <span class="mp-ic">💳</span>
+                <span class="mp-tit">Mercado Pago</span>
+                <span class="mp-estado">{{ 'Visible' if aj.pago_mercadopago else 'Oculto' }}</span>
+            </div>
+            <div class="mp-body {% if not aj.pago_mercadopago %}apagado{% endif %}" data-body="mp">
+                <div class="mp-check">
+                    <input type="checkbox" id="pago_mercadopago" name="pago_mercadopago"
+                           data-toggle="mp" {% if aj.pago_mercadopago %}checked{% endif %}>
+                    <label for="pago_mercadopago">
+                        Aceptar pago con Mercado Pago
+                        <span class="mp-mp-pronto">Próximamente</span>
+                        <span class="mp-sub">
+                            El casillero ya está listo, pero el cobro real todavía no se programó.
+                            <b>Dejalo apagado</b> hasta que conectemos las credenciales y lo probemos
+                            en el ambiente de prueba de Mercado Pago.
+                        </span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-bronce btn-block" style="margin-top:6px;">
+            Guardar medios de pago
+        </button>
+    </form>
+</div>
+
+<script>
+/* Prender/apagar el gris de cada tarjeta en vivo, sin recargar la pagina.
+   Es solo cosmetico: lo que vale es lo que se guarda en el servidor. */
+(function () {
+    document.querySelectorAll('input[data-toggle]').forEach(function (chk) {
+        chk.addEventListener('change', function () {
+            var body = document.querySelector('[data-body="' + chk.dataset.toggle + '"]');
+            if (!body) return;
+            body.classList.toggle('apagado', !chk.checked);
+            var est = body.parentElement.querySelector('.mp-estado');
+            if (est) est.textContent = chk.checked ? 'Visible' : 'Oculto';
+        });
+    });
+})();
+</script>
+{% endblock %}

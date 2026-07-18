@@ -1679,6 +1679,97 @@ def ajustes():
     return render_template('admin/ajustes.html', aj=aj)
 
 
+# ======================= MEDIOS DE PAGO (v0.35.0) =======================
+
+def _carpeta_pagos():
+    carpeta = os.path.join(current_app.static_folder, 'img', 'pagos')
+    os.makedirs(carpeta, exist_ok=True)
+    return carpeta
+
+
+@admin_bp.route('/medios-pago', methods=['GET', 'POST'])
+@admin_requerido
+def medios_pago():
+    """
+    Configura QUE MEDIOS DE PAGO ve el cliente en el checkout y con que datos.
+
+    OJO — no confundir con el cobro:
+      · Aca se define COMO PUEDE PAGARTE el cliente (lo ve antes de pagar).
+      · El cobro real (que plata entro) se sigue registrando en el pedido,
+        que es otra pantalla y otra tabla.
+    Lo que este apagado aca, directamente NO se le muestra al cliente.
+    """
+    aj = get_ajustes()
+
+    if request.method == 'POST':
+        # Interruptores (un checkbox que no viene marcado NO se manda: por eso
+        # se lee con 'in request.form' y no con .get()).
+        aj.pago_efectivo = 'pago_efectivo' in request.form
+        aj.pago_transferencia = 'pago_transferencia' in request.form
+        aj.pago_qr = 'pago_qr' in request.form
+        aj.pago_mercadopago = 'pago_mercadopago' in request.form
+
+        # Datos de la cuenta (se limpian espacios; vacio se guarda como None)
+        def _txt(campo, limite):
+            v = (request.form.get(campo) or '').strip()
+            return v[:limite] if v else None
+
+        aj.transf_titular = _txt('transf_titular', 120)
+        aj.transf_banco = _txt('transf_banco', 120)
+        aj.transf_alias = _txt('transf_alias', 60)
+
+        # CBU/CVU y CUIT: solo numeros (el cliente los va a copiar y pegar,
+        # asi que no queremos puntos ni guiones ensuciandolos).
+        cbu = ''.join(ch for ch in (request.form.get('transf_cbu') or '') if ch.isdigit())
+        aj.transf_cbu = cbu[:22] or None
+        cuit = ''.join(ch for ch in (request.form.get('transf_cuit') or '') if ch.isdigit())
+        aj.transf_cuit = cuit[:11] or None
+
+        # --- QR: si subio una imagen nueva, reemplaza a la anterior ---
+        f = request.files.get('qr_imagen')
+        if f and f.filename:
+            from PIL import Image, ImageOps
+            ext = os.path.splitext(secure_filename(f.filename))[1].lower()
+            if ext not in EXTENSIONES_IMG_BANNER:
+                flash('El QR tiene que ser una imagen JPG, PNG o WEBP.', 'error')
+                return redirect(url_for('admin.medios_pago'))
+            carpeta = _carpeta_pagos()
+            nombre_archivo = f'qr_{secrets.token_hex(4)}.png'
+            try:
+                img = Image.open(f.stream)
+                img = ImageOps.exif_transpose(img)   # corrige la foto girada del celular
+                img = img.convert('RGB')
+                img.thumbnail((900, 900))            # de sobra para escanear
+                img.save(os.path.join(carpeta, nombre_archivo), 'PNG')
+            except Exception:
+                flash('No pude procesar esa imagen del QR. Probá con otra.', 'error')
+                return redirect(url_for('admin.medios_pago'))
+
+            # Borrar el QR viejo para no dejar basura acumulada
+            if aj.qr_imagen:
+                viejo = os.path.join(carpeta, aj.qr_imagen)
+                if os.path.exists(viejo):
+                    try:
+                        os.remove(viejo)
+                    except OSError:
+                        pass
+            aj.qr_imagen = nombre_archivo
+
+        # Avisos utiles (no bloquean el guardado, solo advierten)
+        if aj.pago_transferencia and not (aj.transf_cbu or aj.transf_alias):
+            flash('Ojo: la transferencia está prendida pero no cargaste ni CBU ni alias. '
+                  'El cliente no va a saber a dónde transferirte.', 'warning')
+        if aj.pago_qr and not aj.qr_imagen:
+            flash('Ojo: el pago por QR está prendido pero no subiste la imagen del QR.',
+                  'warning')
+
+        db.session.commit()
+        flash('Medios de pago guardados ✓ Ya se ven así en el checkout.', 'success')
+        return redirect(url_for('admin.medios_pago'))
+
+    return render_template('admin/medios_pago.html', aj=aj)
+
+
 # ======================= IMPORTAR =======================
 
 @admin_bp.route('/importar', methods=['GET', 'POST'])

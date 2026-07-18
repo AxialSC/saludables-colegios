@@ -258,6 +258,28 @@ def checkout():
             'observaciones': (request.form.get('observaciones') or '').strip() or None,
         }
 
+        # 2.b) v0.35.0 · Medio de pago que ELIGIO el cliente.
+        # Defensa en profundidad: no alcanza con que venga en el formulario,
+        # tiene que estar REALMENTE habilitado en el panel. Si alguien manda
+        # 'MERCADOPAGO' a mano teniendolo apagado, se descarta y queda en None
+        # (el pedido entra igual: nunca perdemos una venta por esto).
+        habilitados = set()
+        if ajustes.pago_efectivo:
+            habilitados.add('EFECTIVO')
+        if ajustes.pago_transferencia:
+            habilitados.add('TRANSFERENCIA')
+        if ajustes.pago_qr:
+            habilitados.add('QR')
+        if ajustes.pago_mercadopago:
+            habilitados.add('MERCADOPAGO')
+
+        medio = (request.form.get('medio_pago') or '').strip().upper()
+        medio_pago = medio if medio in habilitados else None
+        # Va DENTRO de 'datos': asi viaja solo al crear el Pedido (que se arma
+        # con **datos) y tambien vuelve al formulario si hay que corregir algo,
+        # dejando marcada la opcion que el cliente ya habia elegido.
+        datos['medio_pago'] = medio_pago
+
         # 3) Validaciones
         errores = []
         if not items:

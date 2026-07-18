@@ -306,6 +306,32 @@ class Ajustes(db.Model):
     whatsapp = db.Column(db.String(30), nullable=False, default='5491171352560')
     nombre_negocio = db.Column(db.String(120), nullable=False, default='Saludables')
 
+    # ------------------------------------------------------------------
+    # v0.35.0 · MEDIOS DE PAGO (lo que ve el cliente en el checkout)
+    # ------------------------------------------------------------------
+    # OJO con la diferencia, que son dos cosas distintas:
+    #   · Cobro.forma_pago  -> COMO ENTRO la plata. Lo registra Juliana DESPUES,
+    #     cuando el pago ya se hizo. Eso ya existia.
+    #   · Estos campos      -> COMO PUEDE PAGARTE el cliente. Es la configuracion
+    #     que se le muestra en la tienda ANTES de pagar.
+    # Son interruptores: lo que este apagado NO se le muestra al cliente.
+    pago_efectivo = db.Column(db.Boolean, nullable=False, default=True)
+    pago_transferencia = db.Column(db.Boolean, nullable=False, default=True)
+    pago_qr = db.Column(db.Boolean, nullable=False, default=False)
+    # Mercado Pago queda APAGADO: el casillero esta listo, pero el cobro real
+    # todavia no se programo (va en la proxima etapa). No prender hasta entonces.
+    pago_mercadopago = db.Column(db.Boolean, nullable=False, default=False)
+
+    # Datos de la cuenta para transferencia (una sola cuenta, decision de Ivan).
+    transf_titular = db.Column(db.String(120), nullable=True)
+    transf_banco = db.Column(db.String(120), nullable=True)
+    transf_cbu = db.Column(db.String(30), nullable=True)      # CBU o CVU (22 digitos)
+    transf_alias = db.Column(db.String(60), nullable=True)
+    transf_cuit = db.Column(db.String(13), nullable=True)
+
+    # Nombre del archivo del QR dentro de app/static/img/pagos/
+    qr_imagen = db.Column(db.String(120), nullable=True)
+
     actualizado = db.Column(db.DateTime, default=_ahora)
 
 
@@ -411,6 +437,12 @@ class Pedido(db.Model):
     direccion = db.Column(db.String(200), nullable=False)
     zona = db.Column(db.String(120), nullable=False)         # barrio/colegio (para metricas)
     observaciones = db.Column(db.Text, nullable=True)
+
+    # v0.35.0 · Que medio de pago ELIGIO el cliente en el checkout.
+    # Es una INTENCION, no un cobro: dice "pienso pagarte con esto". La plata
+    # que realmente entra se sigue registrando aparte, en Cobro. Nullable
+    # porque los pedidos viejos (y los de revendedora) no lo tienen.
+    medio_pago = db.Column(db.String(20), nullable=True)
 
     total = db.Column(db.Numeric(12, 2), nullable=False)      # FINAL con IVA
 
@@ -615,13 +647,15 @@ class FormaPago:
     EFECTIVO = 'EFECTIVO'
     TRANSFERENCIA = 'TRANSFERENCIA'
     MERCADOPAGO = 'MERCADOPAGO'
+    QR = 'QR'
     OTRO = 'OTRO'
 
-    TODAS = (EFECTIVO, TRANSFERENCIA, MERCADOPAGO, OTRO)
+    TODAS = (EFECTIVO, TRANSFERENCIA, MERCADOPAGO, QR, OTRO)
     ETIQUETAS = {
         EFECTIVO: 'Efectivo',
         TRANSFERENCIA: 'Transferencia',
         MERCADOPAGO: 'MercadoPago',
+        QR: 'QR / Billetera',
         OTRO: 'Otro',
     }
 

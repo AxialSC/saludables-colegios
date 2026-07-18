@@ -102,6 +102,27 @@ v0.34.0 -> P6: ICONOS PROPIOS DE LA MARCA. Entran los 8 iconos que mando Ivan
                verificados uno por uno contra el archivo original. La pastilla
                Ofertas conserva su icono de etiqueta. Solo tienda: catalogo.html
                + tienda.css. SIN migracion.
+v0.35.0 -> P7: MEDIOS DE PAGO. Pantalla nueva en el panel (Sistema -> Medios de
+               pago) donde se configura COMO PUEDE PAGARTE el cliente: Efectivo,
+               Transferencia (titular, banco, CBU/CVU, alias, CUIT), QR (se sube
+               la imagen del QR del banco) y Mercado Pago (casillero listo pero
+               APAGADO: el cobro real se programa en la etapa siguiente).
+               OJO con la diferencia, son dos cosas distintas:
+                 · Cobro.forma_pago -> COMO ENTRO la plata. Lo registra Juliana
+                   despues del pago. Eso ya existia y no se toco.
+                 · Estos campos     -> COMO PUEDE PAGAR el cliente. Es lo que se
+                   le muestra en el checkout ANTES de pagar.
+               En el checkout el cliente ELIGE uno y queda guardado en el pedido
+               (Pedido.medio_pago). Al elegir, se despliegan los datos de ESE
+               medio (el CBU solo si eligio transferencia, el QR solo si eligio
+               QR); el CBU y el alias se copian con un toque. Lo que este apagado
+               en el panel NO se le muestra, y el backend revalida la eleccion
+               contra lo realmente habilitado (defensa en profundidad). Si no hay
+               ningun medio prendido, el bloque no aparece y el pedido se manda
+               igual: nunca se traba una venta por la configuracion de pagos.
+               Se agrego QR a FormaPago (ahora tambien se puede registrar un
+               cobro por QR). CON MIGRACION: migrar_v350.py (10 columnas en
+               ajustes + medio_pago en pedidos, idempotente y con backup).
 """
 import os
 from datetime import timedelta
@@ -115,7 +136,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.34.0'
+    APP_VERSION = '0.35.0'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 
