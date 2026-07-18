@@ -112,16 +112,9 @@
             </div>
         </form>
 
-        <!-- ZONA 3: acciones -->
-        <div class="t-head-acciones">
-            <a class="t-head-wa" href="https://wa.me/{{ ajustes.whatsapp }}" target="_blank" rel="noopener">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M12 3C6.5 3 2 6.85 2 11.55c0 2.06.9 3.94 2.4 5.35L3.5 21l4.4-1.42c1.2.46 2.55.72 3.95.72 5.5 0 10-3.85 10-8.55C21.75 6.85 17.5 3 12 3zm0 15.4c-1.3 0-2.55-.27-3.66-.75l-.26-.11-2.6.84.85-2.5-.17-.27a6.6 6.6 0 0 1-1.16-3.71c0-3.75 3.6-6.8 8-6.8s8 3.05 8 6.8-3.6 6.8-8 6.8z"/>
-                    <path d="M9.6 8.2c-.16-.36-.33-.37-.49-.38h-.42c-.14 0-.37.05-.57.27-.2.22-.74.72-.74 1.75s.76 2.03.86 2.17c.11.14 1.48 2.36 3.66 3.22 1.81.71 2.18.57 2.57.54.39-.04 1.27-.52 1.45-1.02.18-.5.18-.93.13-1.02-.05-.09-.2-.14-.42-.25-.22-.11-1.27-.63-1.47-.7-.2-.07-.34-.11-.49.11-.14.22-.56.7-.69.85-.13.14-.25.16-.47.05-.22-.11-.92-.34-1.76-1.08-.65-.58-1.09-1.29-1.22-1.51-.13-.22-.01-.34.1-.45.1-.1.22-.25.33-.38.11-.13.14-.22.22-.36.07-.14.04-.27-.02-.38-.05-.11-.48-1.18-.66-1.61z"/>
-                </svg>
-                <span class="t-head-wa-tx">WhatsApp</span>
-            </a>
-        </div>
+        {# v0.31.0 · Se quito el boton WhatsApp de aca: hacia exactamente lo
+           mismo que el widget flotante de abajo-izquierda. Un solo canal de
+           consultas, menos ruido en el header. #}
     </div>
 </header>
 
@@ -343,17 +336,60 @@
     </div>
 </footer>
 
-<!-- Boton flotante de CONSULTAS por WhatsApp -->
-<a class="wa-fab" href="https://wa.me/{{ ajustes.whatsapp }}?text={{ 'Hola! Tengo una consulta sobre el catálogo web de Saludables Pilar.'|urlencode }}"
-   target="_blank" rel="noopener" aria-label="Consultas por WhatsApp">
-    <span class="wa-fab-ic" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-            <path d="M12 3C6.5 3 2 6.85 2 11.55c0 2.06.9 3.94 2.4 5.35L3.5 21l4.4-1.42c1.2.46 2.55.72 3.95.72 5.5 0 10-3.85 10-8.55C21.75 6.85 17.5 3 12 3zm0 15.4c-1.3 0-2.55-.27-3.66-.75l-.26-.11-2.6.84.85-2.5-.17-.27a6.6 6.6 0 0 1-1.16-3.71c0-3.75 3.6-6.8 8-6.8s8 3.05 8 6.8-3.6 6.8-8 6.8z"/>
-            <path d="M9.6 8.2c-.16-.36-.33-.37-.49-.38h-.42c-.14 0-.37.05-.57.27-.2.22-.74.72-.74 1.75s.76 2.03.86 2.17c.11.14 1.48 2.36 3.66 3.22 1.81.71 2.18.57 2.57.54.39-.04 1.27-.52 1.45-1.02.18-.5.18-.93.13-1.02-.05-.09-.2-.14-.42-.25-.22-.11-1.27-.63-1.47-.7-.2-.07-.34-.11-.49.11-.14.22-.56.7-.69.85-.13.14-.25.16-.47.05-.22-.11-.92-.34-1.76-1.08-.65-.58-1.09-1.29-1.22-1.51-.13-.22-.01-.34.1-.45.1-.1.22-.25.33-.38.11-.13.14-.22.22-.36.07-.14.04-.27-.02-.38-.05-.11-.48-1.18-.66-1.61z"/>
-        </svg>
-    </span>
-    <span class="wa-fab-tx">Consultas</span>
-</a>
+<!-- =====================================================================
+     v0.31.0 · WIDGET FLOTANTE DE CONSULTAS POR WHATSAPP
+     Boton redondo verde de marca + globo de bienvenida. En PC el globo
+     aparece al pasar el mouse; en celular se abre/cierra al tocar el boton.
+     Se auto-abre UNA vez al entrar; si el cliente lo cierra con la X, no
+     vuelve a saltar solo en esa sesion.
+     ===================================================================== -->
+<div class="wa-widget" id="waWidget">
+    <div class="wa-pop" id="waPop" role="dialog" aria-label="Consultas por WhatsApp">
+        <button type="button" class="wa-pop-x" id="waPopX" aria-label="Cerrar">✕</button>
+        <div class="wa-pop-tit">👋 ¡Hola! Somos {{ ajustes.nombre_negocio }}</div>
+        <div class="wa-pop-txt">¿Necesitás ayuda con tu pedido? Escribinos por WhatsApp.</div>
+        <a class="wa-pop-cta"
+           href="https://wa.me/{{ ajustes.whatsapp }}?text={{ ('¡Hola! Tengo una consulta sobre el catálogo web de ' ~ ajustes.nombre_negocio ~ '.')|urlencode }}"
+           target="_blank" rel="noopener">Abrir chat →</a>
+    </div>
+
+    <button type="button" class="wa-fab" id="waFab"
+            aria-label="Abrir consultas por WhatsApp" aria-expanded="false">
+        <span class="wa-fab-ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor">
+                <path d="M12 3C6.5 3 2 6.85 2 11.55c0 2.06.9 3.94 2.4 5.35L3.5 21l4.4-1.42c1.2.46 2.55.72 3.95.72 5.5 0 10-3.85 10-8.55C21.75 6.85 17.5 3 12 3zm0 15.4c-1.3 0-2.55-.27-3.66-.75l-.26-.11-2.6.84.85-2.5-.17-.27a6.6 6.6 0 0 1-1.16-3.71c0-3.75 3.6-6.8 8-6.8s8 3.05 8 6.8-3.6 6.8-8 6.8z"/>
+                <path d="M9.6 8.2c-.16-.36-.33-.37-.49-.38h-.42c-.14 0-.37.05-.57.27-.2.22-.74.72-.74 1.75s.76 2.03.86 2.17c.11.14 1.48 2.36 3.66 3.22 1.81.71 2.18.57 2.57.54.39-.04 1.27-.52 1.45-1.02.18-.5.18-.93.13-1.02-.05-.09-.2-.14-.42-.25-.22-.11-1.27-.63-1.47-.7-.2-.07-.34-.11-.49.11-.14.22-.56.7-.69.85-.13.14-.25.16-.47.05-.22-.11-.92-.34-1.76-1.08-.65-.58-1.09-1.29-1.22-1.51-.13-.22-.01-.34.1-.45.1-.1.22-.25.33-.38.11-.13.14-.22.22-.36.07-.14.04-.27-.02-.38-.05-.11-.48-1.18-.66-1.61z"/>
+            </svg>
+        </span>
+    </button>
+</div>
+
+<script>
+(function () {
+    var w   = document.getElementById('waWidget');
+    var fab = document.getElementById('waFab');
+    var x   = document.getElementById('waPopX');
+    if (!w || !fab) return;
+
+    var KEY = 'salu_wa_cerrado';   // recuerda si el cliente ya lo cerro esta sesion
+
+    function abrir()  { w.classList.add('abierto');  fab.setAttribute('aria-expanded', 'true'); }
+    function cerrar() {
+        w.classList.remove('abierto'); fab.setAttribute('aria-expanded', 'false');
+        try { sessionStorage.setItem(KEY, '1'); } catch (e) {}
+    }
+
+    fab.addEventListener('click', function () {
+        if (w.classList.contains('abierto')) cerrar(); else abrir();
+    });
+    if (x) x.addEventListener('click', function (e) { e.stopPropagation(); cerrar(); });
+
+    // Auto-abrir una sola vez al entrar (si no lo cerro antes en esta sesion)
+    var yaCerro = false;
+    try { yaCerro = sessionStorage.getItem(KEY) === '1'; } catch (e) {}
+    if (!yaCerro) { setTimeout(abrir, 2200); }
+})();
+</script>
 
 <!-- Boton flotante del carrito -->
 <button class="cart-fab" onclick="abrirCarrito()">

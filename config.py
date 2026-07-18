@@ -53,6 +53,14 @@ v0.30.0 -> P3: COBRO BLINDADO. El cobro de un pedido se habilita SOLO cuando est
                cartel ("primero confirma el pedido") y el backend rechaza el POST
                igual (defensa en profundidad). Evita cobrar algo no confirmado.
                SIN migracion.
+v0.31.0 -> P4: WHATSAPP UNIFICADO EN LA TIENDA. Se saca el boton WhatsApp
+               DUPLICADO del header (hacia lo mismo que el flotante) y el flotante
+               pasa a ser un WIDGET: boton redondo verde + globo de bienvenida
+               ("Somos <negocio> · ¿Necesitas ayuda?") que se abre al pasar el
+               mouse (PC) o al tocarlo (celular), con auto-apertura una vez al
+               entrar y una X para cerrarlo. BONUS: la pastilla "Ofertas" del
+               navbar se pone ROJA cuando esta activa (antes de tocarla, amarilla).
+               Solo tienda: catalogo.html + tienda.css. SIN migracion.
 """
 import os
 from datetime import timedelta
@@ -66,7 +74,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.30.0'
+    APP_VERSION = '0.31.0'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 
