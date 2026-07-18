@@ -87,6 +87,21 @@ v0.33.0 -> P5-fix: CADA MENU EN SU LUGAR (PC vs CELULAR). En v0.32 el mosaico se
                duplicada que hacia que la pastilla Ofertas ROJA volviera a
                amarillo al pasarle el mouse. Solo tienda: catalogo.html +
                tienda.css. SIN migracion.
+v0.34.0 -> P6: ICONOS PROPIOS DE LA MARCA. Entran los 8 iconos que mando Ivan
+               (todo, golosinas, galletitas, comestibles, bebidas, sin-alcohol,
+               con-alcohol, saludables), reemplazando a los provisorios. Van
+               INLINE en el HTML (no como <img>) por un motivo concreto: asi el
+               icono HEREDA el color del texto. Los archivos venian con el verde
+               #235339 QUEMADO en el stroke, y en un azulejo activo (fondo verde)
+               habrian quedado verde-sobre-verde = invisibles; se cambio ese
+               color por currentColor, entonces se pintan verdes sobre fondo
+               blanco y BLANCOS sobre el azulejo/solapa activa, solos.
+               Se respeta el grosor de linea original de los archivos (1.8): el
+               CSS ya no lo pisa, solo fija el tamaño. Los 8 iconos se usan en
+               los DOS menus (navbar de PC y mosaico de celular) = 16 lugares,
+               verificados uno por uno contra el archivo original. La pastilla
+               Ofertas conserva su icono de etiqueta. Solo tienda: catalogo.html
+               + tienda.css. SIN migracion.
 """
 import os
 from datetime import timedelta
@@ -100,7 +115,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.33.0'
+    APP_VERSION = '0.34.0'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 

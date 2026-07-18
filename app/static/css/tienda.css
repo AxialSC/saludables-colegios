@@ -166,11 +166,7 @@ a { color: inherit; text-decoration: none; }
     border-bottom: 3px solid transparent;
     transition: background .15s, color .15s;
 }
-.t-nav-item svg {
-    width: 18px; height: 18px; flex: none;
-    fill: none; stroke: currentColor; stroke-width: 1.7;
-    stroke-linecap: round; stroke-linejoin: round;
-}
+.t-nav-item svg { width: 18px; height: 18px; flex: none; }
 .t-nav-item:hover { background: rgba(255,255,255,.10); color: #fff; }
 .t-nav-item.activo {
     color: #fff; font-weight: 800;
@@ -231,11 +227,11 @@ a { color: inherit; text-decoration: none; }
 .cat-tile.activo { background: var(--t-marca); border-color: var(--t-marca); color: #fff; }
 
 .cat-ic { display: inline-flex; }
-.cat-ic svg {
-    width: 30px; height: 30px;
-    fill: none; stroke: currentColor; stroke-width: 1.7;
-    stroke-linecap: round; stroke-linejoin: round;
-}
+/* v0.34.0 · Los iconos son los SVG de Ivan, inline. Solo les fijamos el
+   TAMAÑO; el grosor de linea (1.8), el fill y los remates vienen dentro de
+   cada archivo. El color lo heredan (stroke=currentColor): verde sobre el
+   azulejo blanco, BLANCO sobre el azulejo activo. */
+.cat-ic svg { width: 30px; height: 30px; }
 .cat-lb { font-size: 0.82rem; font-weight: 700; line-height: 1.2; }
 
 /* Ofertas a lo ancho, 2 TONOS: amarilla normal -> roja cuando esta activa */
