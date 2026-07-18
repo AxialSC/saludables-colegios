@@ -61,6 +61,17 @@ v0.31.0 -> P4: WHATSAPP UNIFICADO EN LA TIENDA. Se saca el boton WhatsApp
                entrar y una X para cerrarlo. BONUS: la pastilla "Ofertas" del
                navbar se pone ROJA cuando esta activa (antes de tocarla, amarilla).
                Solo tienda: catalogo.html + tienda.css. SIN migracion.
+v0.32.0 -> P5: MENU DE CATEGORIAS ESTILO GONDOLA. El navbar horizontal verde se
+               reemplaza por un MOSAICO de 8 azulejos (linea de 4) con icono +
+               etiqueta: Todo, Golosinas, Galletitas, Comestibles, Bebidas, Sin
+               alcohol, Con alcohol, Saludables. Debajo, la barra de OFERTAS a lo
+               ancho en 2 tonos (amarilla -> roja cuando esta activa). Cada azulejo
+               usa el filtro que YA existia en el backend (?rubro= para los rubros
+               de Torres, ?cat= para las solapas): NO hubo que tocar cliente.py ni
+               migrar. Los rubros del long-tail (Varios, Limpieza, Perfumeria, etc.)
+               siguen accesibles en el desplegable "Todos los rubros". Iconos SVG
+               inline (stroke=currentColor) para que se vean bien en el azulejo
+               activo. Solo tienda: catalogo.html + tienda.css. SIN migracion.
 """
 import os
 from datetime import timedelta
@@ -74,7 +85,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.31.0'
+    APP_VERSION = '0.32.0'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 
