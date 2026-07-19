@@ -201,6 +201,27 @@ v0.37.3 -> P9-fix3: los avisos del checkout y la confirmacion salian SIEMPRE en
                pero no la usaban: ahora la pintan (verde exito / amarillo aviso /
                rojo error). Lo detecto Ivan en la primera prueba real de pago.
                SIN migracion.
+v0.38.0 -> P10: LOS PDF DEL CLIENTE, CON LA CARA DE LA TIENDA. El comprobante de
+               pedido y el presupuesto usaban la paleta "El Arquitecto" (carbon,
+               bronce, Times): la del PANEL de Juliana. Pero esos papeles los
+               recibe el CLIENTE y tienen que verse como la tienda. Ahora:
+                 · Franja VERDE de marca arriba, con el logo real.
+                 · Marca de agua con el isotipo, muy tenue (7%): se insinua sin
+                   competir con los precios ni comer tinta al imprimir.
+                 · Tabla de productos con encabezado verde y filas alternadas
+                   (con 15 renglones el ojo se pierde si son todas iguales).
+                 · Total en caja verde, bien visible.
+               Nuevo app/pdf_marca.py: los colores, el logo y la marca de agua
+               viven en UN solo lugar y los comparten los dos documentos (misma
+               idea que comisiones.py). Si cambia un color de la marca, se toca
+               una linea y cambian los dos.
+               Ademas: se SACO la IP y el dispositivo del PDF (dato interno de
+               seguridad; Ivan lo sigue viendo en el panel, pero en el papel del
+               cliente no suma), y el comprobante ahora MUESTRA EL COSTO DE
+               PLATAFORMA desglosado cuando se pago con Mercado Pago (antes el
+               PDF decia un total y al cliente le figuraba otro en su tarjeta).
+               Si faltara un archivo de logo, el PDF sale igual con el nombre en
+               texto: un comprobante tiene que salir SIEMPRE. SIN migracion.
 """
 import os
 from datetime import timedelta
@@ -214,7 +235,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.37.3'
+    APP_VERSION = '0.38.0'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 

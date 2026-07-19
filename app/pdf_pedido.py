@@ -1,29 +1,36 @@
 """
 app/pdf_pedido.py — Comprobante de pedido en PDF (ReportLab).
 NO es factura: es un comprobante de pedido sujeto a confirmacion de stock.
+
+v0.38.0 · REDISEÑO CON LA IDENTIDAD DE LA TIENDA.
+Antes usaba la paleta "El Arquitecto" (carbon + bronce + Times), que es la del
+PANEL de Juliana. Este papel lo recibe el CLIENTE: tiene que verse como la
+tienda (verde de marca), no como una herramienta interna. Los colores, el logo
+y la marca de agua salen de pdf_marca.py, compartido con el presupuesto.
+
+Cambios de esta version:
+  · Franja verde con el logo real arriba.
+  · Marca de agua con el isotipo, muy tenue.
+  · Tabla de productos con encabezado verde y filas alternadas.
+  · Se saco la IP y el dispositivo (dato interno; Ivan lo sigue viendo en el
+    panel, pero no tiene por que estar en el papel del cliente).
+  · Se muestra el COSTO DE PLATAFORMA cuando el pedido se pago con Mercado
+    Pago. Antes el PDF decia un total y el cliente habia pagado otro.
 """
 from io import BytesIO
 
-from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer, Table,
                                 TableStyle)
 
 from .utils.timezone import a_argentina
 from .utils.validaciones import formatear_cuit
-
-CARBON = colors.HexColor('#1A1A1A')
-BRONCE = colors.HexColor('#8B6F47')
-CREMA = colors.HexColor('#F4F1EC')
-GRIS = colors.HexColor('#888888')
-LINEA = colors.HexColor('#E0DAD0')
+from . import pdf_marca as M
 
 
 def _pesos(v):
-    s = f'{float(v):,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
-    return '$' + s
+    return M.pesos(v)
 
 
 def generar_pdf_pedido(pedido, ajustes):
@@ -31,47 +38,34 @@ def generar_pdf_pedido(pedido, ajustes):
     buf = BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=A4,
                             leftMargin=20 * mm, rightMargin=20 * mm,
-                            topMargin=18 * mm, bottomMargin=18 * mm,
+                            topMargin=15 * mm, bottomMargin=16 * mm,
                             title=f'Pedido {pedido.numero}')
-    styles = getSampleStyleSheet()
-    h_marca = ParagraphStyle('marca', parent=styles['Normal'], fontName='Times-Bold',
-                             fontSize=20, textColor=BRONCE, spaceAfter=2, leading=22)
-    h_sub = ParagraphStyle('sub', parent=styles['Normal'], fontSize=8, textColor=GRIS,
-                           spaceAfter=2)
-    normal = ParagraphStyle('n', parent=styles['Normal'], fontSize=9, leading=13)
-    chico = ParagraphStyle('c', parent=styles['Normal'], fontSize=7.5, textColor=GRIS,
-                           leading=11)
-    titulo = ParagraphStyle('t', parent=styles['Normal'], fontName='Helvetica-Bold',
-                            fontSize=11, textColor=CARBON, spaceBefore=6, spaceAfter=6)
-
+    st = M.estilos()
     elems = []
 
-    # Encabezado
-    elems.append(Paragraph(ajustes.nombre_negocio, h_marca))
-    elems.append(Paragraph('Catálogo Mayorista · Pilar, Zona Norte', h_sub))
+    # ---------- Franja de marca ----------
+    elems.append(M.cabecera(ajustes))
     elems.append(Spacer(1, 6 * mm))
 
-    # Datos del pedido
+    # ---------- Numero y fecha ----------
     fecha = a_argentina(pedido.creado).strftime('%d/%m/%Y %H:%M') if pedido.creado else '—'
-    nro_extra = ''
+    extra = ''
     if pedido.modificado_en:
-        nro_extra = (f'<br/><font size="7" color="#8B6F47">Pedido modificado el '
-                     f'{a_argentina(pedido.modificado_en).strftime("%d/%m/%Y %H:%M")} hs</font>')
-    cab = [
-        [Paragraph('<b>COMPROBANTE DE PEDIDO</b>', titulo),
-         Paragraph(f'<b>N° {pedido.numero}</b><br/>{fecha} hs{nro_extra}', normal)],
-    ]
+        extra = (f'<br/><font size="7" color="#2F6F4E">Modificado el '
+                 f'{a_argentina(pedido.modificado_en).strftime("%d/%m/%Y %H:%M")} hs</font>')
+    cab = [[Paragraph('<b>COMPROBANTE DE PEDIDO</b>', st['titulo']),
+            Paragraph(f'<b>N° {pedido.numero}</b><br/>{fecha} hs{extra}', st['normal'])]]
     t_cab = Table(cab, colWidths=[100 * mm, 70 * mm])
     t_cab.setStyle(TableStyle([
         ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('LINEBELOW', (0, 0), (-1, -1), 1, BRONCE),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('LINEBELOW', (0, 0), (-1, -1), 1.2, M.VERDE),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
     ]))
     elems.append(t_cab)
     elems.append(Spacer(1, 5 * mm))
 
-    # Cliente
+    # ---------- Datos del cliente ----------
     datos = (f'<b>Cliente:</b> {pedido.cliente_completo}<br/>'
              f'<b>CUIT:</b> {formatear_cuit(pedido.cuit)}<br/>'
              f'<b>WhatsApp:</b> {pedido.whatsapp}')
@@ -81,79 +75,74 @@ def generar_pdf_pedido(pedido, ajustes):
                f'<b>Zona / Colegio:</b> {pedido.zona}')
     if pedido.observaciones:
         entrega += f'<br/><b>Observaciones:</b> {pedido.observaciones}'
-
-    t_datos = Table([[Paragraph(datos, normal), Paragraph(entrega, normal)]],
-                    colWidths=[85 * mm, 85 * mm])
-    t_datos.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('BACKGROUND', (0, 0), (-1, -1), CREMA),
-        ('BOX', (0, 0), (-1, -1), 0.5, LINEA),
-        ('LEFTPADDING', (0, 0), (-1, -1), 8),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
-        ('TOPPADDING', (0, 0), (-1, -1), 8),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-    ]))
-    elems.append(t_datos)
+    elems.append(M.caja_datos(
+        [Paragraph(datos, st['normal']), Paragraph(entrega, st['normal'])],
+        [85 * mm, 85 * mm]))
     elems.append(Spacer(1, 6 * mm))
 
-    # Tabla de items
+    # ---------- Productos ----------
     data = [['Código', 'Producto', 'Cant.', 'P. Unit.', 'Subtotal']]
     for it in pedido.items:
-        data.append([
-            it.codigo,
-            Paragraph(it.nombre, chico),
-            str(it.cantidad),
-            _pesos(it.precio_unitario),
-            _pesos(it.subtotal),
-        ])
-    t_items = Table(data, colWidths=[20 * mm, 86 * mm, 14 * mm, 25 * mm, 25 * mm], repeatRows=1)
-    t_items.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), CARBON),
-        ('TEXTCOLOR', (0, 0), (-1, 0), CREMA),
-        ('FONTSIZE', (0, 0), (-1, 0), 8),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 1), (-1, -1), 8),
-        ('ALIGN', (2, 0), (2, -1), 'CENTER'),
-        ('ALIGN', (3, 0), (-1, -1), 'RIGHT'),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#FAF8F4')]),
-        ('LINEBELOW', (0, 1), (-1, -1), 0.4, LINEA),
-        ('TOPPADDING', (0, 0), (-1, -1), 6),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-        ('LEFTPADDING', (0, 0), (-1, -1), 6),
-    ]))
+        data.append([it.codigo, Paragraph(it.nombre, st['chico']), str(it.cantidad),
+                     _pesos(it.precio_unitario), _pesos(it.subtotal)])
+    t_items = Table(data, colWidths=[20 * mm, 86 * mm, 14 * mm, 25 * mm, 25 * mm],
+                    repeatRows=1)
+    t_items.setStyle(M.estilo_tabla_items(col_center=2, col_right=3))
     elems.append(t_items)
-    elems.append(Spacer(1, 4 * mm))
+    elems.append(Spacer(1, 5 * mm))
 
-    # Total
-    t_total = Table([['TOTAL DEL PEDIDO', _pesos(pedido.total)]],
-                    colWidths=[120 * mm, 50 * mm])
-    t_total.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (0, 0), 'RIGHT'),
-        ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
-        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 12),
-        ('TEXTCOLOR', (1, 0), (1, 0), BRONCE),
-        ('TOPPADDING', (0, 0), (-1, -1), 6),
-    ]))
-    elems.append(t_total)
-    elems.append(Spacer(1, 8 * mm))
+    # ---------- Totales ----------
+    # v0.37.0 · Si el cliente pago con Mercado Pago, se le sumo el costo de la
+    # pasarela. El comprobante TIENE que mostrarlo desglosado: si no, el papel
+    # dice un numero y en el resumen de la tarjeta le figura otro.
+    extra_pago = float(getattr(pedido, 'costo_plataforma', 0) or 0)
+    if extra_pago > 0:
+        filas = [
+            ['Subtotal productos', _pesos(pedido.total)],
+            ['Costo de plataforma de pago', _pesos(extra_pago)],
+            ['TOTAL PAGADO', _pesos(pedido.total_a_pagar)],
+        ]
+        t_tot = Table(filas, colWidths=[120 * mm, 50 * mm])
+        t_tot.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
+            ('FONTSIZE', (0, 0), (-1, -2), 9),
+            ('TEXTCOLOR', (0, 0), (-1, -2), M.GRIS),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, -1), (-1, -1), 12),
+            ('TEXTCOLOR', (0, -1), (-1, -1), M.VERDE),
+            ('LINEABOVE', (0, -1), (-1, -1), 1, M.VERDE),
+            ('TOPPADDING', (0, -1), (-1, -1), 8),
+        ]))
+        elems.append(t_tot)
+    else:
+        t_tot = Table([['TOTAL DEL PEDIDO', _pesos(pedido.total)]],
+                      colWidths=[110 * mm, 60 * mm])
+        t_tot.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
+            ('BACKGROUND', (0, 0), (-1, -1), M.VERDE_SOFT),
+            ('BOX', (0, 0), (-1, -1), 1, M.VERDE),
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (0, 0), 11),
+            ('FONTSIZE', (1, 0), (1, 0), 15),
+            ('TEXTCOLOR', (0, 0), (-1, -1), M.VERDE),
+            ('TOPPADDING', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+        ]))
+        elems.append(t_tot)
 
-    # Leyenda (pedido de Ivan)
+    # ---------- Cierre ----------
+    # OJO: aca NO va el dispositivo ni la IP. Son datos internos de seguridad;
+    # Ivan los sigue viendo en el panel, pero al cliente no le suman nada y en
+    # un comprobante comercial quedan fuera de lugar.
     leyenda = ('Todos los pedidos se verifican según nuestro stock para mantener un nivel '
                'de calidad y buenas prácticas de venta. Este comprobante es un pedido sujeto '
                'a confirmación; <b>no es una factura</b>. Juliana se va a contactar para '
                'coordinar la entrega y el pago.')
-    elems.append(Paragraph(leyenda, chico))
-    elems.append(Spacer(1, 4 * mm))
-    origen_txt = ''
-    if pedido.dispositivo or pedido.ip_origen:
-        origen_txt = (f'Pedido realizado desde {pedido.dispositivo or "—"} · '
-                      f'IP {pedido.ip_origen or "—"}')
-        elems.append(Paragraph(origen_txt, chico))
-    elems.append(Spacer(1, 2 * mm))
-    elems.append(Paragraph('AXIAL SECURITY · Desarrollo a medida', chico))
+    M.pie(elems, leyenda)
 
-    doc.build(elems)
+    doc.build(elems, onFirstPage=M.marca_agua, onLaterPages=M.marca_agua)
     buf.seek(0)
     return buf.getvalue()
