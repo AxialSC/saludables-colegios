@@ -185,6 +185,14 @@ v0.37.1 -> P9-fix: los mensajes de aviso de la pantalla de Medios de pago se
                contenedor de ancho fijo, asi que la barra verde de "guardado"
                cruzaba de punta a punta mientras todo lo demas respetaba su
                margen. Ojo del cliente. SIN migracion.
+v0.37.2 -> P9-fix2: TEXTO INVISIBLE en Medios de pago. Las etiquetas de los
+               interruptores ("Aceptar pago con Mercado Pago", "Sumarle el IVA",
+               etc.) se veian apagadas, casi ilegibles. Causa: se uso la variable
+               --text, que en la paleta El Arquitecto es CREMA (#F4F1EC) porque
+               esta pensada para el fondo oscuro del sidebar; sobre la tarjeta
+               BLANCA de esta pantalla se perdia. Corregido a --text-dark
+               (carbon #1A1A1A). Lo detecto Ivan mirando la pantalla.
+               SIN migracion.
 """
 import os
 from datetime import timedelta
@@ -198,7 +206,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.37.1'
+    APP_VERSION = '0.37.2'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 

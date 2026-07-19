@@ -234,7 +234,10 @@
 .cobro-resumen { display:flex; justify-content:space-between; gap:10px; margin-bottom:12px;
     background:#faf8f4; padding:12px; border-radius:var(--radius); }
 .cobro-resumen div { text-align:center; font-size:0.7rem; color:var(--text-soft); }
-.cobro-resumen b { display:block; font-size:0.95rem; color:var(--text); margin-top:3px; }
+.cobro-resumen b { display:block; font-size:0.95rem; color:var(--text-dark); margin-top:3px; }
+/* v0.37.2 · Era var(--text) = CREMA (#F4F1EC) sobre un fondo casi blanco (#faf8f4):
+   el numero del 'Total' quedaba practicamente invisible. 'Cobrado' y 'Saldo' no se
+   notaban porque tienen su color puesto a mano en el HTML. */
 .cobros-lista { border-top:1px solid #f0ece4; }
 .cobro-item { display:flex; justify-content:space-between; align-items:center; padding:8px 0;
     border-bottom:1px solid #f0ece4; font-size:0.78rem; }

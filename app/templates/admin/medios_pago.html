@@ -46,7 +46,10 @@
     .mp-check input { margin-top: 3px; width: 16px; height: 16px; cursor: pointer; }
     .mp-check label {
         font-size: 0.78rem; font-weight: 700; letter-spacing: .05em;
-        text-transform: uppercase; cursor: pointer; color: var(--text);
+        text-transform: uppercase; cursor: pointer; color: var(--text-dark);
+        /* v0.37.2 · OJO: en la paleta El Arquitecto, --text es CREMA (#F4F1EC),
+           pensada para el fondo oscuro del sidebar. Sobre la tarjeta BLANCA de
+           esta pantalla quedaba casi invisible. Va --text-dark (carbon). */
     }
     .mp-check .mp-sub {
         display: block; font-size: 0.76rem; font-weight: 400; letter-spacing: 0;
