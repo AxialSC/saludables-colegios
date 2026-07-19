@@ -10,6 +10,13 @@
        queda claro de un vistazo que ese medio no se le muestra al cliente. */
     .mp-wrap { max-width: 760px; }
 
+    /* v0.37.1 · Los mensajes de aviso (los verdes de "guardado") viven en
+       base_admin.html, FUERA de .mp-wrap, asi que salian de punta a punta
+       mientras el contenido respetaba su margen: quedaba desprolijo. Se los
+       alinea al mismo ancho. Va aca y no en app.css a proposito: es un ajuste
+       de ESTA pantalla, no cambia el resto del panel. */
+    .main-area .flashes { max-width: 760px; }
+
     .mp-aviso {
         background: #FBF4E6; border: 1px solid #E8D9B0; color: #7a5b1e;
         border-radius: 9px; padding: 12px 14px; margin-bottom: 20px;

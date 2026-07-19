@@ -180,6 +180,11 @@ v0.37.0 -> P9: MERCADO PAGO EN LA TIENDA (Checkout Pro). El cliente elige MP en
                sigue por WhatsApp: nunca se pierde una venta.
                CON MIGRACION: migrar_v370.py (3 columnas en ajustes + 4 en
                pedidos). Requiere haber corrido antes migrar_v350.py.
+v0.37.1 -> P9-fix: los mensajes de aviso de la pantalla de Medios de pago se
+               alinean con el contenido. Vivian en base_admin.html, FUERA del
+               contenedor de ancho fijo, asi que la barra verde de "guardado"
+               cruzaba de punta a punta mientras todo lo demas respetaba su
+               margen. Ojo del cliente. SIN migracion.
 """
 import os
 from datetime import timedelta
@@ -193,7 +198,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.37.0'
+    APP_VERSION = '0.37.1'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 
