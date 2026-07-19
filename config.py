@@ -146,6 +146,40 @@ v0.36.0 -> P8: FIX DE ALINEACION DEL CHECKOUT Y LA CONFIRMACION. Las clases
                CSS (se saco del HTML) para poder animarla. Como las dos pantallas
                comparten las clases, el arreglo del CSS cura las DOS de una.
                SIN migracion.
+v0.37.0 -> P9: MERCADO PAGO EN LA TIENDA (Checkout Pro). El cliente elige MP en
+               el checkout, se lo manda al sitio de Mercado Pago, paga y vuelve
+               solo. Cuando el pago se acredita, MP le avisa al sistema por un
+               WEBHOOK y el cobro se registra SOLO: Juliana no toca nada.
+               Piezas nuevas: app/pagos_mp.py (unica puerta a MP, como
+               comisiones.py), rutas /mp/retorno/<token> y /mp/webhook.
+
+               COSTO DE PLATAFORMA — regla de Ivan: el precio de lista es igual
+               para todos; el que elige pagar con MP (y financiarse con su
+               tarjeta) paga ADEMAS lo que cobra la pasarela, asi a Ivan le
+               entran sus $100 + IVA limpios. La cuenta DIVIDE, no suma:
+                     total_a_cobrar = total / (1 - comision)
+               Sumar el porcentaje se queda corto porque MP cobra tambien sobre
+               el recargo (en un pedido de $50.000 la diferencia es $17,82).
+               Es PARAMETRIZABLE desde el panel (activo si/no, porcentaje, y si
+               lleva IVA): cuando MP cambie tarifas o la contadora defina lo del
+               IVA, se ajusta sin tocar codigo.
+
+               BLINDAJE DE OFERTAS: en un pedido con productos en oferta (piso de
+               margen 10%) NO se ofrece Mercado Pago, porque la comision se come
+               casi toda la ganancia. Se esconde en el checkout Y se rechaza en
+               el backend (misma logica que el candado del 6%).
+
+               SEGURIDAD: las credenciales se leen de variables de entorno
+               (MP_ACCESS_TOKEN / MP_PUBLIC_KEY) definidas en el archivo WSGI de
+               PythonAnywhere, NUNCA en el repo. Arranca en MODO PRUEBA
+               (MP_SANDBOX=1 por defecto). El webhook va sin CSRF (lo llama MP,
+               no un form nuestro) pero NO se le cree nada: se re-pregunta a MP
+               con nuestro token cual es el estado real del pago. El registro de
+               cobro es idempotente (MP avisa varias veces el mismo pago).
+               Si MP no esta configurado o falla, el pedido se guarda igual y se
+               sigue por WhatsApp: nunca se pierde una venta.
+               CON MIGRACION: migrar_v370.py (3 columnas en ajustes + 4 en
+               pedidos). Requiere haber corrido antes migrar_v350.py.
 """
 import os
 from datetime import timedelta
@@ -159,7 +193,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.36.0'
+    APP_VERSION = '0.37.0'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 

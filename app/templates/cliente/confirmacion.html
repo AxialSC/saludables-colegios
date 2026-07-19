@@ -17,15 +17,46 @@
 
 <div class="co-wrap">
 
+    {# v0.37.0 · Avisos del pago (los deja mp_retorno con flash) #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="co-flashes">
+          {% for category, message in messages %}<li>{{ message }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
     <div class="co-card co-ok">
         <div class="co-check">✓</div>
         <h2>¡Gracias {{ pedido.nombre }}!</h2>
         <p>Tu pedido quedó registrado con el número</p>
         <div class="co-numero">{{ pedido.numero }}</div>
+
+        {# v0.37.0 · Si pago con Mercado Pago, se muestra como quedo el pago.
+           Si no, el texto de siempre (coordinar con Juliana). #}
+        {% if pedido.mp_estado == 'approved' %}
+        <div class="co-pago ok">
+            <b>💳 Pago acreditado</b>
+            <span>Ya recibimos tu pago por Mercado Pago. Juliana verifica el stock
+                  y te contacta para coordinar la entrega.</span>
+        </div>
+        {% elif pedido.mp_estado in ['pending', 'in_process', 'authorized'] %}
+        <div class="co-pago proceso">
+            <b>⏳ Pago en proceso</b>
+            <span>Mercado Pago todavía está confirmando el pago. Apenas se acredite,
+                  el pedido avanza solo. No hace falta que hagas nada.</span>
+        </div>
+        {% elif pedido.mp_estado %}
+        <div class="co-pago falla">
+            <b>⚠️ El pago no se completó</b>
+            <span>Tu pedido quedó guardado igual. Escribinos por WhatsApp y lo resolvemos.</span>
+        </div>
+        {% else %}
         <p class="co-ayuda" style="margin-top:10px;">
             Tocá el botón de abajo para avisarle a Juliana por WhatsApp. Ella verifica el stock
             y se contacta con vos para coordinar la entrega y el pago.
         </p>
+        {% endif %}
 
         <a class="co-wa" target="_blank"
            href="https://wa.me/{{ ajustes.whatsapp }}?text={{ wa_msg | urlencode }}">
@@ -44,7 +75,22 @@
             <span>{{ it.subtotal|pesos }}</span>
         </div>
         {% endfor %}
+
+        {# v0.37.0 · El costo de plataforma se muestra como LINEA APARTE: el
+           cliente tiene que ver exactamente que paga y por que. #}
+        {% if pedido.tiene_costo_plataforma %}
+        <div class="co-item">
+            <span>Subtotal</span><span>{{ pedido.total|pesos }}</span>
+        </div>
+        <div class="co-item co-item-extra">
+            <span>Costo de plataforma de pago</span>
+            <span>{{ pedido.costo_plataforma|pesos }}</span>
+        </div>
+        <div class="co-total-row"><span>Total pagado</span><span>{{ pedido.total_a_pagar|pesos }}</span></div>
+        {% else %}
         <div class="co-total-row"><span>Total</span><span>{{ pedido.total|pesos }}</span></div>
+        {% endif %}
+
         <p class="co-nota">
             Todos los pedidos se verifican según stock para mantener la calidad y las buenas
             prácticas de venta. Este comprobante es un pedido, no una factura.

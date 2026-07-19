@@ -23,13 +23,15 @@ from flask import (Blueprint, render_template, request, redirect, url_for,
                    abort, Response, flash)
 from sqlalchemy import select, or_, func
 
-from .extensions import db
+from .extensions import db, csrf
 from .models import (Producto, Pedido, ItemPedido, Oferta, get_ajustes,
                      generar_numero_pedido, EstadoPedido, CategoriaProducto,
-                     Banner, ZonaBanner, DestinoBanner, Suscriptor)
+                     Banner, ZonaBanner, DestinoBanner, Suscriptor,
+                     Cobro, FormaPago)
 from .utils.validaciones import validar_cuit, limpiar_cuit
 from .utils.timezone import ahora_argentina
 from . import pricing
+from . import pagos_mp
 from .pdf_pedido import generar_pdf_pedido
 
 cliente_bp = Blueprint('cliente', __name__)
@@ -228,7 +230,8 @@ def _recalcular_carrito(carrito_dict, ajustes):
             pu = pricing.precio_por_cantidad(p, ajustes, qty)
         sub = round(pu * qty, 2)
         items.append({'producto': p, 'cantidad': qty,
-                      'precio_unitario': pu, 'subtotal': sub})
+                      'precio_unitario': pu, 'subtotal': sub,
+                      'es_oferta': bool(of)})   # v0.37.0 · lo usa el blindaje de MP
         total += sub
     return items, round(total, 2), descartados
 
@@ -273,6 +276,17 @@ def checkout():
         if ajustes.pago_mercadopago:
             habilitados.add('MERCADOPAGO')
 
+        # v0.37.0 · BLINDAJE DE OFERTAS.
+        # Las ofertas tienen piso de margen del 10%. Con la comision de la
+        # pasarela encima, ese pedido se vende practicamente a costo (o a
+        # perdida). Regla de Ivan: las ofertas se pagan en efectivo o por
+        # transferencia. Se saca MP de los habilitados ANTES de validar, asi
+        # el candado vale aunque manden el dato a mano (misma logica que el
+        # piso del 6% de las revendedoras).
+        hay_ofertas = any(it.get('es_oferta') for it in items)
+        if hay_ofertas:
+            habilitados.discard('MERCADOPAGO')
+
         medio = (request.form.get('medio_pago') or '').strip().upper()
         medio_pago = medio if medio in habilitados else None
         # Va DENTRO de 'datos': asi viaja solo al crear el Pedido (que se arma
@@ -316,6 +330,13 @@ def checkout():
                 dispositivo=disp,
                 **datos,
             )
+            # v0.37.0 · Si eligio Mercado Pago, se le suma el costo de la
+            # pasarela para que a Ivan le entren sus $100 + IVA limpios.
+            # Se calcula DIVIDIENDO (ver pagos_mp.costo_plataforma): sumar el
+            # porcentaje se queda corto, porque MP cobra tambien sobre el
+            # recargo. Va aparte de 'total' a proposito: no es una venta.
+            if medio_pago == 'MERCADOPAGO':
+                pedido.costo_plataforma = pagos_mp.costo_plataforma(total, ajustes)
             db.session.add(pedido)
             db.session.flush()  # para tener pedido.id
             for it in items:
@@ -333,6 +354,26 @@ def checkout():
             flash('Hubo un problema al registrar el pedido. Probá de nuevo.', 'error')
             return render_template('cliente/checkout.html', ajustes=ajustes, datos=datos)
 
+        # v0.37.0 · Si eligio Mercado Pago, se lo manda a pagar ANTES de la
+        # pantalla de confirmacion. Si por lo que sea no se pudo armar el pago
+        # (sin credenciales, sin internet de salida, MP caido), NO se pierde el
+        # pedido: ya quedo guardado y se sigue al circuito normal de siempre,
+        # avisandole al cliente que coordine el pago por WhatsApp.
+        if medio_pago == 'MERCADOPAGO':
+            try:
+                url_pago = pagos_mp.crear_preferencia(pedido, items, ajustes)
+            except Exception:
+                url_pago = None
+            if url_pago:
+                db.session.commit()          # guarda el mp_preference_id
+                return redirect(url_pago)
+            db.session.rollback()
+            pedido.costo_plataforma = 0      # no cobramos un costo que no se uso
+            pedido.medio_pago = None
+            db.session.commit()
+            flash('No pudimos abrir Mercado Pago en este momento. Tu pedido quedó '
+                  'registrado igual: coordinamos el pago por WhatsApp.', 'warning')
+
         return redirect(url_for('cliente.confirmacion', token=pedido.token))
 
     # GET -> muestra el formulario (el carrito lo lee el JS desde sessionStorage)
@@ -342,6 +383,127 @@ def checkout():
 def pricing_pesos(v):
     s = f'{float(v):,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
     return '$' + s
+
+
+# ======================= MERCADO PAGO (v0.37.0) =======================
+
+def _registrar_cobro_mp(pedido, pago):
+    """
+    Deja registrado el cobro de un pago aprobado de Mercado Pago.
+
+    Es IDEMPOTENTE: Mercado Pago avisa el mismo pago varias veces (reintenta si
+    no le contestamos rapido, y avisa de nuevo ante cada cambio de estado). Sin
+    esta guarda, el mismo pedido quedaria cobrado dos o tres veces.
+
+    OJO con el monto: se registra el TOTAL DE LA MERCADERIA, no lo que pago el
+    cliente. La diferencia es justo el costo de plataforma, que se lo queda
+    Mercado Pago. O sea: lo que se registra es lo que REALMENTE entra a la
+    cuenta, que es como tiene que ser.
+    """
+    if pedido.mp_payment_id == pago['id'] and pedido.esta_cobrado:
+        return False
+    if any(c.forma_pago == FormaPago.MERCADOPAGO for c in pedido.cobros):
+        return False
+
+    db.session.add(Cobro(
+        pedido_id=pedido.id,
+        forma_pago=FormaPago.MERCADOPAGO,
+        monto=float(pedido.total or 0),
+        nota=f'Mercado Pago · pago {pago["id"]}',
+        registrado_por='Mercado Pago (automático)',
+    ))
+    if pedido.estado == EstadoPedido.PENDIENTE:
+        pedido.estado = EstadoPedido.CONFIRMADO
+    return True
+
+
+@cliente_bp.route('/mp/retorno/<token>')
+def mp_retorno(token):
+    """
+    Aca vuelve el CLIENTE despues de pasar por Mercado Pago.
+
+    Lo que llega por la URL NO se cree (cualquiera puede escribir
+    ?status=approved a mano): se le vuelve a preguntar a Mercado Pago cual es
+    el estado real del pago. Misma regla que el recalculo del carrito.
+    """
+    pedido = Pedido.query.filter_by(token=token).first()
+    if pedido is None:
+        abort(404)
+
+    payment_id = (request.args.get('payment_id')
+                  or request.args.get('collection_id') or '').strip()
+    pago = pagos_mp.consultar_pago(payment_id) if payment_id else None
+
+    if pago and pago.get('token_pedido') == pedido.token:
+        pedido.mp_payment_id = pago['id'][:40]
+        pedido.mp_estado = (pago.get('estado') or '')[:30]
+        if pago['estado'] in pagos_mp.ESTADOS_OK:
+            _registrar_cobro_mp(pedido, pago)
+            db.session.commit()
+            flash('¡Listo! Recibimos tu pago. 🎉', 'success')
+        elif pago['estado'] in pagos_mp.ESTADOS_EN_PROCESO:
+            db.session.commit()
+            flash('Tu pago está en proceso. Te avisamos apenas se acredite.', 'warning')
+        else:
+            db.session.commit()
+            flash('El pago no se pudo completar. Tu pedido quedó guardado: '
+                  'escribinos por WhatsApp y lo resolvemos.', 'error')
+    else:
+        # Volvio sin datos utiles (cancelo, cerro la pestaña, etc.).
+        # El webhook va a acomodar el estado si el pago igual se concreto.
+        flash('Volviste sin completar el pago. Tu pedido quedó guardado.', 'warning')
+
+    return redirect(url_for('cliente.confirmacion', token=pedido.token))
+
+
+@cliente_bp.route('/mp/webhook', methods=['POST', 'GET'])
+@csrf.exempt
+def mp_webhook():
+    """
+    Por aca avisa Mercado Pago (servidor a servidor) cuando cambia un pago.
+
+    Es LA pieza importante: si el cliente paga y cierra el navegador sin volver,
+    este aviso llega igual y el pedido se marca cobrado solo. Juliana no tiene
+    que registrar nada a mano.
+
+    Va SIN CSRF a proposito: el que llama es Mercado Pago, no un formulario
+    nuestro, y no tiene (ni puede tener) nuestro token. La seguridad no esta en
+    el CSRF sino en que NO le creemos nada de lo que manda: solo tomamos el ID
+    y le RE-PREGUNTAMOS a MP con nuestro Access Token cual es el estado real.
+    Un impostor que invente un aviso no logra nada: el pago no va a existir.
+
+    Siempre devuelve 200. Si contestaramos error, MP reintenta en loop.
+    """
+    datos = request.get_json(silent=True) or {}
+    payment_id = (request.args.get('data.id')
+                  or request.args.get('id')
+                  or (datos.get('data') or {}).get('id')
+                  or datos.get('id') or '')
+    tipo = (request.args.get('type') or datos.get('type')
+            or datos.get('topic') or '')
+
+    # Solo nos interesan los avisos de PAGOS
+    if tipo and 'payment' not in str(tipo):
+        return ('', 200)
+
+    pago = pagos_mp.consultar_pago(payment_id)
+    if not pago:
+        return ('', 200)
+
+    pedido = Pedido.query.filter_by(token=pago.get('token_pedido')).first()
+    if pedido is None:
+        return ('', 200)
+
+    try:
+        pedido.mp_payment_id = pago['id'][:40]
+        pedido.mp_estado = (pago.get('estado') or '')[:30]
+        if pago['estado'] in pagos_mp.ESTADOS_OK:
+            _registrar_cobro_mp(pedido, pago)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    return ('', 200)
 
 
 @cliente_bp.route('/p/<token>')

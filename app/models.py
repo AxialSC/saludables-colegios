@@ -332,6 +332,23 @@ class Ajustes(db.Model):
     # Nombre del archivo del QR dentro de app/static/img/pagos/
     qr_imagen = db.Column(db.String(120), nullable=True)
 
+    # ------------------------------------------------------------------
+    # v0.37.0 · COSTO DE PLATAFORMA DE MERCADO PAGO
+    # ------------------------------------------------------------------
+    # Regla de Ivan: el precio de lista es el mismo para todos. El que elige
+    # pagar con Mercado Pago (y financiarse con su tarjeta) paga ADEMAS lo que
+    # cobra la pasarela. Ivan cobra siempre sus $100 + IVA limpios.
+    #
+    # Se deja PARAMETRIZABLE a proposito: Mercado Pago cambia sus tarifas, y
+    # falta que la contadora defina si el item lleva IVA. El dia que cambie
+    # cualquiera de las dos cosas se ajusta desde el panel, sin tocar codigo.
+    mp_costo_activo = db.Column(db.Boolean, nullable=False, default=True)
+    # Porcentaje BASE que cobra Mercado Pago (ej: 1.56 para el plazo de 35 dias)
+    mp_costo_pct = db.Column(db.Numeric(5, 2), nullable=False, default=1.56)
+    # Si esta en True, al porcentaje de arriba se le suma el IVA (x1.21).
+    # MP publica sus tarifas SIN IVA ("no incluyen IVA o retenciones").
+    mp_costo_iva = db.Column(db.Boolean, nullable=False, default=True)
+
     actualizado = db.Column(db.DateTime, default=_ahora)
 
 
@@ -444,6 +461,15 @@ class Pedido(db.Model):
     # porque los pedidos viejos (y los de revendedora) no lo tienen.
     medio_pago = db.Column(db.String(20), nullable=True)
 
+    # v0.37.0 · MERCADO PAGO
+    # costo_plataforma: lo que se le sumo al pedido para cubrir la comision.
+    # NO forma parte de la venta: no entra en el margen ni en la comision de la
+    # revendedora. Es plata que entra y sale. Por eso va aparte de 'total'.
+    costo_plataforma = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    mp_preference_id = db.Column(db.String(80), nullable=True)
+    mp_payment_id = db.Column(db.String(40), nullable=True)
+    mp_estado = db.Column(db.String(30), nullable=True)
+
     total = db.Column(db.Numeric(12, 2), nullable=False)      # FINAL con IVA
 
     # Para la contabilidad de Juliana (se completa en el panel)
@@ -541,6 +567,22 @@ class Pedido(db.Model):
         if not self.medio_pago:
             return None
         return FormaPago.ETIQUETAS.get(self.medio_pago, self.medio_pago)
+
+    @property
+    def total_a_pagar(self):
+        """
+        v0.37.0 · Lo que realmente tiene que pagar el cliente: la mercaderia
+        MAS el costo de plataforma (si eligio Mercado Pago).
+
+        'total' sigue siendo SOLO la mercaderia, a proposito: es la base con la
+        que se calculan margenes y comisiones. El costo de plataforma es plata
+        que entra y sale, no es una venta.
+        """
+        return float(self.total or 0) + float(self.costo_plataforma or 0)
+
+    @property
+    def tiene_costo_plataforma(self):
+        return float(self.costo_plataforma or 0) > 0
 
     @property
     def origen_etiqueta(self):

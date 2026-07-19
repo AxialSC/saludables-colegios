@@ -1031,3 +1031,23 @@ a { color: inherit; text-decoration: none; }
 @media (prefers-reduced-motion: reduce) {
     .t-volver, .t-volver::before { transition: none; }
 }
+
+/* v0.37.0 · Aviso cuando el carrito trae ofertas (Mercado Pago no se ofrece) */
+.pg-of-aviso {
+    margin-top: 4px; padding: 12px 14px; border-radius: 10px;
+    background: #FFF4F2; border: 1px solid #F5C6BE; color: #A33A28;
+    font-size: 0.82rem; line-height: 1.5;
+}
+.pg-of-aviso b { font-weight: 800; }
+
+/* v0.37.0 · Estado del pago en la pantalla de confirmacion */
+.co-pago {
+    display: flex; flex-direction: column; gap: 5px;
+    margin: 14px 0 4px; padding: 13px 15px; border-radius: 10px;
+    font-size: 0.84rem; line-height: 1.5; text-align: left;
+}
+.co-pago b { font-size: 0.92rem; font-weight: 800; }
+.co-pago.ok      { background:#EEF6EF; border:1px solid #C9E3CC; color:#1F6B33; }
+.co-pago.proceso { background:#FFF6E8; border:1px solid #FFE0B3; color:#8A5A00; }
+.co-pago.falla   { background:#FFF4F2; border:1px solid #F5C6BE; color:#A33A28; }
+.co-item-extra { color: var(--t-soft); font-style: italic; }

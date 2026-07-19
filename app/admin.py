@@ -30,6 +30,7 @@ from sqlalchemy import select, or_, func
 from werkzeug.utils import secure_filename
 
 from .extensions import db
+from . import pagos_mp
 from .models import (Producto, Pedido, Cobro, ModificacionPedido, ItemPedido,
                      get_ajustes, EstadoPedido, OrigenPedido, FormaPago, CategoriaProducto,
                      Oferta, Cotizacion, CotizacionItem, TipoCotizacion,
@@ -1709,6 +1710,15 @@ def medios_pago():
         aj.pago_qr = 'pago_qr' in request.form
         aj.pago_mercadopago = 'pago_mercadopago' in request.form
 
+        # --- v0.37.0 · Costo de plataforma de Mercado Pago ---
+        aj.mp_costo_activo = 'mp_costo_activo' in request.form
+        aj.mp_costo_iva = 'mp_costo_iva' in request.form
+        try:
+            pct = float((request.form.get('mp_costo_pct') or '0').replace(',', '.'))
+        except (TypeError, ValueError):
+            pct = 0.0
+        aj.mp_costo_pct = max(0.0, min(pct, 99.0))
+
         # Datos de la cuenta (se limpian espacios; vacio se guarda como None)
         def _txt(campo, limite):
             v = (request.form.get(campo) or '').strip()
@@ -1767,7 +1777,11 @@ def medios_pago():
         flash('Medios de pago guardados ✓ Ya se ven así en el checkout.', 'success')
         return redirect(url_for('admin.medios_pago'))
 
-    return render_template('admin/medios_pago.html', aj=aj)
+    return render_template('admin/medios_pago.html', aj=aj,
+                           mp_ok=pagos_mp.configurado(),
+                           mp_motivo=pagos_mp.motivo_no_configurado(),
+                           mp_sandbox=pagos_mp.es_sandbox(),
+                           mp_costo_ej=pagos_mp.costo_plataforma(100000, aj))
 
 
 # ======================= IMPORTAR =======================

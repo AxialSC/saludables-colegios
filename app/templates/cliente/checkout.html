@@ -168,18 +168,36 @@
         {% endif %}
 
         {% if ajustes.pago_mercadopago %}
-        <label class="pg-opt">
+        <label class="pg-opt" id="pg-opt-mp">
             <input type="radio" name="medio_pago" value="MERCADOPAGO" form="co-form"
                    {% if datos and datos.medio_pago == 'MERCADOPAGO' %}checked{% endif %}>
             <span class="pg-txt">
                 <b>💳 Mercado Pago</b>
-                <small>Tarjeta o dinero en cuenta.</small>
+                <small>Tarjeta de crédito, débito o dinero en cuenta.
+                {% if ajustes.mp_costo_activo %}Tiene un costo de plataforma.{% endif %}</small>
             </span>
         </label>
         <div class="pg-datos" data-para="MERCADOPAGO">
-            <div class="pg-aviso">Coordinamos el pago por Mercado Pago al confirmar tu pedido.</div>
+            {% if ajustes.mp_costo_activo %}
+            <div class="pg-dato"><span>Tu pedido</span><b id="mp-base">—</b></div>
+            <div class="pg-dato"><span>Costo de plataforma</span><b id="mp-extra">—</b></div>
+            <div class="pg-dato" style="border-top:2px solid var(--t-line); padding-top:10px;">
+                <span><b>Total a pagar</b></span><b id="mp-total">—</b></div>
+            {% endif %}
+            <div class="pg-nota">
+                Al confirmar te llevamos al sitio de Mercado Pago para pagar,
+                y volvés solo. 🔒
+            </div>
         </div>
         {% endif %}
+
+        {# v0.37.0 · Aviso que aparece SOLO si el carrito trae ofertas: ahi
+           Mercado Pago se esconde (lo esconde el JS de abajo) y el backend
+           tampoco lo acepta. #}
+        <div class="pg-of-aviso" id="pg-of-aviso" hidden>
+            🏷️ Tu carrito tiene <b>productos en oferta</b>. Los precios de oferta se abonan
+            en <b>efectivo o por transferencia</b>.
+        </div>
     </div>
     {% endif %}
 
@@ -254,8 +272,56 @@
         refrescar();   // estado inicial
     })();
 
-    /* Tocar un CBU o alias lo copia al portapapeles: el cliente no tiene que
-       seleccionar 22 digitos con el dedo en el celular. */
+    /* =================================================================
+       v0.37.0 · MERCADO PAGO: dos cosas.
+       1) Si el carrito trae OFERTAS, se esconde la opcion (el margen del 10%
+          no banca la comision). El backend lo rechaza igual aunque lo fuercen:
+          esto es solo para no ofrecer algo que despues iba a fallar.
+       2) Muestra en vivo cuanto seria el costo de plataforma, para que el
+          cliente sepa exactamente que va a pagar ANTES de decidir.
+       ================================================================= */
+    (function () {
+        var optMp  = document.getElementById('pg-opt-mp');
+        var aviso  = document.getElementById('pg-of-aviso');
+        var hayOf  = cods.some(function (c) { return !!carrito[c].of; });
+
+        if (hayOf) {
+            if (optMp) {
+                var r = optMp.querySelector('input[name="medio_pago"]');
+                if (r) { r.checked = false; r.disabled = true; }
+                optMp.hidden = true;
+                var panel = document.querySelector('.pg-datos[data-para="MERCADOPAGO"]');
+                if (panel) panel.hidden = true;
+                // Si MP quedaba elegido, se vuelve a la primera opcion valida
+                var primera = document.querySelector('input[name="medio_pago"]:not([disabled])');
+                if (primera && !document.querySelector('input[name="medio_pago"]:checked')) {
+                    primera.checked = true;
+                }
+            }
+            if (aviso) aviso.hidden = false;
+            return;
+        }
+
+        // Costo de plataforma en vivo (la MISMA cuenta que hace el servidor:
+        // se DIVIDE, no se suma)
+        var PCT = {{ (ajustes.mp_costo_pct|float) if ajustes.mp_costo_activo else 0 }};
+        var CON_IVA = {{ 'true' if ajustes.mp_costo_iva else 'false' }};
+        var elBase  = document.getElementById('mp-base');
+        var elExtra = document.getElementById('mp-extra');
+        var elTotal = document.getElementById('mp-total');
+        if (elBase && PCT > 0) {
+            var c = (PCT / 100) * (CON_IVA ? 1.21 : 1);
+            var base = 0;
+            cods.forEach(function (cod) {
+                var it = carrito[cod];
+                base += precioUnit(it) * it.qty;
+            });
+            var bruto = base / (1 - c);
+            elBase.textContent  = fmt(base);
+            elExtra.textContent = fmt(bruto - base);
+            elTotal.textContent = fmt(bruto);
+        }
+    })();
     document.querySelectorAll('.pg-copiable').forEach(function (el) {
         el.addEventListener('click', function () {
             var txt = el.textContent.trim();

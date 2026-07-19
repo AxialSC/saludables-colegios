@@ -80,6 +80,28 @@
     .mp-qr-sub { font-size: 0.75rem; color: var(--text-soft); margin-top: 6px; line-height: 1.5; }
     .mp-qr-file { flex: 1; min-width: 240px; }
 
+
+    .mp-conex {
+        margin-bottom: 14px; padding: 11px 13px; border-radius: 8px;
+        font-size: 0.8rem; line-height: 1.5;
+    }
+    .mp-conex.ok    { background:#eef6ee; border:1px solid #cfe8cf; color:#2e7d32; }
+    .mp-conex.falta { background:#fff6e8; border:1px solid #ffe0b3; color:#9a6200; }
+
+    .mp-ejemplo {
+        margin-top: 16px; padding: 14px; border-radius: 9px;
+        background: #FAF8F4; border: 1px solid var(--divider);
+    }
+    .mp-ej-lb {
+        font-size: 0.68rem; letter-spacing: .08em; text-transform: uppercase;
+        color: var(--text-soft); font-weight: 700; margin-bottom: 8px;
+    }
+    .mp-ej-fila {
+        display: flex; justify-content: space-between; padding: 6px 0;
+        border-bottom: 1px solid var(--divider); font-size: 0.85rem;
+    }
+    .mp-ej-fila:last-of-type { border-bottom: none; }
+    .mp-ej-nota { margin-top: 10px; font-size: 0.76rem; color: var(--text-soft); line-height: 1.5; }
     .mp-mp-pronto {
         display: inline-block; background: #E8E4DC; color: #6b5638;
         font-size: 0.64rem; font-weight: 800; letter-spacing: .08em;
@@ -225,7 +247,7 @@
             </div>
         </div>
 
-        <!-- ============ MERCADO PAGO (preparado, apagado) ============ -->
+        <!-- ============ MERCADO PAGO ============ -->
         <div class="mp-card">
             <div class="mp-head">
                 <span class="mp-ic">💳</span>
@@ -233,18 +255,96 @@
                 <span class="mp-estado">{{ 'Visible' if aj.pago_mercadopago else 'Oculto' }}</span>
             </div>
             <div class="mp-body {% if not aj.pago_mercadopago %}apagado{% endif %}" data-body="mp">
+
+                {# Semaforo: si falta el token o la libreria, se dice CLARO y se
+                   explica como arreglarlo. Sin esto, prender el interruptor y
+                   que no pase nada seria un misterio imposible de diagnosticar. #}
+                {% if mp_ok %}
+                <div class="mp-conex ok">
+                    ✅ <b>Conectado</b> — credenciales cargadas
+                    {% if mp_sandbox %}
+                    · <b>MODO PRUEBA</b>: los pagos son simulados, no entra plata real.
+                    {% else %}
+                    · <b>MODO REAL</b>: los pagos son de verdad.
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="mp-conex falta">
+                    ⚠️ <b>Todavía no está conectado.</b> {{ mp_motivo }}
+                </div>
+                {% endif %}
+
                 <div class="mp-check">
                     <input type="checkbox" id="pago_mercadopago" name="pago_mercadopago"
                            data-toggle="mp" {% if aj.pago_mercadopago %}checked{% endif %}>
                     <label for="pago_mercadopago">
                         Aceptar pago con Mercado Pago
-                        <span class="mp-mp-pronto">Próximamente</span>
                         <span class="mp-sub">
-                            El casillero ya está listo, pero el cobro real todavía no se programó.
-                            <b>Dejalo apagado</b> hasta que conectemos las credenciales y lo probemos
-                            en el ambiente de prueba de Mercado Pago.
+                            Tarjeta de crédito, débito o dinero en cuenta. El cliente paga en
+                            el sitio de Mercado Pago y vuelve solo. <b>No se ofrece en pedidos
+                            con productos en oferta</b> (el margen del 10% no banca la comisión).
                         </span>
                     </label>
+                </div>
+
+                <div class="mp-campos" style="grid-template-columns:1fr;">
+                    <div class="campo full" style="margin-bottom:10px;">
+                        <div class="mp-check" style="margin-bottom:0;">
+                            <input type="checkbox" id="mp_costo_activo" name="mp_costo_activo"
+                                   {% if aj.mp_costo_activo %}checked{% endif %}>
+                            <label for="mp_costo_activo">
+                                Cobrarle el costo de plataforma al cliente
+                                <span class="mp-sub">
+                                    Si está prendido, al que paga con Mercado Pago se le suma una
+                                    línea con el costo de la pasarela, y a vos te entra tu precio
+                                    completo. Si lo apagás, ese costo lo absorbés vos.
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mp-campos">
+                    <div class="campo">
+                        <label for="mp_costo_pct">Comisión de Mercado Pago (%)</label>
+                        <input type="number" step="0.01" min="0" max="99" id="mp_costo_pct"
+                               name="mp_costo_pct"
+                               value="{{ '%.2f'|format(aj.mp_costo_pct|float) }}">
+                    </div>
+                    <div class="campo" style="display:flex; align-items:flex-end;">
+                        <div class="mp-check" style="margin-bottom:14px;">
+                            <input type="checkbox" id="mp_costo_iva" name="mp_costo_iva"
+                                   {% if aj.mp_costo_iva %}checked{% endif %}>
+                            <label for="mp_costo_iva">
+                                Sumarle el IVA (21%)
+                                <span class="mp-sub">
+                                    Mercado Pago publica sus tarifas <b>sin IVA</b>.
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mp-nota">
+                    <b>El número que va acá</b> lo sacás de tu cuenta de Mercado Pago, en
+                    <i>Costos → plazos de acreditación</i>. A 35 días suele ser el más barato.
+                    Ojo: hay que configurarlo por separado para <b>Checkout</b> y para
+                    <b>Link de pago</b>.
+                </div>
+
+                <div class="mp-ejemplo">
+                    <div class="mp-ej-lb">Con esta configuración, en un pedido de $100.000:</div>
+                    <div class="mp-ej-fila"><span>El cliente paga</span>
+                        <b>${{ '{:,.2f}'.format(100000 + mp_costo_ej)|replace(',','X')|replace('.',',')|replace('X','.') }}</b></div>
+                    <div class="mp-ej-fila"><span>Costo de plataforma</span>
+                        <b>${{ '{:,.2f}'.format(mp_costo_ej)|replace(',','X')|replace('.',',')|replace('X','.') }}</b></div>
+                    <div class="mp-ej-fila"><span>Te entran a vos</span>
+                        <b style="color:var(--success);">$100.000,00</b></div>
+                    <div class="mp-ej-nota">
+                        El costo se calcula <b>dividiendo</b>, no sumando: si solo sumáramos el
+                        porcentaje, Mercado Pago cobraría comisión también sobre el recargo y te
+                        quedarías corto en cada venta.
+                    </div>
                 </div>
             </div>
         </div>
