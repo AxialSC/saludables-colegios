@@ -193,6 +193,14 @@ v0.37.2 -> P9-fix2: TEXTO INVISIBLE en Medios de pago. Las etiquetas de los
                BLANCA de esta pantalla se perdia. Corregido a --text-dark
                (carbon #1A1A1A). Lo detecto Ivan mirando la pantalla.
                SIN migracion.
+v0.37.3 -> P9-fix3: los avisos del checkout y la confirmacion salian SIEMPRE en
+               ROJO. El estilo nacio cuando esas pantallas solo mostraban errores
+               de validacion, asi que estaba fijo en rojo; con Mercado Pago ahora
+               tambien dan buenas noticias, y "¡Recibimos tu pago!" aparecia con
+               el color de "algo salio mal". Los templates ya leian la categoria
+               pero no la usaban: ahora la pintan (verde exito / amarillo aviso /
+               rojo error). Lo detecto Ivan en la primera prueba real de pago.
+               SIN migracion.
 """
 import os
 from datetime import timedelta
@@ -206,7 +214,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.37.2'
+    APP_VERSION = '0.37.3'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 

@@ -813,6 +813,14 @@ a { color: inherit; text-decoration: none; }
     background: #fdeaea; color: #c62828; border: 1px solid #f3cccc;
     padding: 11px 14px; border-radius: 10px; font-size: 0.84rem; margin-bottom: 8px;
 }
+/* v0.37.3 · Este bloque nacio cuando el checkout SOLO daba errores de
+   validacion, asi que estaba fijo en rojo. Con Mercado Pago la pantalla tambien
+   da buenas noticias ("Recibimos tu pago"), y salian en rojo: justo el color
+   que le dice al cliente "algo salio mal". Ahora cada aviso se pinta segun su
+   categoria. El rojo de arriba queda como valor por defecto. */
+.co-flashes li.f-success { background:#EEF6EF; color:#1F6B33; border-color:#C9E3CC; }
+.co-flashes li.f-warning { background:#FFF6E8; color:#8A5A00; border-color:#FFE0B3; }
+.co-flashes li.f-error   { background:#fdeaea; color:#c62828; border-color:#f3cccc; }
 
 .co-ok { text-align: center; }
 .co-check {
