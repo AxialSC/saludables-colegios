@@ -222,6 +222,23 @@ v0.38.0 -> P10: LOS PDF DEL CLIENTE, CON LA CARA DE LA TIENDA. El comprobante de
                PDF decia un total y al cliente le figuraba otro en su tarjeta).
                Si faltara un archivo de logo, el PDF sale igual con el nombre en
                texto: un comprobante tiene que salir SIEMPRE. SIN migracion.
+v0.38.1 -> P11: FIX DE LA HORA (todo se veia 3 HORAS ATRASADO). Era una DOBLE
+               CONVERSION: models._ahora() guarda HORA ARGENTINA sin etiqueta de
+               zona, pero timezone.a_argentina() asumia que un dato sin zona
+               venia en UTC y le restaba 3 horas otra vez. Un pedido de las 02:34
+               del 19/07 se mostraba como 23:34 del 18/07.
+               NO era solo cosmetico: todo pedido hecho entre medianoche y las
+               3 AM figuraba con la FECHA DEL DIA ANTERIOR (y si caia un 1° de
+               mes, del MES anterior), ensuciando cualquier corte por dia o por
+               mes. Afectaba al panel, a los PDF y a los listados.
+               Arreglado en a_argentina(): un datetime sin zona ahora se
+               interpreta como lo que realmente es en esta base, hora Argentina.
+               Se verificaron los 14 campos de fecha del modelo: NINGUNO guarda
+               en UTC (todos usan _ahora()), asi que el cambio es seguro.
+               NO HAY QUE MIGRAR NADA: lo guardado siempre estuvo bien, lo que
+               fallaba era la lectura. Las fechas historicas se corrigen solas.
+               Lo detecto Ivan comparando la hora real con la del pedido.
+               SIN migracion.
 """
 import os
 from datetime import timedelta
@@ -235,7 +252,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.38.0'
+    APP_VERSION = '0.38.1'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 
