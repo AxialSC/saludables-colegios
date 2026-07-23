@@ -239,6 +239,36 @@ v0.38.1 -> P11: FIX DE LA HORA (todo se veia 3 HORAS ATRASADO). Era una DOBLE
                fallaba era la lectura. Las fechas historicas se corrigen solas.
                Lo detecto Ivan comparando la hora real con la del pedido.
                SIN migracion.
+v0.38.2 -> P12: MERCADO PAGO "APAGADO" EN VEZ DE ESCONDIDO cuando el carrito
+               tiene ofertas. El codigo intentaba esconderlo con el atributo
+               hidden, pero .pg-opt tiene display:flex y eso le gana al hidden,
+               asi que quedaba visible igual (deshabilitado, pero sin explicar
+               por que). Lo detecto Ivan en la prueba del blindaje.
+               Se decidio dejarlo VISIBLE a proposito: si la opcion desaparece,
+               el cliente que ya compro antes se pregunta que paso. Ahora se
+               muestra en gris, con borde punteado y una etiqueta "No disponible
+               con ofertas", ademas del cartel que ya estaba. La regla de negocio
+               no cambia: el backend lo sigue rechazando igual. SIN migracion.
+v0.39.0 -> P13: PROLIJIDAD DEL PANEL — pantalla de OFERTAS. Dos cosas que se
+               veian mal y tenian la misma causa de fondo (clases sin estilo):
+                 (a) .filtro-input se usa en esta pantalla desde siempre, pero su
+                     APARIENCIA solo estaba definida DENTRO de otra plantilla
+                     (admin/pedido_detalle.html). Resultado: el buscador y el
+                     desplegable de rubros se dibujaban como controles crudos del
+                     navegador (borde fino negro), desentonando con todo el panel.
+                     Es el mismo bug que las clases huerfanas del checkout (v0.36).
+                 (b) La pantalla no tenia contenedor de ancho: en un monitor ancho
+                     los paneles y los avisos cruzaban de punta a punta mientras el
+                     resto del sistema respeta su margen. Ahora .of-wrap (1100px).
+               Ademas se saco el emoji del titulo (ninguna otra pantalla lo usa;
+               el icono ya esta en el sidebar) y se le dio estilo al boton "Vaciar
+               lista", que tampoco tenia. NO se toco NADA de la logica: el JS
+               quedo identico al original, verificado byte a byte.
+               PENDIENTE relacionado: .filtro-input tambien se usa en otras
+               pantallas del panel (pedidos, etc.). La solucion de fondo es
+               subirla a app.css y sacarla de las plantillas; se hara en la tanda
+               global de prolijidad, con la lista completa de pantallas.
+               SIN migracion.
 """
 import os
 from datetime import timedelta
@@ -252,7 +282,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.38.1'
+    APP_VERSION = '0.39.0'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 
