@@ -66,13 +66,27 @@
         <div class="panel" style="margin-top:16px;">
             <h3>Historial de modificaciones</h3>
             {% for m in pedido.modificaciones %}
+            {# v0.41.0 · La descripción puede venir con el prefijo "Al aprobar: ".
+               Si se hacía el split directo, la PRIMERA línea quedaba como
+               "Al aprobar: agregó ..." y no se detectaba como alta (empieza con
+               "Al", no con "agregó"): salía pintada como cambio en vez de verde.
+               Se separa el prefijo antes de partir las líneas. #}
+            {% set desc = m.descripcion %}
+            {% set ctx = '' %}
+            {% if desc.startswith('Al aprobar: ') %}
+              {% set ctx = 'Al aprobar' %}
+              {% set desc = desc[12:] %}
+            {% endif %}
             <div class="modif-item">
                 <div class="modif-cab">
-                    <span>{{ m.creado|ar_datetime }} · {{ m.hecho_por }}</span>
+                    <span>
+                      {% if ctx %}<b class="modif-ctx">{{ ctx }}</b>{% endif %}
+                      {{ m.creado|ar_datetime }} · {{ m.hecho_por }}
+                    </span>
                     <span class="modif-totales">{{ m.total_anterior|pesos }} → <b>{{ m.total_nuevo|pesos }}</b></span>
                 </div>
                 <ul class="modif-lista">
-                    {% for linea in m.descripcion.split('; ') %}
+                    {% for linea in desc.split('; ') %}
                     {% set alta = linea.startswith('agregó') %}
                     {% set baja = linea.startswith('quitó') %}
                     <li class="modif-linea {% if alta %}m-alta{% elif baja %}m-baja{% else %}m-cambio{% endif %}">
@@ -259,6 +273,9 @@
 .modif-cab { display:flex; justify-content:space-between; gap:10px; font-size:0.72rem;
     color:var(--text-soft); margin-bottom:7px; }
 .modif-totales b { color:#6b5638; }
+.modif-ctx { display:inline-block; background:var(--carbon); color:#C8A951;
+    font-size:.58rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+    padding:2px 8px; border-radius:20px; margin-right:6px; }
 .modif-lista { list-style:none; margin:0; padding:0; }
 .modif-linea { display:flex; align-items:flex-start; gap:9px; padding:6px 10px;
     font-size:0.82rem; border-radius:7px; margin-bottom:4px; }

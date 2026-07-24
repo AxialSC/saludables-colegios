@@ -309,7 +309,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.40.0'
+    APP_VERSION = '0.41.0'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 

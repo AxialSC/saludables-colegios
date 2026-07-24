@@ -261,7 +261,8 @@ def aprobar(pid):
             if cant < 1:
                 # cantidad 0 = Juliana saco este producto (no habia stock)
                 if cod in originales:
-                    cambios.append(f'quitó [{cod}] {originales[cod].nombre}')
+                    o = originales[cod]
+                    cambios.append(f'quitó [{cod}] {o.nombre} · eran {o.cantidad} u.')
                 continue
 
             prod = Producto.query.filter_by(codigo=cod, activo=True).first()
@@ -289,20 +290,24 @@ def aprobar(pid):
                 'subtotal': round(precio * cant, 2),
             })
 
-            # Detectar cambios para el historial
+            # Detectar cambios para el historial.
+            # v0.41.0 · El texto tiene que entenderse SOLO, sin ir a buscar el
+            # codigo a la tabla: por eso va siempre el nombre del producto. Y se
+            # usa "·" y "×" en vez de pegar la cantidad con una "x", que se
+            # confundia con el nombre del producto ("Agua x2000cc x1000").
             if cod in originales:
                 oc = originales[cod].cantidad
                 op = float(originales[cod].precio_unitario)
                 if oc != cant:
-                    cambios.append(f'[{cod}] cantidad {oc}→{cant}')
+                    cambios.append(f'[{cod}] {nombre} · cantidad {oc} → {cant} u.')
                 if abs(op - precio) > 0.01:
-                    cambios.append(f'[{cod}] precio {_pesos(op)}→{_pesos(precio)}')
+                    cambios.append(f'[{cod}] {nombre} · precio {_pesos(op)} → {_pesos(precio)}')
             else:
                 # v0.40.0 · Producto AGREGADO por Juliana (no venia en el pedido
                 # original). Tipico: no habia stock de uno y se cambio por otro.
                 # Queda registrado igual que las quitas, para que Nadia entienda
                 # que paso con su venta.
-                cambios.append(f'agregó [{cod}] {nombre} x{cant} a {_pesos(precio)}')
+                cambios.append(f'agregó [{cod}] {nombre} · {cant} u. × {_pesos(precio)}')
 
         if not items_calc:
             flash('No podés aprobar un pedido sin productos. Si no hay stock de nada, '
