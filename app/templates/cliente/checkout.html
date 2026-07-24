@@ -6,7 +6,7 @@
     <title>Finalizar pedido · {{ ajustes.nombre_negocio }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/tienda.css') }}">
 </head>
-<body>
+<body class="co-page">
 
 <header class="t-header">
     <div class="t-header-top">
@@ -113,7 +113,7 @@
             <input type="radio" name="medio_pago" value="EFECTIVO" form="co-form"
                    {% if not datos or datos.medio_pago == 'EFECTIVO' or not datos.medio_pago %}checked{% endif %}>
             <span class="pg-txt">
-                <b>💵 Efectivo</b>
+                <b><svg class="pg-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg><span>Efectivo</span></b>
                 <small>Contra entrega o al retirar el pedido.</small>
             </span>
         </label>
@@ -124,7 +124,7 @@
             <input type="radio" name="medio_pago" value="TRANSFERENCIA" form="co-form"
                    {% if datos and datos.medio_pago == 'TRANSFERENCIA' %}checked{% endif %}>
             <span class="pg-txt">
-                <b>🏦 Transferencia bancaria</b>
+                <b><svg class="pg-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10h18M5 10v8m4-8v8m6-8v8m4-8v8M2 18h20M12 3 3 8h18z"/></svg><span>Transferencia bancaria</span></b>
                 <small>Te pasamos los datos de la cuenta.</small>
             </span>
         </label>
@@ -151,7 +151,7 @@
             <input type="radio" name="medio_pago" value="QR" form="co-form"
                    {% if datos and datos.medio_pago == 'QR' %}checked{% endif %}>
             <span class="pg-txt">
-                <b>📱 QR / Billetera</b>
+                <b><svg class="pg-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14h1M14 20h3M20 17v4"/></svg><span>QR / Billetera</span></b>
                 <small>Escaneás con tu app y pagás.</small>
             </span>
         </label>
@@ -172,7 +172,7 @@
             <input type="radio" name="medio_pago" value="MERCADOPAGO" form="co-form"
                    {% if datos and datos.medio_pago == 'MERCADOPAGO' %}checked{% endif %}>
             <span class="pg-txt">
-                <b>💳 Mercado Pago</b>
+                <b><svg class="pg-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 10h20M6 15h4"/></svg><span>Mercado Pago</span></b>
                 <small>Tarjeta de crédito, débito o dinero en cuenta.
                 {% if ajustes.mp_costo_activo %}Tiene un costo de plataforma.{% endif %}</small>
             </span>

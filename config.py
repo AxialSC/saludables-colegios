@@ -350,6 +350,40 @@ v0.45.0 -> A1 (cierre): PROLIJIDAD DEL PANEL, lo que faltaba. Cambios 100%
                ya iba en 0.44.0. Se completaron las entradas v0.41 a v0.44 con el
                detalle que estaba en BITACORA_SALUDABLES.md.
                SIN migracion.
+v0.46.0 -> A2: EL CIRCUITO DE PAGO (checkout + confirmacion). Lo marco Ivan
+               mirando la pantalla: era BLANCO SOBRE BLANCO. Las tarjetas
+               tenian el mismo color que el fondo y un borde clarisimo, asi
+               que no se despegaban de nada y la pantalla se leia "apagada".
+                 · FONDO GRIS CALIDO (#E9E6DF) detras de las tarjetas blancas.
+                   Ivan propuso una IMAGEN de fondo y se decidio que NO: en una
+                   pantalla de pago cualquier adorno le compite a la informacion
+                   y baja la confianza. Mercado Libre, Amazon y Shopify pueden
+                   poner lo que quieran y todos dejan el fondo liso. Lo que hace
+                   que se vea de primera es el CONTRASTE y el aire, no el fondo.
+                 · TARJETAS CON SOMBRA y borde definido: ahora flotan.
+                 · TITULO DE CADA TARJETA con una barrita verde de marca.
+                 · EL TOTAL en su propia franja: es el numero que el ojo busca.
+                 · MEDIOS DE PAGO con borde visible y anillo verde en el elegido
+                   (el borde anterior era --t-line, casi invisible sobre blanco).
+                 · LOS EMOJIS DE PAGO (dinero/banco/QR/tarjeta) PASAN A SVG.
+                   En Windows salian como cuadraditos de colores y no se pueden
+                   pintar por CSS. Es LA MISMA leccion del boton Agregar del
+                   carrito en v0.22.1.
+                 · "Seguir comprando", boton Enviar pedido y el foco de los
+                   campos, con mas presencia.
+               TODO cuelga de 'body.co-page', clase que SOLO tienen checkout.html
+               y confirmacion.html. La gondola, el carrito y el resto de la tienda
+               NO se tocan: sin esa clase, todo se ve exactamente igual que antes.
+               No se cambio ni una linea de JS ni de logica.
+               + FIX de yapa (la TRAMPA CONOCIDA N°4, que estaba viva aca): el JS
+                 esconde Mercado Pago con 'optMp.hidden = true' cuando el carrito
+                 trae ofertas, pero .pg-opt tiene 'display: flex' y una regla de
+                 autor le GANA al 'hidden' del navegador. Resultado: la opcion
+                 seguia VISIBLE (apagada, sin poder tocarse) al lado del cartel
+                 que dice que con ofertas no se acepta MP. El blindaje de fondo
+                 nunca fallo (radio disabled + rechazo en el backend): era solo
+                 lo que se veia. Arreglado desde el CSS, sin tocar el JS.
+               SIN migracion.
 """
 import os
 from datetime import timedelta
@@ -363,7 +397,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.45.0'
+    APP_VERSION = '0.46.0'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 

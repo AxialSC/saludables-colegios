@@ -1059,3 +1059,193 @@ a { color: inherit; text-decoration: none; }
 .co-pago.proceso { background:#FFF6E8; border:1px solid #FFE0B3; color:#8A5A00; }
 .co-pago.falla   { background:#FFF4F2; border:1px solid #F5C6BE; color:#A33A28; }
 .co-item-extra { color: var(--t-soft); font-style: italic; }
+
+/* =====================================================================
+   v0.46.0 · A2 · EL CIRCUITO DE PAGO (checkout + confirmacion)
+   ---------------------------------------------------------------------
+   EL PROBLEMA QUE RESUELVE (lo marco Ivan mirando la pantalla):
+   el checkout era BLANCO sobre BLANCO. Las tarjetas tenian el mismo color
+   que el fondo y un borde clarisimo, asi que no se separaban de nada: la
+   pantalla se leia "apagada", como sin terminar.
+
+   POR QUE UN GRIS Y NO UNA IMAGEN DE FONDO:
+   Ivan propuso una imagen. Se decidio que NO, y vale dejarlo escrito para
+   que nadie lo "mejore" mas adelante: en una pantalla de PAGO, cualquier
+   adorno le compite a la informacion y baja la confianza. Mercado Libre,
+   Amazon y Shopify pueden poner lo que quieran y todos dejan el fondo liso.
+   Lo que hace que se vea de primera no es el fondo: es el CONTRASTE, el
+   aire entre bloques y los detalles (sombras, foco, el boton con peso).
+
+   TODO ESTO CUELGA DE 'body.co-page', que solo tienen checkout.html y
+   confirmacion.html. La gondola, el carrito y el resto de la tienda NO
+   se tocan: si esta regla no existiera, se verian exactamente igual.
+   ===================================================================== */
+body.co-page {
+    --t-check-bg: #E9E6DF;      /* gris CALIDO: hace juego con la crema de la marca */
+    background: var(--t-check-bg);
+}
+
+/* ---- El header blanco ahora FLOTA sobre el gris ---- */
+body.co-page .t-header {
+    background: var(--t-card);
+    box-shadow: 0 1px 0 rgba(31,31,29,.06), 0 8px 20px -14px rgba(31,31,29,.30);
+    margin-bottom: 4px;
+}
+
+/* ---- "Seguir comprando": que se note que es un boton ----
+   Ya era una pastilla (v0.36) pero con el borde casi invisible se perdia.
+   Ahora tiene fondo blanco propio, borde definido y una sombrita: se lee
+   como algo tocable de un vistazo. El hover verde no se toca. */
+body.co-page .t-volver {
+    background: #fff;
+    border-color: #D9D4C8;
+    box-shadow: 0 1px 3px rgba(31,31,29,.07);
+}
+body.co-page .t-volver:hover {
+    box-shadow: 0 3px 10px rgba(35,83,57,.22);
+}
+
+/* ---- Las tarjetas: sombra real, para que se despeguen del fondo ---- */
+body.co-page .co-card {
+    border-color: #E0DCD2;
+    box-shadow: 0 1px 2px rgba(31,31,29,.05),
+                0 10px 24px -16px rgba(31,31,29,.30);
+    padding: 22px 20px;
+}
+
+/* ---- Titulo de cada tarjeta con una barrita verde de marca ----
+   Detalle chico que cambia la percepcion: da jerarquia y "vida" sin
+   agregar ruido. Va con '> h3' para agarrar SOLO los titulos directos de
+   la tarjeta (el <h2> del "¡Gracias!" de la confirmacion no se toca). */
+body.co-page .co-card > h3 {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 1.02rem;
+    letter-spacing: -.005em;
+}
+body.co-page .co-card > h3::before {
+    content: '';
+    width: 4px; height: 17px; border-radius: 3px;
+    background: var(--t-marca);
+    flex: none;
+}
+
+/* ---- El total, con peso propio ----
+   Era una linea mas. Ahora tiene su franja clara: en una pantalla de pago,
+   el numero final es LO que el cliente busca con el ojo. */
+body.co-page .co-total-row {
+    background: #F6F3EC;
+    border-top: 2px solid #E4DFD3;
+    border-radius: 10px;
+    margin: 14px -4px 0;
+    padding: 14px 16px;
+}
+
+/* ---- Campos del formulario: el foco se ve de verdad ---- */
+body.co-page .co-field input,
+body.co-page .co-field textarea {
+    border-color: #DFDACF;
+    background: #FCFBF8;
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+body.co-page .co-field input:focus,
+body.co-page .co-field textarea:focus {
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(35,83,57,.13);
+}
+body.co-page .co-field label { color: #4A463D; }
+
+/* ---- Medios de pago: se veian "apagados" ----
+   El borde era var(--t-line) (#ECE9E1) sobre tarjeta blanca: practicamente
+   invisible. Ahora el borde se distingue y el elegido queda con un anillo
+   verde que no deja duda de cual esta seleccionado. */
+body.co-page .pg-opt {
+    border-color: #DDD8CC;
+    background: #FCFBF8;
+    align-items: center;
+}
+body.co-page .pg-opt:hover {
+    background: #fff;
+    border-color: var(--t-marca);
+    box-shadow: 0 2px 10px -4px rgba(35,83,57,.28);
+}
+body.co-page .pg-opt.elegido {
+    background: #F1F7F3;
+    border-color: var(--t-marca);
+    box-shadow: 0 0 0 3px rgba(35,83,57,.13);
+}
+
+/* ---- Iconos de los medios de pago (SVG, no emoji) ----
+   Los emojis 💵🏦📱💳 se dibujaban distinto en cada telefono (en Windows
+   salian como cuadraditos de colores) y no se pueden pintar por CSS. Es la
+   MISMA leccion del boton Agregar del carrito, v0.22.1. Ahora son SVG: se
+   ven igual en todos lados y heredan el color con currentColor. */
+body.co-page .pg-txt b {
+    display: flex; align-items: center; gap: 9px;
+    color: var(--t-text);
+}
+body.co-page .pg-ic {
+    width: 20px; height: 20px; flex: none;
+    color: var(--t-marca);
+}
+body.co-page .pg-opt.elegido .pg-ic { color: var(--t-marca-d); }
+
+/* ---- Boton "Enviar pedido": el cierre de la venta ---- */
+body.co-page .co-submit {
+    padding: 16px;
+    letter-spacing: .02em;
+    box-shadow: 0 6px 18px -6px rgba(35,83,57,.55);
+    transition: background .15s ease, transform .08s ease, box-shadow .15s ease;
+}
+body.co-page .co-submit:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px -8px rgba(35,83,57,.65);
+}
+body.co-page .co-submit:active { transform: translateY(0); }
+
+/* ---- Confirmacion: el tilde y el numero de pedido ---- */
+body.co-page .co-check {
+    box-shadow: 0 0 0 8px rgba(35,83,57,.07);
+}
+body.co-page .co-numero {
+    display: inline-block;
+    background: #F6F3EC;
+    border: 1px dashed #D9D4C8;
+    border-radius: 10px;
+    padding: 8px 18px;
+    margin-top: 10px;
+}
+body.co-page .co-volver-link {
+    background: #fff;
+    border: 1.5px solid #D9D4C8;
+    border-radius: 999px;
+    padding: 9px 18px;
+    box-shadow: 0 1px 3px rgba(31,31,29,.07);
+}
+body.co-page .co-volver-link:hover {
+    background: var(--t-marca); color: #fff; border-color: var(--t-marca);
+}
+
+/* ---- Panel de datos del medio elegido (CBU, QR, costo de MP) ---- */
+body.co-page .pg-datos {
+    background: #FBFAF6;
+    border-color: #DFDACF;
+}
+
+/* ---- 🪤 FIX · la trampa conocida N°4, viva en esta pantalla ----
+   El JS esconde la opcion de Mercado Pago con 'optMp.hidden = true' cuando el
+   carrito trae productos en oferta. PERO .pg-opt tiene 'display: flex' en esta
+   hoja, y una regla de autor le GANA al 'hidden' del navegador: la opcion
+   seguia VISIBLE (apagada y sin poder tocarse, pero visible), justo al lado
+   del cartel que dice que con ofertas no se acepta MP. Confuso.
+   El blindaje de fondo nunca fallo: el radio queda disabled y el backend
+   rechaza MP igual aunque lo fuercen. Esto es solo lo que se ve.
+   NO se toco el JS: se arregla desde el CSS, que es donde estaba el problema. */
+body.co-page .pg-opt[hidden],
+body.co-page .pg-datos[hidden] { display: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+    body.co-page .co-submit,
+    body.co-page .co-field input,
+    body.co-page .co-field textarea { transition: none; }
+    body.co-page .co-submit:hover { transform: none; }
+}
