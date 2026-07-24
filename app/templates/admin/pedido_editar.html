@@ -15,6 +15,9 @@
             Cambiá cantidades, quitá o agregá productos. El precio se recalcula con el escalón
             (1-4 / 5-9 / 10+). El pedido no puede quedar por debajo de {{ ajustes.minimo_compra|pesos }}.
             <span style="color:#2e7d32; font-weight:700;">Lo que agregás queda resaltado en verde.</span>
+            <br>
+            <span class="ed-tip">💡 Podés <b>escribir la cantidad directamente</b> en el casillero, o
+            <b>mantener apretado</b> − / + para que corra rápido.</span>
         </p>
         <div id="ed-items"></div>
     </div>
@@ -43,6 +46,7 @@
 .ed-grid { display:grid; grid-template-columns:1.3fr 1fr; gap:18px; margin-top:14px; }
 @media (max-width:860px){ .ed-grid { grid-template-columns:1fr; } }
 .filtro-input { padding:10px 12px; border:1px solid var(--divider); border-radius:var(--radius); font-size:0.9rem; background:#fff; outline:none; }
+.ed-tip { display:inline-block; margin-top:6px; color:#6b5638; }
 .ed-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid #f0ece4; }
 .ed-item .ei-nom { flex:1; font-size:0.84rem; font-weight:600; min-width:0; }
 .ed-item .ei-pu { font-size:0.7rem; color:var(--text-soft); font-weight:400; margin-top:2px; }
@@ -50,10 +54,21 @@
 .ei-cod { display:inline-block; font-family:'Courier New',monospace; font-size:0.68rem; color:var(--text-soft);
     background:#f4f1ec; padding:1px 6px; border-radius:5px; margin-right:7px; vertical-align:middle; }
 .ei-ctrl { display:flex; align-items:center; gap:5px; }
-.ei-ctrl button { width:28px; height:28px; border:1px solid var(--divider); background:#fff; border-radius:8px; font-weight:700; cursor:pointer; font-size:1rem; }
+.ei-ctrl button { width:28px; height:28px; border:1px solid var(--divider); background:#fff; border-radius:8px; font-weight:700; cursor:pointer; font-size:1rem;
+    user-select:none; -webkit-user-select:none; touch-action:manipulation; }
 .ei-ctrl button:hover { background:#faf8f4; }
-.ei-ctrl span { min-width:22px; text-align:center; font-weight:700; }
+.ei-ctrl button:active { background:var(--bronce); color:#fff; border-color:var(--bronce); }
 .ei-quitar { color:#c62828; border:none!important; background:none!important; }
+.ei-quitar:active { background:none!important; color:#c62828!important; }
+
+/* v0.43.0 · La cantidad pasa a ser EDITABLE. Con 990 unidades, llegar a 100 a
+   golpe de botón era imposible; ahora se escribe el número y listo. */
+.ei-qty { width:62px; height:28px; text-align:center; font-weight:800; font-size:0.85rem;
+    border:1px solid var(--divider); border-radius:8px; outline:none; background:#fff;
+    -moz-appearance:textfield; }
+.ei-qty::-webkit-outer-spin-button, .ei-qty::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+.ei-qty:focus { border-color:var(--bronce); background:#fffdf8; }
+
 .ed-resultados { margin-top:8px; }
 .ed-res-item { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:9px 10px; border:1px solid #f0ece4; border-radius:8px; margin-bottom:6px; font-size:0.82rem; }
 .ed-res-item button { border:none; background:var(--bronce); color:#fff; font-weight:700; padding:6px 12px; border-radius:8px; cursor:pointer; font-size:0.75rem; }
@@ -69,6 +84,11 @@
 .ed-item.ed-nuevo { background:#f1f8f1; border-left:3px solid #2e7d32; padding-left:9px; border-radius:7px; border-bottom-color:#dcebdc; }
 .ei-tag-nuevo { display:inline-block; font-size:0.58rem; font-weight:800; color:#2e7d32; background:#e3f1e3;
     padding:2px 8px; border-radius:999px; margin-left:8px; letter-spacing:0.05em; text-transform:uppercase; vertical-align:middle; }
+
+@media (max-width:640px){
+    .ei-ctrl button { width:34px; height:34px; }   /* dedo, no mouse */
+    .ei-qty { width:66px; height:34px; font-size:16px; }  /* 16px: iOS no hace zoom */
+}
 </style>
 
 <script>
@@ -94,10 +114,12 @@
                 const tag = esNuevo ? '<span class="ei-tag-nuevo">✚ agregado</span>' : '';
                 return '<div class="ed-item'+(esNuevo?' ed-nuevo':'')+'">'+
                     '<div class="ei-nom"><span class="ei-cod">'+esc(it.codigo)+'</span>'+esc(it.nombre)+tag+'<div class="ei-pu">'+fmt(pu)+' c/u</div></div>'+
-                    '<div class="ei-ctrl"><button type="button" onclick="cambiar(\''+cod+'\',-1)">−</button>'+
-                    '<span>'+it.qty+'</span>'+
-                    '<button type="button" onclick="cambiar(\''+cod+'\',1)">+</button>'+
-                    '<button type="button" class="ei-quitar" onclick="quitar(\''+cod+'\')">✕</button></div>'+
+                    '<div class="ei-ctrl">'+
+                      '<button type="button" data-accion="menos" data-cod="'+esc(cod)+'" aria-label="Restar">−</button>'+
+                      '<input type="number" class="ei-qty" min="0" step="1" value="'+it.qty+'" data-cod="'+esc(cod)+'" aria-label="Cantidad">'+
+                      '<button type="button" data-accion="mas" data-cod="'+esc(cod)+'" aria-label="Sumar">+</button>'+
+                      '<button type="button" class="ei-quitar" data-accion="quitar" data-cod="'+esc(cod)+'" aria-label="Quitar">✕</button>'+
+                    '</div>'+
                     '<div class="ei-sub">'+fmt(pu*it.qty)+'</div></div>';
             }).join('');
         }
@@ -115,6 +137,99 @@
 
     window.cambiar = function(cod, d){ if(!items[cod]) return; items[cod].qty += d; if(items[cod].qty<=0) delete items[cod]; render(); };
     window.quitar = function(cod){ delete items[cod]; render(); };
+
+    /* ====================================================================
+       v0.43.0 · BOTONES QUE CORREN AL MANTENERLOS APRETADOS
+       El problema real: un pedido con 990 unidades. Para bajarlo a 100 había
+       que tocar el botón 890 veces. Ahora:
+         · Un toque suelto = 1 unidad (como siempre).
+         · Manteniendo apretado, arranca a repetir y VA ACELERANDO:
+           de a 1 → de a 5 → de a 10 → de a 25.
+           De 990 a 100 tarda unos 2 segundos.
+       Los listeners van DELEGADOS en el contenedor y no en cada botón, porque
+       render() reescribe todo el HTML en cada cambio: si se engancharan a los
+       botones, se perderían en el primer render.
+       ==================================================================== */
+    (function(){
+        var cont = document.getElementById('ed-items');
+        var timer = null, tick = 0, accion = null, cod = null;
+
+        function pasoActual(){
+            // Cuanto más tiempo apretado, más grande el salto
+            if (tick > 40) return 25;
+            if (tick > 24) return 10;
+            if (tick > 10) return 5;
+            return 1;
+        }
+
+        function aplicar(){
+            if (!cod || !items[cod]) { frenar(); return; }
+            var paso = pasoActual() * (accion === 'menos' ? -1 : 1);
+            var nueva = items[cod].qty + paso;
+            if (nueva <= 0) {           // no pasarse de largo hacia abajo
+                if (items[cod].qty > 1) { items[cod].qty = 1; render(); }
+                frenar();
+                return;
+            }
+            items[cod].qty = nueva;
+            render();
+        }
+
+        function arrancar(ac, c){
+            accion = ac; cod = c; tick = 0;
+            aplicar();                                   // el primer toque, ya
+            timer = setTimeout(function repetir(){       // después, en cadena
+                tick++;
+                aplicar();
+                timer = setTimeout(repetir, 70);
+            }, 420);                                     // pausa antes de repetir
+        }
+
+        function frenar(){
+            if (timer) { clearTimeout(timer); timer = null; }
+            tick = 0; accion = null; cod = null;
+        }
+
+        cont.addEventListener('mousedown', function(e){
+            var b = e.target.closest('button[data-accion]');
+            if (!b) return;
+            var ac = b.dataset.accion;
+            if (ac === 'quitar') { quitar(b.dataset.cod); return; }
+            e.preventDefault();
+            arrancar(ac, b.dataset.cod);
+        });
+        cont.addEventListener('touchstart', function(e){
+            var b = e.target.closest('button[data-accion]');
+            if (!b) return;
+            var ac = b.dataset.accion;
+            if (ac === 'quitar') { quitar(b.dataset.cod); return; }
+            e.preventDefault();
+            arrancar(ac, b.dataset.cod);
+        }, { passive: false });
+
+        ['mouseup','mouseleave','touchend','touchcancel','blur']
+            .forEach(function(ev){ cont.addEventListener(ev, frenar); });
+        window.addEventListener('mouseup', frenar);
+
+        // Escribir la cantidad a mano (lo más rápido cuando el salto es grande)
+        cont.addEventListener('change', function(e){
+            var inp = e.target.closest('.ei-qty');
+            if (!inp) return;
+            var c = inp.dataset.cod;
+            if (!items[c]) return;
+            var n = parseInt(inp.value, 10);
+            if (isNaN(n) || n < 0) n = items[c].qty;
+            if (n <= 0) { delete items[c]; } else { items[c].qty = n; }
+            render();
+        });
+        // Enter no debe mandar el formulario sin querer
+        cont.addEventListener('keydown', function(e){
+            if (e.key === 'Enter' && e.target.closest('.ei-qty')) {
+                e.preventDefault();
+                e.target.blur();
+            }
+        });
+    })();
 
     function agregar(p){
         if(items[p.codigo]) items[p.codigo].qty += 1;

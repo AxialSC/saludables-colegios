@@ -1,101 +1,154 @@
 {% extends 'admin/base_admin.html' %}
 
+{% block title %}Suscriptores · {{ app_nombre }}{% endblock %}
 {% block seccion %}Marketing{% endblock %}
-{% block titulo %}📩 Suscriptores{% endblock %}
+{% block titulo %}Suscriptores{% endblock %}
 
 {% block contenido %}
 <style>
+    /* v0.43.0 · PROLIJIDAD (A1).
+       Esta pantalla venía de antes del design system y desentonaba con el resto
+       del panel: colores escritos a mano (#1A1A1A, #C2A05B) en vez de las
+       variables, esquinas cuadradas donde el resto usa var(--radius), tabla sin
+       contenedor (la fila del encabezado negro cortaba en punta) y el título con
+       emoji, que ninguna otra pantalla usa.
+       Se toma como referencia "Base de clientes", que es la que está bien.
+       OJO: el oro del panel es var(--gold) = #C8A951. Acá estaba escrito
+       #C2A05B a mano, un tono distinto: por eso las dos pantallas no se veían
+       igual aunque "fueran del mismo color". */
+    .sus-wrap { max-width: 1180px; }
+    .main-area .flashes { max-width: 1180px; }
+
     .sus-toolbar {
         display: flex; justify-content: space-between; align-items: center;
         gap: 14px; flex-wrap: wrap; margin-bottom: 16px;
     }
+    .sus-search { display: flex; gap: 8px; }
     .sus-search input[type=text] {
-        padding: 9px 14px; border: 1px solid #E0DAD0; border-radius: 8px;
-        min-width: 260px; font-size: 0.85rem;
+        padding: 11px 14px; border: 1px solid var(--divider);
+        border-radius: var(--radius); min-width: 300px; font-size: 0.88rem;
+        background: #fff; outline: none; transition: border-color .15s ease;
     }
+    .sus-search input[type=text]:focus { border-color: var(--bronce); }
+    .sus-search input[type=text]::placeholder { color: #b3ada2; }
     .sus-search button {
-        padding: 9px 16px; border: 1px solid #1A1A1A; background: #1A1A1A;
-        color: #F4F1EC; border-radius: 8px; font-weight: 700; font-size: 0.82rem;
-        cursor: pointer;
+        padding: 11px 20px; border: none; background: var(--carbon);
+        color: var(--crema); border-radius: var(--radius);
+        font-weight: 700; font-size: 0.78rem; letter-spacing: .06em;
+        text-transform: uppercase; cursor: pointer; transition: background .15s ease;
     }
+    .sus-search button:hover { background: #000; }
+
     .sus-export {
-        padding: 10px 18px; border-radius: 8px; background: #C2A05B; color: #1A1A1A;
-        font-weight: 700; font-size: 0.85rem; text-decoration: none; display: inline-block;
+        padding: 11px 20px; border-radius: var(--radius);
+        background: var(--bronce); color: #fff;
+        font-weight: 700; font-size: 0.78rem; letter-spacing: .06em;
+        text-transform: uppercase; display: inline-block;
+        transition: filter .15s ease;
     }
-    .sus-export:hover { filter: brightness(1.06); }
-    .sus-count { font-size: 0.85rem; color: #666; margin-bottom: 14px; }
+    .sus-export:hover { filter: brightness(1.08); }
+
+    .sus-count { font-size: 0.85rem; color: var(--text-soft); margin-bottom: 14px; }
+
+    /* La tabla vive DENTRO de una caja redondeada, como en Base de clientes:
+       así el encabezado oscuro no corta en punta contra el fondo crema. */
+    .sus-caja {
+        background: #fff; border: 1px solid var(--divider);
+        border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow);
+    }
     .sus-tabla { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
     .sus-tabla th {
-        text-align: left; background: #1A1A1A; color: #C2A05B; padding: 10px 12px;
-        font-size: 0.72rem; letter-spacing: .06em; text-transform: uppercase; font-weight: 700;
+        text-align: left; background: var(--carbon); color: var(--gold);
+        padding: 12px 14px; font-size: 0.66rem; letter-spacing: .1em;
+        text-transform: uppercase; font-weight: 700; white-space: nowrap;
     }
-    .sus-tabla td { padding: 10px 12px; border-bottom: 1px solid #E0DAD0; }
-    .sus-tabla tr:nth-child(even) td { background: #FAF8F4; }
+    .sus-tabla td { padding: 12px 14px; border-bottom: 1px solid #f0ece4; }
+    .sus-tabla tr:last-child td { border-bottom: none; }
+    .sus-tabla tbody tr:nth-child(even) td { background: #FAF8F4; }
+    .sus-tabla tbody tr:hover td { background: #F4F1EC; }
+
     .sus-badge {
-        display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.72rem;
-        font-weight: 700;
+        display: inline-block; padding: 3px 11px; border-radius: 20px;
+        font-size: 0.68rem; font-weight: 700; letter-spacing: .04em;
+        text-transform: uppercase;
     }
-    .sus-badge.on { background: #e3f3e5; color: #2e7d32; }
-    .sus-badge.off { background: #fbe6e6; color: #c62828; }
+    .sus-badge.on { background: #eaf5ea; color: var(--success); }
+    .sus-badge.off { background: #fdeaea; color: var(--danger); }
+
     .sus-btn-mini {
-        padding: 5px 11px; border-radius: 6px; border: 1px solid #E0DAD0; background: #fff;
-        font-size: 0.75rem; font-weight: 700; cursor: pointer;
+        padding: 7px 13px; border-radius: 8px; border: 1px solid var(--divider);
+        background: #fff; font-size: 0.74rem; font-weight: 700; cursor: pointer;
+        white-space: nowrap; transition: all .15s ease;
     }
-    .sus-btn-mini:hover { border-color: #8B6F47; color: #8B6F47; }
-    .sus-vacio { text-align: center; color: #999; padding: 30px; }
+    .sus-btn-mini:hover { border-color: var(--bronce); color: var(--bronce); background: #FAF8F4; }
+
+    .sus-vacio { text-align: center; color: var(--text-soft); padding: 34px; }
+
+    @media (max-width: 720px) {
+        .sus-search { flex: 1 0 100%; }
+        .sus-search input[type=text] { flex: 1; min-width: 0; }
+        .sus-export { flex: 1 0 100%; text-align: center; }
+        .sus-caja { overflow-x: auto; }
+    }
 </style>
 
-<div class="sus-toolbar">
-    <form method="GET" class="sus-search" style="display:flex; gap:8px;">
-        <input type="text" name="q" value="{{ q }}" placeholder="Buscar por nombre, email o WhatsApp…">
-        <button type="submit">Buscar</button>
-    </form>
-    <a href="{{ url_for('admin.suscriptores_exportar') }}" class="sus-export">⬇️ Exportar CSV (activos)</a>
+<div class="sus-wrap">
+
+    <div class="sus-toolbar">
+        <form method="GET" class="sus-search">
+            <input type="text" name="q" value="{{ q }}" placeholder="Buscar por nombre, email o WhatsApp…">
+            <button type="submit">Buscar</button>
+        </form>
+        <a href="{{ url_for('admin.suscriptores_exportar') }}" class="sus-export">⬇ Exportar CSV (activos)</a>
+    </div>
+
+    <div class="sus-count">{{ activos }} activo(s) · {{ total }} en total</div>
+
+    <div class="sus-caja">
+        <table class="sus-tabla">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>DNI/CUIT</th>
+                    <th>Email</th>
+                    <th>WhatsApp</th>
+                    <th>Cumpleaños</th>
+                    <th>Notif.</th>
+                    <th>Alta</th>
+                    <th>Estado</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in lista %}
+                <tr>
+                    <td>{{ s.nombre_completo }}</td>
+                    <td>{{ s.dni_cuit or '—' }}</td>
+                    <td>{{ s.email or '—' }}</td>
+                    <td>{{ s.whatsapp or '—' }}</td>
+                    <td>{{ s.cumple_etiqueta }}</td>
+                    <td>{{ 'Sí' if s.acepta_notificaciones else 'No' }}</td>
+                    <td>{{ s.creado.strftime('%d/%m/%Y') if s.creado else '—' }}</td>
+                    <td>
+                        <span class="sus-badge {{ 'on' if s.activo else 'off' }}">
+                            {{ 'Activo' if s.activo else 'Baja' }}
+                        </span>
+                    </td>
+                    <td>
+                        <form method="POST" action="{{ url_for('admin.suscriptor_activo', sid=s.id) }}"
+                              onsubmit="return confirm('{{ '¿Dar de baja' if s.activo else '¿Reactivar' }} a {{ s.nombre_completo }}?');">
+                            <button type="submit" class="sus-btn-mini">
+                                {{ 'Dar de baja' if s.activo else 'Reactivar' }}
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="9" class="sus-vacio">Todavía no hay suscriptores.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
 </div>
-
-<div class="sus-count">{{ activos }} activo(s) · {{ total }} en total</div>
-
-<table class="sus-tabla">
-    <thead>
-        <tr>
-            <th>Nombre</th>
-            <th>DNI/CUIT</th>
-            <th>Email</th>
-            <th>WhatsApp</th>
-            <th>Cumpleaños</th>
-            <th>Notif.</th>
-            <th>Alta</th>
-            <th>Estado</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for s in lista %}
-        <tr>
-            <td>{{ s.nombre_completo }}</td>
-            <td>{{ s.dni_cuit or '—' }}</td>
-            <td>{{ s.email or '—' }}</td>
-            <td>{{ s.whatsapp or '—' }}</td>
-            <td>{{ s.cumple_etiqueta }}</td>
-            <td>{{ 'Sí' if s.acepta_notificaciones else 'No' }}</td>
-            <td>{{ s.creado.strftime('%d/%m/%Y') if s.creado else '—' }}</td>
-            <td>
-                <span class="sus-badge {{ 'on' if s.activo else 'off' }}">
-                    {{ 'Activo' if s.activo else 'Baja' }}
-                </span>
-            </td>
-            <td>
-                <form method="POST" action="{{ url_for('admin.suscriptor_activo', sid=s.id) }}"
-                      onsubmit="return confirm('{{ '¿Dar de baja' if s.activo else '¿Reactivar' }} a {{ s.nombre_completo }}?');">
-                    <button type="submit" class="sus-btn-mini">
-                        {{ 'Dar de baja' if s.activo else 'Reactivar' }}
-                    </button>
-                </form>
-            </td>
-        </tr>
-        {% else %}
-        <tr><td colspan="9" class="sus-vacio">Todavía no hay suscriptores.</td></tr>
-        {% endfor %}
-    </tbody>
-</table>
 {% endblock %}
