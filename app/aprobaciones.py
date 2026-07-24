@@ -152,6 +152,71 @@ def detalle(pid):
 
 
 # ============================================================================
+#  v0.40.0 · BUSCADOR PARA AGREGAR UN PRODUCTO A LA VENTA
+# ============================================================================
+
+@aprobaciones_bp.route('/<int:pid>/buscar')
+@admin_requerido
+def buscar_producto(pid):
+    """
+    Buscador JSON para AGREGAR un producto a una venta de revendedora que
+    Juliana esta editando.
+
+    EL CASO REAL QUE RESUELVE:
+      Nadia vendio 10 Rumba. Juliana llama a Torres y no hay stock. Antes solo
+      podia sacar el producto (cantidad 0) o rechazar el pedido entero y pedirle
+      a Nadia que lo rearme. Ahora puede llamar al cliente, ofrecerle Mellizas,
+      y hacer el cambio en el momento.
+
+    OJO — POR QUE NO SE REUSA revendedora.vender_buscar NI admin.ofertas_buscar:
+      · vender_buscar tiene @revendedora_requerido (Juliana recibiria un 403) y
+        calcula el piso con la comision de QUIEN ESTA LOGUEADO. Aca hay que usar
+        la comision de LA REVENDEDORA DEL PEDIDO, que es otra persona.
+      · ofertas_buscar devuelve el piso del 10% del admin, que NO es el piso de
+        ella (el suyo es 8/9/10% segun su escalon).
+      Devolver el piso equivocado seria regalarle margen a la casa o pisarle la
+      comision a Nadia. Por eso esta ruta es propia y ata el piso al pedido.
+    """
+    p = _venta_rev_o_404(pid)
+
+    q = (request.args.get('q') or '').strip()
+    rubro = (request.args.get('rubro') or '').strip()
+    if not q and not rubro:
+        return jsonify([])
+
+    nivel = comisiones.nivel_de(p.revendedora_id)
+    ajustes = get_ajustes()
+
+    # Codigos que YA estan en el pedido: se marcan para no duplicar renglones.
+    ya_estan = {it.codigo for it in p.items}
+
+    stmt = Producto.query.filter(Producto.activo.is_(True))
+    if rubro:
+        stmt = stmt.filter(Producto.rubro == rubro)
+    if q:
+        like = f'%{q}%'
+        stmt = stmt.filter(or_(Producto.nombre.ilike(like),
+                               Producto.codigo.ilike(like),
+                               Producto.marca.ilike(like)))
+    prods = stmt.order_by(Producto.nombre).limit(40).all()
+
+    res = []
+    for prod in prods:
+        pr = comisiones.precios_para(prod, ajustes, nivel['comision'])
+        res.append({
+            'codigo': prod.codigo,
+            'nombre': prod.nombre,
+            'marca': prod.marca or '',
+            'rubro': prod.rubro or '',
+            'lista': pr['lista'],       # precio sugerido al agregarlo
+            'minimo': pr['minimo'],     # SU piso, segun SU escalon
+            'costo': pr['costo'],
+            'ya_esta': prod.codigo in ya_estan,
+        })
+    return jsonify(res)
+
+
+# ============================================================================
 #  APROBAR
 # ============================================================================
 
@@ -232,6 +297,12 @@ def aprobar(pid):
                     cambios.append(f'[{cod}] cantidad {oc}→{cant}')
                 if abs(op - precio) > 0.01:
                     cambios.append(f'[{cod}] precio {_pesos(op)}→{_pesos(precio)}')
+            else:
+                # v0.40.0 · Producto AGREGADO por Juliana (no venia en el pedido
+                # original). Tipico: no habia stock de uno y se cambio por otro.
+                # Queda registrado igual que las quitas, para que Nadia entienda
+                # que paso con su venta.
+                cambios.append(f'agregó [{cod}] {nombre} x{cant} a {_pesos(precio)}')
 
         if not items_calc:
             flash('No podés aprobar un pedido sin productos. Si no hay stock de nada, '

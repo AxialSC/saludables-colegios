@@ -36,6 +36,22 @@
         {% endif %}
       </div>
 
+      {# v0.40.0 · AGREGAR UN PRODUCTO A LA VENTA.
+         El caso real: Nadia vendió 10 Rumba, Torres no tiene stock, y Juliana
+         le ofrece Mellizas al cliente. Antes había que rechazar todo el pedido
+         y pedirle a Nadia que lo rearmara. Solo aparece en modo edición. #}
+      {% if p.estado == 'PENDIENTE' %}
+      <div class="ad-agregar" id="boxAgregar" style="display:none;">
+        <div class="ad-agregar-tit">
+          Agregar un producto
+          <small>Se cobra al precio de lista de {{ p.revendedora_nombre }}; podés bajarlo hasta su mínimo.</small>
+        </div>
+        <input type="text" id="agQ" class="ad-agregar-input" autocomplete="off"
+               placeholder="Buscá por nombre, código o marca (ej: mellizas, 89012)…">
+        <div id="agRes" class="ad-agregar-res"></div>
+      </div>
+      {% endif %}
+
       <table class="ad-tabla" id="tablaItems">
         <tbody>
           {% for it in items_data %}
@@ -189,6 +205,40 @@
   .ad-editar-btn:hover { background:#2a2a2a; }
   .ad-editar-btn.on { background:var(--gold); color:var(--carbon); border-color:var(--gold); }
 
+  /* ---- v0.40.0 · Agregar producto ---- */
+  .ad-agregar { padding:14px 18px; background:#FAF8F4; border-bottom:1px solid var(--divider); }
+  .ad-agregar-tit { font-size:.68rem; font-weight:700; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--bronce); margin-bottom:8px; }
+  .ad-agregar-tit small { display:block; font-weight:400; text-transform:none;
+    letter-spacing:0; color:var(--text-soft); font-size:.72rem; margin-top:3px; }
+  .ad-agregar-input { width:100%; padding:10px 12px; border:1px solid var(--divider);
+    border-radius:var(--radius); font-size:.88rem; background:#fff; outline:none;
+    transition:border-color .15s ease; }
+  .ad-agregar-input:focus { border-color:var(--bronce); }
+  .ad-agregar-res { margin-top:8px; max-height:260px; overflow-y:auto; }
+  .ad-agregar-res:empty { display:none; }
+  .ag-row { display:flex; align-items:center; gap:10px; padding:9px 10px;
+    border:1px solid var(--divider); border-radius:8px; background:#fff; margin-bottom:6px; }
+  .ag-info { flex:1; min-width:0; }
+  .ag-nom { font-size:.82rem; font-weight:600; white-space:nowrap; overflow:hidden;
+    text-overflow:ellipsis; }
+  .ag-meta { font-size:.7rem; color:var(--text-soft); margin-top:2px; }
+  .ag-btn { border:1px solid var(--bronce); background:#fff; color:#6b5638;
+    font-size:.74rem; font-weight:700; padding:6px 12px; border-radius:7px;
+    cursor:pointer; white-space:nowrap; }
+  .ag-btn:hover { background:var(--bronce); color:#fff; }
+  .ag-btn:disabled { opacity:.5; cursor:default; background:#eef3ee;
+    border-color:#bcdcbc; color:#2e7d32; }
+  .ag-hint { font-size:.78rem; color:var(--text-soft); padding:8px 2px; }
+
+  /* Fila recién agregada: se distingue del resto */
+  .ad-fila-nueva { background:#F3FAF4; }
+  .ad-nuevo { display:inline-block; background:#2e7d32; color:#fff; font-size:.58rem;
+    font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+    padding:2px 7px; border-radius:20px; margin-left:5px; }
+  .ad-quitar-nueva { border:none; background:none; color:var(--danger);
+    font-size:.95rem; cursor:pointer; padding:0 2px; }
+
   .ad-tabla { width:100%; border-collapse:collapse; }
   .ad-tabla td { padding:12px 16px; border-bottom:1px solid #f0ece4; vertical-align:middle; }
   .ad-nom { font-size:.85rem; font-weight:600; }
@@ -273,6 +323,9 @@
     document.getElementById('btnEditar').classList.toggle('on', editando);
     document.querySelectorAll('.ad-lect').forEach(function (e) { e.style.display = editando ? 'none' : ''; });
     document.querySelectorAll('.ad-edit').forEach(function (e) { e.style.display = editando ? '' : 'none'; });
+    // v0.40.0 · El buscador para agregar solo tiene sentido editando.
+    var box = document.getElementById('boxAgregar');
+    if (box) box.style.display = editando ? 'block' : 'none';
     if (editando) recalc();
   };
 
@@ -307,8 +360,15 @@
       inP.classList.toggle('bajo', bajo);
       if (bajo && cant > 0) algunBajo = true;
 
+      // v0.40.0 · OJO: las filas AGREGADAS llevan un botón ✕ dentro de esta
+      // misma celda. Si escribiéramos el subtotal en la celda entera (como
+      // antes), el botón se borraría en el primer recalc. Por eso, si la fila
+      // tiene un <span> propio para el número, se escribe ahí. Las filas de
+      // siempre no lo tienen y siguen funcionando igual que antes.
       var sub = precio * cant;
-      tr.querySelector('.ad-sub-edit').textContent = fmt(sub);
+      var celSub = tr.querySelector('.ad-sub-edit');
+      var destino = celSub.querySelector('.ad-sub-num') || celSub;
+      destino.textContent = fmt(sub);
       total += sub;
       costo += cst * cant;
       if (cant > 0) items.push({ codigo: tr.dataset.codigo, cantidad: cant, precio: Number(precio.toFixed(2)) });
@@ -337,6 +397,129 @@
     // Cargar el JSON que se manda si se aprueba editado
     document.getElementById('items_json').value = editando ? JSON.stringify(items) : '';
   };
+
+  /* ====================================================================
+     v0.40.0 · AGREGAR UN PRODUCTO A LA VENTA
+     El backend ya aceptaba códigos nuevos en items_json; lo que faltaba era
+     la forma de cargarlos. La fila que se arma acá es IDÉNTICA en estructura
+     a las que dibuja Jinja (mismos data-* y mismas clases), así recalc() la
+     toma sin enterarse de que es nueva.
+     ==================================================================== */
+  var URL_BUSCAR = "{{ url_for('aprobaciones.buscar_producto', pid=p.id) }}";
+  var agQ   = document.getElementById('agQ');
+  var agRes = document.getElementById('agRes');
+  var tmr = null, reqId = 0;
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function enTabla(cod) {
+    return !!document.querySelector('#tablaItems tr[data-codigo="' + CSS.escape(cod) + '"]');
+  }
+
+  function buscar() {
+    var myId = ++reqId;
+    var q = agQ.value.trim();
+    if (q.length < 2) { agRes.innerHTML = ''; return; }
+    agRes.innerHTML = '<div class="ag-hint">Buscando…</div>';
+    fetch(URL_BUSCAR + '?q=' + encodeURIComponent(q))
+      .then(function (r) { return r.json(); })
+      .then(function (data) { if (myId === reqId) pintar(data); })
+      .catch(function () { agRes.innerHTML = '<div class="ag-hint">Error al buscar. Probá de nuevo.</div>'; });
+  }
+
+  function pintar(data) {
+    if (!data.length) {
+      agRes.innerHTML = '<div class="ag-hint">No se encontraron productos.</div>';
+      return;
+    }
+    agRes.innerHTML = data.map(function (p) {
+      var ya = p.ya_esta || enTabla(p.codigo);
+      return '<div class="ag-row">' +
+          '<div class="ag-info">' +
+            '<div class="ag-nom">' + esc(p.nombre) + '</div>' +
+            '<div class="ag-meta">Cód. ' + esc(p.codigo) +
+              (p.marca ? ' · ' + esc(p.marca) : '') +
+              ' · lista ' + fmt(p.lista) + ' · mín ' + fmt(p.minimo) + '</div>' +
+          '</div>' +
+          '<button type="button" class="ag-btn" ' + (ya ? 'disabled' : '') +
+            " onclick='agregarFila(" + JSON.stringify(p).replace(/'/g, '&#39;') + ", this)'>" +
+            (ya ? '✓ Ya está' : '+ Agregar') + '</button>' +
+        '</div>';
+    }).join('');
+  }
+
+  window.agregarFila = function (p, btn) {
+    if (enTabla(p.codigo)) return;
+
+    var tb = document.querySelector('#tablaItems tbody');
+    var tr = document.createElement('tr');
+    tr.className = 'ad-fila-nueva';
+    tr.dataset.codigo = p.codigo;
+    tr.dataset.minimo = p.minimo;
+    tr.dataset.costo  = p.costo;
+    tr.dataset.lista  = p.lista;
+
+    // Arranca con 1 unidad al precio de LISTA (no al mínimo): el mínimo es el
+    // piso al que se PUEDE llegar negociando, no el precio de partida. Si
+    // arrancara en el mínimo, Juliana estaría regalando margen sin querer.
+    var precio = Number(p.lista);
+
+    tr.innerHTML =
+      '<td>' +
+        '<div class="ad-nom">' + esc(p.nombre) + '</div>' +
+        '<div class="ad-cod">Cód. ' + esc(p.codigo) +
+          '<span class="ad-nuevo">agregado</span> · mín ' + fmt(p.minimo) + '</div>' +
+      '</td>' +
+      '<td class="ad-lect ad-cant-cell" style="display:none;">1 u.</td>' +
+      '<td class="ad-lect ad-money" style="display:none;">' + fmt(precio) + '</td>' +
+      '<td class="ad-lect ad-money ad-sub" style="display:none;">' + fmt(precio) + '</td>' +
+      '<td class="ad-edit">' +
+        '<input type="number" min="0" value="1" class="ad-in-cant" onchange="recalc()">' +
+        '<span class="ad-edit-lbl">cant.</span>' +
+      '</td>' +
+      '<td class="ad-edit ad-money">' +
+        '<span class="ad-pesos">$</span>' +
+        '<input type="number" step="0.01" min="' + p.minimo + '" value="' + precio.toFixed(2) +
+          '" class="ad-in-precio" onchange="recalc()">' +
+      '</td>' +
+      '<td class="ad-edit ad-money ad-sub-edit">' +
+        '<span class="ad-sub-num">' + fmt(precio) + '</span>' +
+        ' <button type="button" class="ad-quitar-nueva" title="Sacar este producto"' +
+        ' onclick="quitarFila(this)">✕</button>' +
+      '</td>';
+
+    tb.appendChild(tr);
+    if (btn) { btn.disabled = true; btn.textContent = '✓ Ya está'; }
+    recalc();
+  };
+
+  // Solo se pueden sacar de la tabla las filas AGREGADAS en esta edición. Las
+  // originales se quitan poniéndoles cantidad 0, para que el historial registre
+  // "quitó [código]" y Nadia entienda qué pasó con su venta.
+  window.quitarFila = function (btn) {
+    var tr = btn.closest('tr');
+    if (tr && tr.classList.contains('ad-fila-nueva')) {
+      var cod = tr.dataset.codigo;
+      tr.remove();
+      var b = agRes.querySelector('.ag-btn[disabled]');
+      if (b && cod) buscar();   // refrescar para poder volver a agregarlo
+      recalc();
+    }
+  };
+
+  if (agQ) {
+    agQ.addEventListener('input', function () {
+      clearTimeout(tmr); tmr = setTimeout(buscar, 280);
+    });
+    // Enter no debe mandar el formulario de aprobación sin querer
+    agQ.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); clearTimeout(tmr); buscar(); }
+    });
+  }
 
   // Si se aprueba SIN entrar a editar, no mandamos items_json (el backend usa
   // los items tal cual estan).

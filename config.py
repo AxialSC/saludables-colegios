@@ -269,6 +269,33 @@ v0.39.0 -> P13: PROLIJIDAD DEL PANEL — pantalla de OFERTAS. Dos cosas que se
                subirla a app.css y sacarla de las plantillas; se hara en la tanda
                global de prolijidad, con la lista completa de pantallas.
                SIN migracion.
+v0.40.0 -> P14: AGREGAR UN PRODUCTO EN LA BANDEJA DE APROBACION.
+               EL CASO REAL: Nadia vende 10 Rumba, Juliana llama a Torres y no
+               hay stock. Antes solo se podia SACAR el producto (cantidad 0) o
+               rechazar el pedido entero y pedirle a Nadia que lo rearmara.
+               Ahora Juliana llama al cliente, le ofrece Mellizas, y hace el
+               cambio en el momento.
+               Hallazgo: el backend YA aceptaba codigos nuevos en items_json (si
+               el producto existe y esta activo, lo procesa). Lo que faltaba era
+               la forma de cargarlos y el registro en el historial. Se agrego:
+                 · Ruta /admin/aprobaciones/<pid>/buscar (JSON, admin_requerido).
+                   NO se reuso revendedora.vender_buscar (tiene otro decorador y
+                   calcula el piso con la comision de QUIEN ESTA LOGUEADO, que
+                   aca seria Juliana y no Nadia) ni admin.ofertas_buscar (devuelve
+                   el piso del 10% del admin, no el 8/9/10% de ella). Devolver el
+                   piso equivocado seria pisarle la comision a la revendedora.
+                 · Buscador en el detalle, visible SOLO en modo edicion. El
+                   producto entra al precio de LISTA de ella (no al minimo: el
+                   minimo es el piso al que se puede llegar negociando, no el
+                   precio de partida; arrancar ahi seria regalar margen).
+                 · El historial ahora registra "agrego [codigo] X" ademas de las
+                   quitas y los cambios de cantidad/precio.
+               Los candados NO cambian: el piso de la revendedora, el minimo de
+               $50k netos y el 6% de la casa se revalidan igual al aprobar.
+               Detalle tecnico: recalc() escribia el subtotal en la celda entera,
+               lo que borraba el boton de quitar de las filas nuevas; ahora
+               escribe en un span propio si existe (las filas viejas siguen
+               funcionando igual). SIN migracion.
 """
 import os
 from datetime import timedelta
@@ -282,7 +309,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.39.0'
+    APP_VERSION = '0.40.0'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 
