@@ -27,6 +27,7 @@ SEGURIDAD (lo que pidio Ivan):
   · Rechazar SIEMPRE pide motivo (queda claro para Nadia por que).
 """
 import json
+import re
 
 from flask import (Blueprint, render_template, redirect, url_for,
                    request, flash, abort, jsonify)
@@ -122,6 +123,18 @@ def detalle(pid):
     p = _venta_rev_o_404(pid)
     nivel = comisiones.nivel_de(p.revendedora_id)
 
+    # v0.42.0 · Que productos NO venian en el pedido original de Nadia, sino que
+    # los sumo Juliana al aprobar (el cambio por falta de stock).
+    #
+    # Se sacan del historial en vez de guardar un campo nuevo en ItemPedido: no
+    # amerita una migracion, porque el dato YA esta registrado ahi y el historial
+    # es inmutable (nadie lo edita). Si algun dia hiciera falta para reportes, se
+    # agrega la columna; por ahora esto lo resuelve sin tocar la base.
+    codigos_agregados = set()
+    for m in p.modificaciones:
+        for cod in re.findall(r'agregó \[([^\]]+)\]', m.descripcion or ''):
+            codigos_agregados.add(cod)
+
     # Para el editor: cada item con SU piso recalculado hoy (por si Torres cambio
     # el costo desde que Nadia armo el pedido).
     items_data = []
@@ -142,6 +155,7 @@ def detalle(pid):
             'codigo': it.codigo, 'nombre': it.nombre, 'cantidad': it.cantidad,
             'precio': float(it.precio_unitario), 'minimo': minimo, 'lista': lista,
             'costo': costo, 'existe': existe,
+            'agregado': it.codigo in codigos_agregados,
         })
 
     return render_template('admin/aprobacion_detalle.html', p=p, nivel=nivel,

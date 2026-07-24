@@ -55,12 +55,18 @@
       <table class="ad-tabla" id="tablaItems">
         <tbody>
           {% for it in items_data %}
+          {# v0.42.0 · Si el producto lo sumó Juliana al aprobar (no venía en el
+             pedido de Nadia), la fila queda marcada. Así, al abrir una venta ya
+             aprobada, se ve de un vistazo qué se cambió sin tener que leer el
+             historial entero. #}
           <tr data-codigo="{{ it.codigo }}" data-minimo="{{ it.minimo }}"
-              data-costo="{{ it.costo }}" data-lista="{{ it.lista }}">
+              data-costo="{{ it.costo }}" data-lista="{{ it.lista }}"
+              class="{% if it.agregado %}ad-fue-agregado{% endif %}">
             <td>
               <div class="ad-nom">{{ it.nombre }}</div>
               <div class="ad-cod">
                 Cód. {{ it.codigo }}
+                {% if it.agregado %}<span class="ad-tag-agr">agregado por {{ p.aprobado_por or 'admin' }}</span>{% endif %}
                 {% if not it.existe %}<span class="ad-sinstock">ya no está en catálogo</span>{% endif %}
                 · mín {{ it.minimo|pesos }}
               </div>
@@ -265,6 +271,13 @@
     border-color:#bcdcbc; color:#2e7d32; }
   .ag-hint { font-size:.78rem; color:var(--text-soft); padding:8px 2px; }
 
+  /* Producto que SUMÓ el admin al aprobar (queda marcado para siempre) */
+  .ad-fue-agregado { background:#F6FAF7; }
+  .ad-fue-agregado td:first-child { border-left:3px solid #2e7d32; }
+  .ad-tag-agr { display:inline-block; background:#E5F3E7; color:#2e7d32;
+    font-size:.58rem; font-weight:800; letter-spacing:.05em; text-transform:uppercase;
+    padding:2px 8px; border-radius:20px; margin-left:5px; }
+
   /* Fila recién agregada: se distingue del resto */
   .ad-fila-nueva { background:#F3FAF4; }
   .ad-nuevo { display:inline-block; background:#2e7d32; color:#fff; font-size:.58rem;
@@ -303,7 +316,13 @@
     gap:10px; flex-wrap:wrap; margin-bottom:9px; font-size:.76rem; }
   .ad-hist-quien { color:#5a5345; }
   .ad-hist-quien b { color:var(--carbon); }
-  .ad-hist-ctx { display:inline-block; background:var(--carbon); color:var(--gold);
+  /* v0.42.0 · OJO CON LA ESPECIFICIDAD: la etiqueta es un <b> DENTRO de
+     .ad-hist-quien, y ".ad-hist-quien b" (0,1,1) le ganaba a ".ad-hist-ctx"
+     (0,1,0). Resultado: texto carbón sobre fondo carbón = pastilla negra sin
+     texto. Por eso el selector va calificado con el padre. Es el mismo tipo de
+     bug que --text crema sobre tarjeta blanca: SIEMPRE verificar contraste. */
+  .ad-hist-quien b.ad-hist-ctx { display:inline-block; background:var(--carbon);
+    color:var(--gold);
     font-size:.6rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
     padding:2px 8px; border-radius:20px; margin-right:6px; }
   .ad-hist-meta { color:var(--text-soft); font-size:.72rem; white-space:nowrap; }
