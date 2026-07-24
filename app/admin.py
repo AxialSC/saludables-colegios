@@ -18,6 +18,7 @@ v0.19.1 -> FOOD COST real: sube factura PDF de Torres, la lee sola, cruza por
            placeholder de v0.14.1.
 """
 import os
+import re
 import secrets
 import tempfile
 from datetime import timedelta, datetime as _dt
@@ -216,8 +217,20 @@ def pedidos():
 @admin_requerido
 def pedido_detalle(pid):
     pedido = Pedido.query.get_or_404(pid)
+    # v0.44.0 · Que productos NO venian en el pedido original sino que se
+    # sumaron en una edicion posterior. Se sacan del historial (que es
+    # inmutable y ya tiene el dato) en vez de agregar una columna: misma
+    # solucion que en la bandeja de aprobacion.
+    # El regex cubre los DOS formatos que existen en el sistema:
+    #   · editor general  -> "agregó 42× [80718] Nombre"
+    #   · bandeja E4      -> "agregó [80718] Nombre · 10 u. × $1.600"
+    codigos_agregados = set()
+    for m in pedido.modificaciones:
+        for cod in re.findall(r'agregó\s+(?:\d+×\s+)?\[([^\]]+)\]', m.descripcion or ''):
+            codigos_agregados.add(cod)
     return render_template('admin/pedido_detalle.html', pedido=pedido,
                            estados=EstadoPedido.ETIQUETAS,
+                           codigos_agregados=codigos_agregados,
                            formas=FormaPago.ETIQUETAS)
 
 

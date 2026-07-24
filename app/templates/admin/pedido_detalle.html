@@ -44,9 +44,15 @@
                 <thead><tr><th>Código</th><th>Producto</th><th style="text-align:center;">Cant.</th><th style="text-align:right;">P.Unit</th><th style="text-align:right;">Subtotal</th></tr></thead>
                 <tbody>
                     {% for it in pedido.items %}
-                    <tr>
+                    {# v0.44.0 · Marca los productos que NO venían en el pedido original
+                       sino que se sumaron en una edición. Antes había que leerse el
+                       historial entero para saber qué se cambió. #}
+                    <tr class="{% if it.codigo in codigos_agregados %}fila-agregada{% endif %}">
                         <td class="mono">{{ it.codigo }}</td>
-                        <td>{{ it.nombre }}</td>
+                        <td>
+                            {{ it.nombre }}
+                            {% if it.codigo in codigos_agregados %}<span class="tag-agregado">agregado</span>{% endif %}
+                        </td>
                         <td style="text-align:center;">{{ it.cantidad }}</td>
                         <td style="text-align:right;">{{ it.precio_unitario|pesos }}</td>
                         <td style="text-align:right;" class="venta-final">{{ it.subtotal|pesos }}</td>
@@ -233,6 +239,12 @@
 .tabla tbody td { padding:10px 14px; border-bottom:1px solid #f0ece4; }
 .mono { font-family:'Courier New',monospace; color:var(--text-soft); }
 .venta-final { font-weight:800; color:#6b5638; white-space:nowrap; }
+/* v0.44.0 · Producto sumado en una edición posterior */
+.fila-agregada td { background:#F6FAF7 !important; }
+.fila-agregada td:first-child { border-left:3px solid #2e7d32; }
+.tag-agregado { display:inline-block; background:#E5F3E7; color:#2e7d32; font-size:.58rem;
+    font-weight:800; letter-spacing:.05em; text-transform:uppercase; padding:2px 8px;
+    border-radius:20px; margin-left:6px; vertical-align:middle; }
 .total-pedido { text-align:right; font-size:1rem; margin-top:12px; }
 .total-pedido b { color:#6b5638; font-size:1.2rem; }
 .acc-row { display:flex; gap:8px; }

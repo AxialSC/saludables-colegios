@@ -5,12 +5,11 @@
    v0.22.0 -> E1:
      · El sidebar deja de ser una lista plana de 16 links y pasa a estar
        AGRUPADO POR SECCIONES (PRINCIPAL / VENTAS / CRM / CATALOGO / SISTEMA).
-       Con 16 pestañas seguidas, el ojo no encuentra nada: tiene que leerlas
-       TODAS cada vez. Los titulitos funcionan como anclas: "lo que busco es de
-       ventas" -> vas directo a ese bloque. Es la diferencia entre un cajon de
-       sastre y un panel profesional.
-     · Logo real de la marca (logo-blanco.png) en el sidebar y en el login,
-       en vez del texto "SALUDABLES" con letter-spacing.
+     · Logo real de la marca (logo-blanco.png) en el sidebar y en el login.
+
+   v0.44.0 -> A1: se suben al final las CLASES COMPARTIDAS del panel
+     (.filtro-input, .filtros-bar, .btn-limpiar, .resultado-info, .tabla-caja).
+     Ver la nota al pie del archivo.
    ===================================================================== */
 
 :root {
@@ -207,11 +206,6 @@ a { color: inherit; text-decoration: none; }
 
 /* ---------------------------------------------------------------------
    v0.22.0 · NAV POR SECCIONES
-   Antes: 16 links seguidos, todos iguales. El ojo no tenia donde agarrarse.
-   Ahora: bloques con titulito. Los titulos NO se estiran (flex-shrink:0); los
-   links si reparten el espacio sobrante, como venia de v0.19.3. Si aun asi no
-   entran (pantalla muy baja), scrollea SOLO la lista, nunca la marca ni el
-   usuario.
    --------------------------------------------------------------------- */
 .nav {
     flex: 1; min-height: 0;
@@ -380,3 +374,50 @@ a { color: inherit; text-decoration: none; }
 .error-page .codigo { font-size: 4rem; font-weight: 300; color: var(--bronce); letter-spacing: 0.1em; }
 .error-page h2 { font-weight: 400; margin: 10px 0 6px; }
 .error-page p { color: var(--text-soft); margin-bottom: 22px; }
+
+/* =====================================================================
+   v0.44.0 · A1 · CLASES COMPARTIDAS DEL PANEL
+   ---------------------------------------------------------------------
+   POR QUE ESTAN ACA Y NO EN CADA PLANTILLA:
+   .filtro-input se usa en Pedidos, Catalogo, Ofertas y mas, pero solo estaba
+   definida DENTRO de algunas plantillas. En las que no la definian, el
+   buscador y los desplegables se dibujaban CRUDOS (el borde fino negro del
+   navegador) y desentonaban con todo el panel. Es el mismo tipo de problema
+   que las clases huerfanas del checkout (.t-header-top, v0.36).
+
+   OJO: este bloque va AL FINAL del archivo a proposito, pero las plantillas
+   que definen la clase en su propio <style> siguen ganando (el <style> del
+   template se lee despues que app.css). O sea: esto NO cambia nada de lo que
+   ya se veia bien, solo arregla lo que estaba crudo.
+   ===================================================================== */
+.filtros-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+
+.filtro-input {
+    padding: 11px 13px;
+    border: 1px solid var(--divider);
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    background: #fff;
+    color: var(--text-dark);
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+.filtro-input:focus { border-color: var(--bronce); }
+.filtro-input::placeholder { color: #b3ada2; }
+input.filtro-input { min-width: 240px; flex: 1; }
+select.filtro-input { cursor: pointer; }
+
+.btn-limpiar {
+    font-size: 0.78rem; font-weight: 700; color: var(--text-soft);
+    align-self: center; transition: color 0.15s ease;
+}
+.btn-limpiar:hover { color: var(--danger); }
+
+.resultado-info { font-size: 0.8rem; color: var(--text-soft); margin-bottom: 14px; }
+
+/* Caja para envolver tablas: asi el encabezado oscuro no corta en punta
+   contra el fondo crema. Es lo que hace bien "Base de clientes". */
+.tabla-caja {
+    background: #fff; border: 1px solid var(--divider);
+    border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow);
+}
