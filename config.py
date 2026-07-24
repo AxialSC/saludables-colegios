@@ -296,6 +296,60 @@ v0.40.0 -> P14: AGREGAR UN PRODUCTO EN LA BANDEJA DE APROBACION.
                lo que borraba el boton de quitar de las filas nuevas; ahora
                escribe en un span propio si existe (las filas viejas siguen
                funcionando igual). SIN migracion.
+v0.41.0 -> P15: HISTORIAL LEGIBLE en el detalle del pedido. Era un parrafo
+               corrido imposible de leer; ahora va renglon por renglon, con marca
+               y color segun el tipo de cambio. Bug encontrado: las descripciones
+               se guardan como "Al aprobar: cambio1; cambio2", asi que al partir
+               por "; " la PRIMERA linea quedaba como "Al aprobar: agrego ..." y
+               no se detectaba como alta. Hay que separar el prefijo antes.
+               SIN migracion.
+v0.42.0 -> P16: la pastilla de contexto del historial salia NEGRA CON TEXTO
+               NEGRO (invisible). Causa: ESPECIFICIDAD CSS. La regla
+               ".ad-hist-quien b" (0,1,1) le ganaba a ".ad-hist-ctx" (0,1,0),
+               aunque la segunda estuviera escrita despues. Lección: al pintar un
+               elemento, verificar que ninguna regla mas especifica lo este
+               pisando. + marcado visual de los productos agregados. SIN migracion.
+v0.43.0 -> P17: CANTIDADES SIN SUFRIR en el editor de pedidos. Un pedido real
+               tenia 990 unidades: bajarlo a 100 eran 890 clics en el boton menos.
+               Ahora la cantidad se puede ESCRIBIR a mano y los botones ± aceleran
+               al mantenerlos apretados (1 -> 5 -> 10 -> 25). + prolijidad de la
+               pantalla de Suscriptores. SIN migracion.
+v0.44.0 -> P18: CIERRE DE LA TANDA. El detalle del pedido marca visualmente lo
+               que se agrego. Y las CLASES COMPARTIDAS del panel (.filtros-bar,
+               .filtro-input, .btn-limpiar, .resultado-info, .tabla-caja) suben a
+               app.css: estaban definidas dentro de algunas plantillas sueltas, asi
+               que en las pantallas que no las definian los buscadores y
+               desplegables se dibujaban CRUDOS. Ahora se arreglan todas de una.
+               SIN migracion.
+v0.45.0 -> A1 (cierre): PROLIJIDAD DEL PANEL, lo que faltaba. Cambios 100%
+               COSMETICOS: no se toco ni una linea de logica, ni de JS, ni de
+               backend. Ninguna pantalla cambia lo que hace, solo como se ve.
+                 · EMOJIS FUERA DE LOS TITULOS en Food Cost, Historial de precios
+                   y Aprobaciones. Eran las 3 unicas pantallas de 9 que lo tenian:
+                   el resto (Pedidos, Catalogo, Clientes, Usuarios...) va con el
+                   titulo limpio. El icono ya esta en el sidebar, repetirlo en el
+                   H1 lo duplica. Ahora las 9 se ven iguales.
+                 · EL ORO, UNO SOLO. usuarios.html y clientes.html definian
+                   --oro:#C2A05B en su propio <style>, pero el oro del panel es
+                   #C8A951 (app.css --gold). Son dos tonos distintos: por eso las
+                   cabeceras negras de esas dos tablas no se veian igual que el
+                   resto aunque "fueran del mismo color". Unificado a #C8A951.
+                 · CABECERAS DE TABLA LEGIBLES. En Food Cost e Historial de
+                   precios los <th> eran BRONCE (#8B6F47) sobre CARBON (#1A1A1A):
+                   dos tonos oscuros peleando, casi ilegible. Pasan a --gold, que
+                   es el mismo criterio que ya usaba "Base de clientes".
+                 · TABLAS EN CAJA. Esas dos tablas se envuelven en .tabla-caja (la
+                   clase que subio a app.css en v0.44): el encabezado oscuro ya no
+                   corta en punta contra el fondo crema.
+                 · DUPLICADOS BORRADOS. pedidos.html y catalogo.html definian
+                   .filtro-input / .filtros-bar / .btn-limpiar / .resultado-info
+                   en su propio <style>, pisando la de app.css con valores
+                   distintos (una decia 260px de ancho minimo, la otra 240px).
+                   Se borraron: ahora las 4 clases tienen UNA sola definicion.
+               NOTA: este changelog se habia quedado en v0.40.0 aunque la version
+               ya iba en 0.44.0. Se completaron las entradas v0.41 a v0.44 con el
+               detalle que estaba en BITACORA_SALUDABLES.md.
+               SIN migracion.
 """
 import os
 from datetime import timedelta
@@ -309,7 +363,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.44.0'
+    APP_VERSION = '0.45.0'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 

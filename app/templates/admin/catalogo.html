@@ -101,16 +101,9 @@
 {% endif %}
 
 <style>
-.filtros-bar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
-.filtro-input {
-    padding:10px 12px; border:1px solid var(--divider); border-radius:var(--radius);
-    font-size:0.9rem; background:#fff; outline:none;
-}
-.filtro-input:focus { border-color:var(--bronce); }
-input.filtro-input { min-width:240px; flex:1; }
-.btn-limpiar { font-size:0.8rem; color:var(--text-soft); align-self:center; }
-.btn-limpiar:hover { color:var(--danger); }
-.resultado-info { font-size:0.8rem; color:var(--text-soft); margin-bottom:14px; }
+/* v0.45.0 · A1: .filtros-bar, .filtro-input, .btn-limpiar y .resultado-info
+   se borraron de aca: ahora viven en app.css (una sola definicion para todo el
+   panel). Lo que queda abajo es propio de ESTA pantalla. */
 
 .tabla { width:100%; border-collapse:collapse; font-size:0.85rem; }
 .tabla thead th {

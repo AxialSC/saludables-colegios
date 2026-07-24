@@ -1,17 +1,17 @@
 {% extends 'admin/base_admin.html' %}
 {% block title %}Historial de precios · {{ app_nombre }}{% endblock %}
 {% block seccion %}Control de precios{% endblock %}
-{% block titulo %}📈 Historial de precios{% endblock %}
+{% block titulo %}Historial de precios{% endblock %}
 
 {% block contenido %}
 <style>
     .hp-intro { color: var(--text-soft); font-size: 0.88rem; margin-bottom: 20px; max-width: 720px; }
     .hp-tabla { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.86rem;
-        background: #fff; border: 1px solid var(--divider); border-radius: var(--radius); overflow: hidden; }
+        background: #fff; }
     .hp-tabla th {
-        text-align: left; background: var(--carbon); color: var(--bronce);
+        text-align: left; background: var(--carbon); color: var(--gold);
         padding: 12px 14px; font-size: 0.68rem; letter-spacing: .1em; text-transform: uppercase;
-        font-weight: 600;
+        font-weight: 700;
     }
     .hp-tabla td { padding: 13px 14px; border-top: 1px solid var(--divider); }
     .hp-tabla tbody tr:hover td { background: #FAF8F4; }
@@ -28,6 +28,7 @@
     aunque no tengas acceso a su base.
 </p>
 
+<div class="tabla-caja">
 <table class="hp-tabla">
     <thead>
         <tr>
@@ -64,4 +65,5 @@
         {% endfor %}
     </tbody>
 </table>
+</div>
 {% endblock %}
