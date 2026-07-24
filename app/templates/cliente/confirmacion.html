@@ -10,7 +10,10 @@
 
 <header class="t-header">
     <div class="t-header-top">
-        <div class="t-marca">{{ ajustes.nombre_negocio }}</div>
+        {# v0.47.0 · Aca el logo va CENTRADO: no hay boton al lado que balancear. #}
+        <img class="t-check-logo t-check-logo-solo"
+             src="{{ url_for('static', filename='img/marca/logo.png') }}"
+             alt="{{ ajustes.nombre_negocio }}">
         <div class="t-tagline">Catálogo mayorista · Pilar</div>
     </div>
 </header>

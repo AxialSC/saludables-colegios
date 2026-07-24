@@ -1249,3 +1249,63 @@ body.co-page .pg-datos[hidden] { display: none !important; }
     body.co-page .co-field textarea { transition: none; }
     body.co-page .co-submit:hover { transform: none; }
 }
+
+/* =====================================================================
+   v0.47.0 · A2b · EL LOGO EN EL HEADER DEL CHECKOUT
+   ---------------------------------------------------------------------
+   Pedido de Ivan: el LOGO de la marca (no el nombre escrito) mirando a la
+   izquierda, y "Seguir comprando" CENTRADO.
+
+   EL DETALLE QUE HACE QUE FUNCIONE: si el boton se centrara "en el espacio
+   que sobra al lado del logo", quedaria corrido a la derecha y se leeria
+   desprolijo. Por eso la fila es una GRILLA DE 3 COLUMNAS (1fr auto 1fr) con
+   la tercera VACIA: el boton cae en el centro exacto de la pagina, sin
+   importar cuanto mida el logo. Es el mismo recurso que usa el checkout de
+   Shopify. Si algun dia se agrega algo a la derecha (un carrito, un telefono),
+   entra ahi y no hay que rehacer nada.
+
+   EN CELULAR la grilla se apila: no entran tres cosas en 380px.
+   ===================================================================== */
+body.co-page .t-head-fila {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 12px;
+}
+
+/* El logo: 640x160 (relacion 4:1). A 38px de alto mide ~152px de ancho. */
+body.co-page .t-check-logo {
+    height: 38px;
+    width: auto;
+    display: block;
+    justify-self: start;
+}
+
+/* En la confirmacion el logo va SOLO y centrado: no hay boton al lado. */
+body.co-page .t-check-logo-solo { justify-self: center; margin: 0 auto; }
+
+/* Pisa el 'align-self: flex-start' que traia .t-volver de la v0.36:
+   dentro de la grilla tiene que quedar centrado en su celda. */
+body.co-page .t-head-fila .t-volver {
+    justify-self: center;
+    align-self: center;
+    margin: 0;
+}
+
+/* Aire entre el logo y la bajada ("Finalizá tu pedido"), que traia -6px */
+body.co-page .t-tagline { margin-top: 0; }
+
+/* ---- CELULAR: tres cosas no entran en una fila ----
+   Se apila: logo centrado arriba, boton a lo ancho abajo (imposible errarle
+   con el dedo). El hueco reservado desaparece: no tiene sentido apilado. */
+@media (max-width: 560px) {
+    body.co-page .t-head-fila {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        gap: 12px;
+    }
+    body.co-page .t-head-hueco { display: none; }
+    body.co-page .t-check-logo { justify-self: center; height: 34px; }
+    body.co-page .t-head-fila .t-volver { justify-self: stretch; width: 100%; }
+}

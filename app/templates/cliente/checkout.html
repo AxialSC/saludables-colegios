@@ -10,8 +10,17 @@
 
 <header class="t-header">
     <div class="t-header-top">
-        <a href="{{ url_for('cliente.catalogo') }}" class="t-volver">Seguir comprando</a>
-        <div class="t-marca" style="margin-top:6px;">{{ ajustes.nombre_negocio }}</div>
+        {# v0.47.0 · Grilla de 3 columnas: logo | boton | hueco reservado.
+           La tercera columna va VACIA a proposito: es lo que hace que
+           "Seguir comprando" quede centrado respecto de la PAGINA y no
+           "centrado en el espacio que sobra al lado del logo". #}
+        <div class="t-head-fila">
+            <img class="t-check-logo"
+                 src="{{ url_for('static', filename='img/marca/logo.png') }}"
+                 alt="{{ ajustes.nombre_negocio }}">
+            <a href="{{ url_for('cliente.catalogo') }}" class="t-volver">Seguir comprando</a>
+            <span class="t-head-hueco" aria-hidden="true"></span>
+        </div>
         <div class="t-tagline">Finalizá tu pedido</div>
     </div>
 </header>

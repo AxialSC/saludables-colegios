@@ -384,6 +384,25 @@ v0.46.0 -> A2: EL CIRCUITO DE PAGO (checkout + confirmacion). Lo marco Ivan
                  nunca fallo (radio disabled + rechazo en el backend): era solo
                  lo que se veia. Arreglado desde el CSS, sin tocar el JS.
                SIN migracion.
+v0.47.0 -> A2b: EL LOGO EN EL HEADER DEL CHECKOUT. Antes decia "Saludables"
+               escrito con la tipografia del sistema; ahora va el LOGO real de
+               la marca (img/marca/logo.png), que es lo que el cliente reconoce.
+                 · CHECKOUT: logo a la izquierda y "Seguir comprando" CENTRADO,
+                   como lo pidio Ivan. El detalle que lo hace funcionar es que
+                   la fila es una GRILLA DE 3 COLUMNAS (1fr auto 1fr) con la
+                   tercera VACIA a proposito: asi el boton cae en el centro
+                   exacto de la PAGINA y no "centrado en el espacio que sobra
+                   al lado del logo", que quedaria corrido a la derecha. Es el
+                   mismo recurso del checkout de Shopify. Si algun dia se suma
+                   algo a la derecha, entra en esa columna sin rehacer nada.
+                 · CONFIRMACION: el logo va centrado (ahi no hay boton al lado
+                   que balancear).
+                 · EN CELULAR (<=560px) la grilla se apila: logo centrado
+                   arriba, boton a lo ancho abajo. Tres cosas no entran en una
+                   fila de 380px.
+                 · El alt del <img> es el nombre del negocio: si la imagen no
+                   cargara, se lee el nombre igual. Nunca queda un hueco.
+               "Finalizá tu pedido" se mantiene, como pidio Ivan. SIN migracion.
 """
 import os
 from datetime import timedelta
@@ -397,7 +416,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Identidad / version ---
-    APP_VERSION = '0.46.0'
+    APP_VERSION = '0.47.0'
     APP_NOMBRE = 'Saludables'
     APP_SUBTITULO = 'Catalogo Mayorista · Pilar'
 
